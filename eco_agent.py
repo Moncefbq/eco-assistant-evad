@@ -1,34 +1,39 @@
 import requests
 import json
-import subprocess
 
-# --- Configuration NoCoDB ---
-NOCODB_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
-TABLE_ID = "m6zxxbaq2f869a0"
-NOCODB_URL = f"https://app.nocodb.com/api/v2/tables/{TABLE_ID}/records"
-HEADERS = {"xc-token": NOCODB_TOKEN, "Content-Type": "application/json"}
+# --- Configuration DeepInfra ---
+DEEPINFRA_KEY = "8yHS8APUhQuMouXKQS89EIBVKPl87Igq"  # 🔑 colle ta clé ici
+API_URL = "https://api.deepinfra.com/v1/openai/chat/completions"
 
+# --- Fonction principale ---
+def ask_model(description: str):
+    headers = {"Authorization": f"Bearer {DEEPINFRA_KEY}"}
+    data = {
+        "model": "meta-llama/Meta-Llama-3-8B-Instruct",  # modèle rapide et gratuit
+        "messages": [
+            {"role": "system", "content": "Tu es un assistant expert en projets écologiques. Rédige des analyses structurées et claires."},
+            {"role": "user", "content": description}
+        ],
+        "temperature": 0.5,
+        "max_tokens": 600
+    }
 
-# --- Appel local au modèle Ollama ---
-def ask_model_ollama(description):
-    """Interroge le modèle local Ollama (Gemma ou Mistral)."""
     try:
-        cmd = ["ollama", "run", "gemma:2b", description]
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        return {"response": result.stdout.strip()}
+        response = requests.post(API_URL, headers=headers, json=data)
+        response.raise_for_status()
+        result = response.json()
+        message = result["choices"][0]["message"]["content"]
+        return {
+            "Titre": "Projet Écologique Proposé",
+            "Description": message,
+            "Type": "À déterminer selon le contexte",
+            "Revenus": "Estimation à compléter"
+        }
     except Exception as e:
         return {"error": str(e)}
 
-
-# --- Sauvegarde dans NoCoDB ---
-def save_to_nocodb(data):
-    """Envoie les données dans ta table NoCoDB."""
-    try:
-        payload = {"Title": data["Title"], "Description": data["Description"], "Type": data["Type"], "Revenues": data["Revenues"]}
-        resp = requests.post(NOCODB_URL, headers=HEADERS, data=json.dumps({"fields": payload}))
-        if resp.status_code == 200 or resp.status_code == 201:
-            print("✅ Projet enregistré dans NoCoDB !")
-        else:
-            print(f"❌ Erreur NoCoDB : {resp.status_code} - {resp.text}")
-    except Exception as e:
-        print("⚠️ Erreur lors de la sauvegarde :", e)
+# --- Simulation d'enregistrement dans NoCoDB (facultatif) ---
+def save_to_nocodb(data: dict):
+    print("✅ Données prêtes à être envoyées à NoCoDB :")
+    print(json.dumps(data, indent=2, ensure_ascii=False))
+    return {"status": "success"}
