@@ -23,7 +23,7 @@ if st.button("Analyser le projet 🌍"):
         st.warning("⚠️ Merci d’ajouter une description avant de lancer l’analyse.")
     else:
         with st.spinner("Analyse en cours..."):
-            result = ask_model_ollama(description)
+            result = ask_model(description)
 
         if not result:
             st.error("❌ Une erreur est survenue pendant l’analyse.")
