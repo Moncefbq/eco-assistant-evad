@@ -1,6 +1,6 @@
 import streamlit as st
 import json
-from eco_agent import ask_model_ollama, save_to_nocodb
+from eco_agent import ask_model, save_to_nocodb
 
 # Configuration de la page
 st.set_page_config(page_title="Assistant Éco-Intelligent", page_icon="🌿", layout="centered")
