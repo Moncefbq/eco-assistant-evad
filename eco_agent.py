@@ -5,6 +5,7 @@ import json
 DEEPINFRA_KEY = "8yHS8APUhQuMouXKQS89EIBVKPl87Igq"  # 🔑 colle ta clé ici
 API_URL = "https://api.deepinfra.com/v1/openai/chat/completions"
 
+
 # --- Fonction principale ---
 def ask_model(description: str):
     headers = {"Authorization": f"Bearer {DEEPINFRA_KEY}"}
