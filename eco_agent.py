@@ -15,12 +15,34 @@ headers = {
 
 # --- Nettoyage intelligent du texte ---
 def clean_text(text: str) -> str:
-    """Supprime les caractères inutiles, emojis et balises Markdown."""
+    """
+    Nettoie le texte : supprime les caractères parasites, préfixes inutiles et espaces multiples.
+    """
+    if not text:
+        return ""
+
+    # Supprimer les caractères Markdown et emojis
     text = re.sub(r"[*#`>_]+", "", text)
     text = re.sub(r"[0-9️⃣🧠💡⚡🌍🔹🔸•]+", "", text)
+
+    # Supprimer les préfixes comme ":", "s:", "de projet:", "Projet:" au début du texte
+    text = re.sub(r"^(s\s*[:\-–])", "", text.strip(), flags=re.IGNORECASE)
+    text = re.sub(r"^(de\s*projet\s*[:\-–]*)", "", text.strip(), flags=re.IGNORECASE)
+    text = re.sub(r"^(projet\s*[:\-–]*)", "", text.strip(), flags=re.IGNORECASE)
+    text = re.sub(r"^[\s:.,;-]+", "", text)
+
+    # Nettoyage des espaces
     text = re.sub(r"\s{2,}", " ", text)
     text = re.sub(r"\s([.,;:!?])", r"\1", text)
+
+    # Supprimer les points ou espaces inutiles à la fin
+    text = re.sub(r"[\s.]+$", "", text)
+
+    # Supprimer guillemets parasites
+    text = text.strip().strip('"').strip("'")
+
     return text.strip()
+
 
 
 # --- Extraction de section (Titre, Description, etc.) ---
