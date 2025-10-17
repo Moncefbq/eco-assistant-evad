@@ -12,6 +12,9 @@ headers = {
 }
 
 def ask_model(description: str):
+    """
+    Interroge le modèle OpenRouter pour générer un projet écologique structuré.
+    """
     data = {
         "model": "mistralai/mistral-7b-instruct",
         "messages": [
@@ -46,7 +49,39 @@ def ask_model(description: str):
     except Exception as e:
         return {"error": str(e)}
 
+
+# --- Connexion à NoCoDB ---
 def save_to_nocodb(data: dict):
-    print("✅ Données prêtes à être envoyées à NoCoDB :")
-    print(json.dumps(data, indent=2, ensure_ascii=False))
-    return {"status": "success"}
+    """
+    Envoie les données du projet dans la table 'Places' de NoCoDB.
+    """
+    try:
+        # ✅ URL de ta table NoCoDB (copie ton Table ID ici)
+        api_url = "https://app.nocodb.com/api/v2/tables/m6zxxbaq2f869a0/records"
+
+        # ✅ Ton token API NoCoDB
+        api_key = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
+
+        headers = {
+            "accept": "application/json",
+            "xc-token": api_key,
+            "Content-Type": "application/json"
+        }
+
+        # ✅ Correspondance avec tes colonnes NoCoDB
+        payload = {
+            "Title": data.get("Titre", "Sans titre"),
+            "Description": data.get("Description", ""),
+            "Type": data.get("Type", ""),
+            "Revenues": data.get("Revenus", "")
+        }
+
+        response = requests.post(api_url, headers=headers, json=payload)
+        response.raise_for_status()  # Lève une erreur si la requête échoue
+
+        print("✅ Projet enregistré avec succès :", response.json())
+        return {"status": "success", "message": "Enregistrement réussi dans NoCoDB ✅"}
+
+    except Exception as e:
+        print("❌ Erreur lors de l’envoi vers NoCoDB :", str(e))
+        return {"status": "error", "message": str(e)}
