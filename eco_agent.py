@@ -3,8 +3,8 @@ import os
 import json
 
 # --- Configuration Hugging Face ---
-HF_TOKEN = os.getenv("HF_TOKEN")  # récupère ta clé depuis Streamlit Secrets
-API_URL = "https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1"  # modèle stable & gratuit
+HF_TOKEN = os.getenv("HF_TOKEN")  # ta clé se trouve dans Streamlit Secrets
+API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
 
 headers = {"Authorization": f"Bearer {HF_TOKEN}"}
 
@@ -20,8 +20,14 @@ def ask_model(description: str):
         response.raise_for_status()
         data = response.json()
 
-        # Extraction du texte de la réponse
-        message = data[0]["generated_text"] if isinstance(data, list) else data.get("generated_text", "Pas de réponse.")
+        # Extraction propre du texte généré
+        message = ""
+        if isinstance(data, list) and "generated_text" in data[0]:
+            message = data[0]["generated_text"]
+        elif isinstance(data, dict) and "generated_text" in data:
+            message = data["generated_text"]
+        else:
+            message = json.dumps(data, indent=2, ensure_ascii=False)
 
         return {
             "Titre": "Projet Écologique Proposé",
@@ -33,7 +39,7 @@ def ask_model(description: str):
     except Exception as e:
         return {"error": str(e)}
 
-# --- Simulation d'enregistrement NoCoDB ---
+# --- Simulation d’enregistrement NoCoDB ---
 def save_to_nocodb(data: dict):
     print("✅ Données prêtes à être envoyées à NoCoDB :")
     print(json.dumps(data, indent=2, ensure_ascii=False))
