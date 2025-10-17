@@ -13,116 +13,119 @@ headers = {
 }
 
 
-# --- Nettoyage général du texte ---
+# --- Nettoyage intelligent du texte ---
 def clean_text(text: str) -> str:
-    """Supprime le markdown, les numéros et espaces inutiles."""
-    text = re.sub(r"[#*`>_]+", "", text)  # markdown
-    text = re.sub(r"[0-9️⃣]+", "", text)  # chiffres, emojis numérotés
-    text = re.sub(r"\s+", " ", text)      # espaces multiples
-    text = re.sub(r"[\[\](){}]", "", text)
+    """Supprime les caractères inutiles, emojis et balises Markdown."""
+    text = re.sub(r"[*#`>_]+", "", text)
+    text = re.sub(r"[0-9️⃣🧠💡⚡🌍🔹🔸•]+", "", text)
+    text = re.sub(r"\s{2,}", " ", text)
+    text = re.sub(r"\s([.,;:!?])", r"\1", text)
     return text.strip()
 
 
-# --- Extraction robuste des champs ---
-def extract_field(text, label):
-    """
-    Extrait la section commençant par 'label' et se terminant avant la prochaine section connue.
-    """
-    # Sections possibles
-    labels = ["Titre", "Description", "Type", "Revenu", "Estimation"]
-    labels_regex = "|".join([l for l in labels if l.lower() != label.lower()])
-
-    pattern = rf"{label}.*?:\s*(.*?)(?=(?:{labels_regex}).*?:|$)"
+# --- Extraction de section (Titre, Description, etc.) ---
+def extract_field(text, start_pattern, end_pattern=None):
+    """Extrait une section entre deux motifs."""
+    if end_pattern:
+        pattern = rf"{start_pattern}(.*?){end_pattern}"
+    else:
+        pattern = rf"{start_pattern}(.*)"
     match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
     return clean_text(match.group(1)) if match else ""
 
 
-# --- Fonction principale : génération de projet ---
+# --- Analyse du projet écologique ---
 def ask_model(description: str):
+    """
+    Analyse un projet écologique et renvoie un texte structuré (Titre, Description, Type, Revenus).
+    Utilise le modèle Mistral Nemo : rapide et précis.
+    """
     data = {
-        "model": "mistralai/mistral-7b-instruct",
+        "model": "mistralai/mistral-nemo",  # ✅ Nouveau modèle rapide
         "messages": [
             {
                 "role": "system",
                 "content": (
                     "Tu es un assistant expert en projets écologiques. "
-                    "Fournis un texte clair et structuré avec les sections suivantes : "
-                    "Titre, Description, Type, Revenus."
-                )
+                    "Analyse le projet et donne quatre sections claires : "
+                    "Titre, Description, Type, Revenus. "
+                    "Aucune mise en forme Markdown, aucun emoji, seulement du texte clair."
+                ),
             },
             {
                 "role": "user",
                 "content": (
-                    f"Analyse ce projet écologique et donne les sections suivantes :\n"
-                    f"1️⃣ Titre\n2️⃣ Description\n3️⃣ Type de projet\n4️⃣ Estimation des revenus.\n\n"
+                    f"Analyse ce projet écologique et fournis :\n"
+                    f"1. Titre\n2. Description\n3. Type de projet\n4. Estimation des revenus.\n\n"
                     f"Projet : {description}"
-                )
-            }
+                ),
+            },
         ],
-        "temperature": 0.6,
-        "max_tokens": 700
+        "temperature": 0.4,   # 🔥 Moins de variabilité → plus cohérent
+        "max_tokens": 650,    # Suffisant pour un texte détaillé
     }
 
     try:
-        response = requests.post(API_URL, headers=headers, json=data)
+        response = requests.post(API_URL, headers=headers, json=data, timeout=30)
         response.raise_for_status()
         result = response.json()
 
-        if "choices" in result and len(result["choices"]) > 0:
-            message = result["choices"][0].get("message", {}).get("content", "")
-        else:
-            return {"error": "Aucune réponse du modèle."}
+        message = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+        if not message.strip():
+            return {"error": "Réponse vide du modèle."}
 
-        # Nettoyage global
-        message = clean_text(message)
+        # --- Nettoyage et extraction ---
+        message = message.strip()
+        titre = extract_field(message, r"Titre[:\-–]*", r"Description[:\-–]*")
+        desc = extract_field(message, r"Description[:\-–]*", r"Type[:\-–]*")
+        type_proj = extract_field(message, r"Type[:\-–]*", r"Revenu[:\-–]*")
+        revenus = extract_field(message, r"Revenu[:\-–]*")
 
-        # Extraction par section
-        titre = extract_field(message, "Titre")
-        desc = extract_field(message, "Description")
-        type_proj = extract_field(message, "Type")
-        revenus = extract_field(message, "Revenu")
-
-        # Valeurs de secours si certaines sont vides
-        titre = titre or "Titre non précisé"
-        desc = desc or message[:400]
-        type_proj = type_proj or "Non défini"
-        revenus = revenus or "À estimer"
+        # --- Valeurs par défaut ---
+        titre = clean_text(titre or "Titre non précisé")
+        desc = clean_text(desc or message[:300])
+        type_proj = clean_text(type_proj or "Non défini")
+        revenus = clean_text(revenus or "À estimer")
 
         return {
             "Titre": titre,
             "Description": desc,
             "Type": type_proj,
-            "Revenus": revenus
+            "Revenus": revenus,
         }
 
     except Exception as e:
         return {"error": str(e)}
 
 
-# --- Connexion à NoCoDB ---
+# --- Envoi vers NoCoDB ---
 def save_to_nocodb(data: dict):
-    """Envoie les données structurées vers NoCoDB via son API REST."""
+    """
+    Enregistre les données dans la table NoCoDB.
+    """
     NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/m6zxxbaq2f869a0/records"
-    NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
+    NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"  # ⚠️ Ton token personnel
 
     headers = {
         "xc-token": NOCODB_API_TOKEN,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
 
     payload = {
         "Title": data.get("Titre"),
         "Description": data.get("Description"),
         "Type": data.get("Type"),
-        "Revenues": data.get("Revenus")
+        "Revenues": data.get("Revenus"),
     }
 
     try:
-        response = requests.post(NOCODB_API_URL, headers=headers, json=payload)
+        response = requests.post(NOCODB_API_URL, headers=headers, json=payload, timeout=15)
         response.raise_for_status()
         print("✅ Enregistrement réussi :", response.json())
         return {"status": "success", "response": response.json()}
+
     except Exception as e:
         print("❌ Erreur lors de l’enregistrement :", str(e))
         return {"status": "error", "message": str(e)}
+
 
