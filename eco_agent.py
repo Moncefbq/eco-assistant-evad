@@ -13,20 +13,27 @@ headers = {
 }
 
 
+# --- Fonction utilitaire pour nettoyer le texte ---
+def clean_text(text: str) -> str:
+    """Nettoie le texte des balises markdown et espaces inutiles."""
+    text = re.sub(r"[*#`>_]+", "", text)  # retire **, ###, etc.
+    text = re.sub(r"\s+", " ", text)      # espaces multiples → un seul
+    return text.strip()
+
+
 # --- Fonction utilitaire pour extraire un champ ---
-def extract_field(text, pattern):
-    """
-    Extrait une section spécifique du texte à l’aide d’une expression régulière.
-    """
+def extract_field(text, start_pattern, end_pattern=None):
+    """Extrait un champ à partir du texte entre deux motifs."""
+    if end_pattern:
+        pattern = rf"{start_pattern}(.*?){end_pattern}"
+    else:
+        pattern = rf"{start_pattern}(.*)"
     match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
-    return match.group(1).strip() if match else ""
+    return clean_text(match.group(1)) if match else ""
 
 
 # --- Génération du projet écologique via OpenRouter ---
 def ask_model(description: str):
-    """
-    Interroge le modèle OpenRouter pour générer un projet écologique structuré.
-    """
     data = {
         "model": "mistralai/mistral-7b-instruct",
         "messages": [
@@ -34,14 +41,14 @@ def ask_model(description: str):
                 "role": "system",
                 "content": (
                     "Tu es un assistant expert en projets écologiques. "
-                    "Fournis des sections claires et séparées : "
+                    "Donne une réponse bien structurée avec ces sections claires : "
                     "Titre, Description, Type, Revenus."
                 )
             },
             {
                 "role": "user",
                 "content": (
-                    f"Analyse ce projet écologique et fournis les sections suivantes :\n"
+                    f"Analyse ce projet écologique et fournis :\n"
                     f"1️⃣ Titre\n2️⃣ Description\n3️⃣ Type de projet\n4️⃣ Estimation des revenus.\n\n"
                     f"Projet : {description}"
                 )
@@ -56,24 +63,24 @@ def ask_model(description: str):
         response.raise_for_status()
         result = response.json()
 
-        # ✅ Extraction du message du modèle
+        message = ""
         if "choices" in result and len(result["choices"]) > 0:
             message = result["choices"][0].get("message", {}).get("content", "")
-        else:
-            message = json.dumps(result, indent=2, ensure_ascii=False)
-
         if not message.strip():
-            message = "Le modèle n’a pas généré de texte."
+            return {"error": "Réponse vide du modèle."}
 
-        # 🧩 Extraction des différentes parties du texte
-        titre = extract_field(message, r"(?:Titre[:*]*\s*)(.*?)(?:\n|$)")
-        desc = extract_field(message, r"(?:Description[:*]*\s*)(.*?)(?:\n\*\*|$)")
-        type_proj = extract_field(message, r"(?:Type.*?:\s*)(.*?)(?:\n\*\*|$)")
-        revenus = extract_field(message, r"(?:Revenus[:*]*\s*)(.*?)(?:\n|$)")
+        # --- Nettoyage initial du texte ---
+        message = message.replace("###", "").replace("**", "").strip()
 
-        # ✅ Valeurs par défaut si vides
+        # --- Extraction des sections ---
+        titre = extract_field(message, r"Titre[:\-–]*", r"Description[:\-–]*")
+        desc = extract_field(message, r"Description[:\-–]*", r"Type[:\-–]*")
+        type_proj = extract_field(message, r"Type[:\-–]*", r"Revenu[:\-–]*")
+        revenus = extract_field(message, r"Revenu[:\-–]*")
+
+        # --- Nettoyage final des valeurs ---
         titre = titre or "Titre non précisé"
-        desc = desc or message.strip()[:400]
+        desc = desc or message[:300]
         type_proj = type_proj or "Non défini"
         revenus = revenus or "À estimer"
 
