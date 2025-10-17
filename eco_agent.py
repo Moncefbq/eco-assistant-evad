@@ -12,118 +12,102 @@ headers = {
     "Content-Type": "application/json"
 }
 
-
-# --- Nettoyage intelligent du texte ---
-def clean_text(text: str) -> str:
-    """Supprime les caractères inutiles, emojis et balises Markdown."""
-    text = re.sub(r"[*#`>_]+", "", text)
-    text = re.sub(r"[0-9️⃣🧠💡⚡🌍🔹🔸•]+", "", text)
-    text = re.sub(r"\s{2,}", " ", text)
-    text = re.sub(r"\s([.,;:!?])", r"\1", text)
-    return text.strip()
-
-
-# --- Extraction de section (Titre, Description, etc.) ---
-def extract_field(text, start_pattern, end_pattern=None):
-    """Extrait une section entre deux motifs."""
-    if end_pattern:
-        pattern = rf"{start_pattern}(.*?){end_pattern}"
-    else:
-        pattern = rf"{start_pattern}(.*)"
-    match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
-    return clean_text(match.group(1)) if match else ""
-
-
-# --- Analyse du projet écologique ---
+# --- Fonction principale d’analyse du projet ---
 def ask_model(description: str):
     """
-    Analyse un projet écologique et renvoie un texte structuré (Titre, Description, Type, Revenus).
-    Utilise le modèle Mistral Nemo : rapide et précis.
+    Interroge le modèle Mistral-Nemo via OpenRouter pour générer
+    une analyse structurée d’un projet écologique.
     """
     data = {
-        "model": "mistralai/mistral-nemo",  # ✅ Nouveau modèle rapide
+        "model": "mistralai/mistral-nemo",
         "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "Tu es un assistant expert en projets écologiques. "
-                    "Analyse le projet et donne quatre sections claires : "
-                    "Titre, Description, Type, Revenus. "
-                    "Aucune mise en forme Markdown, aucun emoji, seulement du texte clair."
-                ),
-            },
-            {
-                "role": "user",
-                "content": (
-                    f"Analyse ce projet écologique et fournis :\n"
-                    f"1. Titre\n2. Description\n3. Type de projet\n4. Estimation des revenus.\n\n"
-                    f"Projet : {description}"
-                ),
-            },
+            {"role": "system", "content": (
+                "Tu es un assistant expert en projets écologiques. "
+                "Analyse le texte fourni et renvoie un JSON structuré avec ces champs :\n"
+                "- Titre\n- Description\n- Type\n- Revenus.\n"
+                "Assure-toi que chaque champ soit clair, sans répétition ni marqueurs inutiles."
+            )},
+            {"role": "user", "content": f"Analyse ce projet écologique : {description}"}
         ],
-        "temperature": 0.4,   # 🔥 Moins de variabilité → plus cohérent
-        "max_tokens": 650,    # Suffisant pour un texte détaillé
+        "temperature": 0.5,
+        "max_tokens": 700
     }
 
     try:
-        response = requests.post(API_URL, headers=headers, json=data, timeout=30)
+        response = requests.post(API_URL, headers=headers, json=data)
         response.raise_for_status()
         result = response.json()
 
-        message = result.get("choices", [{}])[0].get("message", {}).get("content", "")
-        if not message.strip():
-            return {"error": "Réponse vide du modèle."}
+        # ✅ Extraction du message brut du modèle
+        message = result.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
 
-        # --- Nettoyage et extraction ---
-        message = message.strip()
-        titre = extract_field(message, r"Titre[:\-–]*", r"Description[:\-–]*")
-        desc = extract_field(message, r"Description[:\-–]*", r"Type[:\-–]*")
-        type_proj = extract_field(
-    message,
-    r"Type\s*(?:de projet)?[:\-–]*",
-    r"(?:Revenu|Estimation\s+des\s+revenus|Sources\s+de\s+revenus)[:\-–]*"
-                                )
-        revenus = extract_field(message, r"Revenu[:\-–]*")
+        if not message:
+            return {"error": "Aucune réponse du modèle."}
 
-        # --- Valeurs par défaut ---
-        titre = clean_text(titre or "Titre non précisé")
-        desc = clean_text(desc or message[:300])
-        type_proj = clean_text(type_proj or "Non défini")
-        revenus = clean_text(revenus or "À estimer")
+        # --- Extraction propre des champs à l’aide de regex ---
+        titre = extract_field(message, r"(?:Titre|Nom du projet)[:\-–]\s*(.+)")
+        description = extract_field(message, r"(?:Description)[:\-–]\s*(.+)")
+        type_proj = extract_field(message, r"(?:Type|Catégorie|Nature du projet)[:\-–]\s*(.+)")
+        revenus = extract_field(message, r"(?:Revenus|Estimation des revenus|Sources de financement)[:\-–]\s*(.+)")
 
-        return {
-            "Titre": titre,
-            "Description": desc,
-            "Type": type_proj,
-            "Revenus": revenus,
+        # --- Nettoyage final ---
+        data_clean = {
+            "Titre": clean_field(titre or "Projet écologique"),
+            "Description": clean_field(description),
+            "Type": clean_field(type_proj),
+            "Revenus": clean_field(revenus)
         }
+
+        return data_clean
 
     except Exception as e:
         return {"error": str(e)}
 
 
-# --- Envoi vers NoCoDB ---
+# --- Fonction d’extraction avec regex robuste ---
+def extract_field(text: str, start_pattern: str):
+    """
+    Extrait le contenu après un motif donné jusqu’à la prochaine section.
+    Exemple : de 'Description:' jusqu’à 'Type:'.
+    """
+    pattern = re.compile(start_pattern + r"([\s\S]*?)(?=\n[A-ZÉÈÊÂÎÔÙÛÜÇa-z]*[:\-–]|$)", re.IGNORECASE)
+    match = pattern.search(text)
+    return match.group(1).strip() if match else ""
+
+
+# --- Fonction de nettoyage général ---
+def clean_field(value: str):
+    if not value:
+        return ""
+    value = value.strip()
+    value = re.sub(r"^[\s:]*", "", value)      # Supprime ':' ou 's:' au début
+    value = re.sub(r"\s*\.\s*$", "", value)    # Supprime le '.' final
+    value = re.sub(r"\s+", " ", value)         # Supprime les doubles espaces
+    return value
+
+
+# --- Connexion à NoCoDB ---
 def save_to_nocodb(data: dict):
     """
-    Enregistre les données dans la table NoCoDB.
+    Enregistre les données nettoyées dans la table NoCoDB.
     """
     NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/m6zxxbaq2f869a0/records"
-    NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"  # ⚠️ Ton token personnel
+    NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"  # Ton token personnel
 
     headers = {
         "xc-token": NOCODB_API_TOKEN,
-        "Content-Type": "application/json",
+        "Content-Type": "application/json"
     }
 
     payload = {
-        "Title": data.get("Titre"),
-        "Description": data.get("Description"),
-        "Type": data.get("Type"),
-        "Revenues": data.get("Revenus"),
+        "Title": clean_field(data.get("Titre")),
+        "Description": clean_field(data.get("Description")),
+        "Type": clean_field(data.get("Type")),
+        "Revenues": clean_field(data.get("Revenus"))
     }
 
     try:
-        response = requests.post(NOCODB_API_URL, headers=headers, json=payload, timeout=15)
+        response = requests.post(NOCODB_API_URL, headers=headers, json=payload)
         response.raise_for_status()
         print("✅ Enregistrement réussi :", response.json())
         return {"status": "success", "response": response.json()}
@@ -131,5 +115,14 @@ def save_to_nocodb(data: dict):
     except Exception as e:
         print("❌ Erreur lors de l’enregistrement :", str(e))
         return {"status": "error", "message": str(e)}
+
+
+# --- Test local ---
+if __name__ == "__main__":
+    projet = "Installer des systèmes de récupération d'eau de pluie dans les écoles rurales"
+    result = ask_model(projet)
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    # save_to_nocodb(result)
+
 
 
