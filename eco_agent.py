@@ -4,7 +4,7 @@ import json
 
 # --- Configuration Hugging Face ---
 HF_TOKEN = os.getenv("HF_TOKEN")
-API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill"
+API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
 
 headers = {"Authorization": f"Bearer {HF_TOKEN}"}
 
