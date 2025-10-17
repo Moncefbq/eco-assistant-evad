@@ -4,19 +4,19 @@ import json
 
 # --- Configuration Hugging Face ---
 HF_TOKEN = os.getenv("HF_TOKEN")
-API_URL = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-alpha"
+API_URL = "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct"
 
 headers = {"Authorization": f"Bearer {HF_TOKEN}"}
 
 # --- Fonction principale ---
 def ask_model(description: str):
     prompt = f"""
-    Tu es un assistant expert en projets écologiques. 
-    Analyse et structure le projet suivant de façon claire :
-    - Titre du projet
-    - Description détaillée
-    - Type (ex : énergie, recyclage, mobilité, etc.)
-    - Estimation des revenus ou bénéfices écologiques
+    Tu es un assistant expert en projets écologiques.
+    Analyse le projet suivant et propose :
+    - Un titre clair
+    - Une description complète
+    - Le type de projet (énergie, recyclage, mobilité, etc.)
+    - Une estimation des revenus ou bénéfices
     Projet : {description}
     """
 
@@ -30,7 +30,7 @@ def ask_model(description: str):
         response.raise_for_status()
         data = response.json()
 
-        # Extraction du texte généré
+        # Extraction propre du texte
         if isinstance(data, list) and "generated_text" in data[0]:
             message = data[0]["generated_text"]
         else:
