@@ -78,7 +78,11 @@ def ask_model(description: str):
         message = message.strip()
         titre = extract_field(message, r"Titre[:\-–]*", r"Description[:\-–]*")
         desc = extract_field(message, r"Description[:\-–]*", r"Type[:\-–]*")
-        type_proj = extract_field(message, r"Type[:\-–]*", r"Revenu[:\-–]*")
+        type_proj = extract_field(
+    message,
+    r"Type\s*(?:de projet)?[:\-–]*",
+    r"(?:Revenu|Estimation\s+des\s+revenus|Sources\s+de\s+revenus)[:\-–]*"
+                                )
         revenus = extract_field(message, r"Revenu[:\-–]*")
 
         # --- Valeurs par défaut ---
