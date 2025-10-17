@@ -1,153 +1,73 @@
-import requests
-import os
-import json
-import re
+import streamlit as st
+from eco_agent import ask_model, save_to_nocodb
 
-# --- Configuration OpenRouter ---
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-API_URL = "https://openrouter.ai/api/v1/chat/completions"
+st.set_page_config(page_title="Assistant Éco-Intelligent", page_icon="🌱", layout="centered")
 
-headers = {
-    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-    "Content-Type": "application/json"
-}
+# --- Interface principale ---
+st.title("🌿 Assistant Éco-Intelligent")
 
+st.markdown("""
+Décris ton projet écologique ci-dessous :  
 
-# --- Nettoyage intelligent du texte ---
-def clean_text(text: str) -> str:
-    """
-    Nettoie le texte : supprime les caractères parasites, préfixes inutiles et espaces multiples.
-    """
-    if not text:
-        return ""
+1️⃣ **Analyse ton idée**  
+2️⃣ **Reçois une proposition automatique (Titre, Description, Type, Revenus)**  
+3️⃣ **Modifie si besoin**  
+4️⃣ **Enregistre dans NoCoDB ✅**
+""")
 
-    # Supprimer les caractères Markdown et emojis
-    text = re.sub(r"[*#`>_]+", "", text)
-    text = re.sub(r"[0-9️⃣🧠💡⚡🌍🔹🔸•]+", "", text)
+# --- Zone de saisie ---
+description = st.text_area(
+    "📝 Décris ton projet :",
+    placeholder="Ex : Installer des panneaux solaires dans les écoles rurales",
+    height=120
+)
 
-    # Supprimer les préfixes comme ":", "s:", "de projet:", "Projet:" au début du texte
-    text = re.sub(r"^(s\s*[:\-–])", "", text.strip(), flags=re.IGNORECASE)
-    text = re.sub(r"^(de\s*projet\s*[:\-–]*)", "", text.strip(), flags=re.IGNORECASE)
-    text = re.sub(r"^(projet\s*[:\-–]*)", "", text.strip(), flags=re.IGNORECASE)
-    text = re.sub(r"^[\s:.,;-]+", "", text)
-
-    # Nettoyage des espaces
-    text = re.sub(r"\s{2,}", " ", text)
-    text = re.sub(r"\s([.,;:!?])", r"\1", text)
-
-    # Supprimer les points ou espaces inutiles à la fin
-    text = re.sub(r"[\s.]+$", "", text)
-
-    # Supprimer guillemets parasites
-    text = text.strip().strip('"').strip("'")
-
-    return text.strip()
-
-
-
-# --- Extraction de section (Titre, Description, etc.) ---
-def extract_field(text, start_pattern, end_pattern=None):
-    """Extrait une section entre deux motifs."""
-    if end_pattern:
-        pattern = rf"{start_pattern}(.*?){end_pattern}"
+# --- Bouton d’analyse ---
+if st.button("🔍 Analyser le projet"):
+    if not description.strip():
+        st.warning("⚠️ Merci de décrire ton projet avant d'analyser.")
     else:
-        pattern = rf"{start_pattern}(.*)"
-    match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
-    return clean_text(match.group(1)) if match else ""
+        with st.spinner("Analyse du projet en cours... ⏳"):
+            data = ask_model(description)
 
+        if "error" in data:
+            st.error(f"❌ Erreur : {data['error']}")
+        else:
+            st.success("💡 Proposition générée avec succès !")
 
-# --- Analyse du projet écologique ---
-def ask_model(description: str):
-    """
-    Analyse un projet écologique et renvoie un texte structuré (Titre, Description, Type, Revenus).
-    Utilise le modèle Mistral Nemo : rapide et précis.
-    """
-    data = {
-        "model": "mistralai/mistral-nemo",  # ✅ Nouveau modèle rapide
-        "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "Tu es un assistant expert en projets écologiques. "
-                    "Analyse le projet et donne quatre sections claires : "
-                    "Titre, Description, Type, Revenus. "
-                    "Aucune mise en forme Markdown, aucun emoji, seulement du texte clair."
-                ),
-            },
-            {
-                "role": "user",
-                "content": (
-                    f"Analyse ce projet écologique et fournis :\n"
-                    f"1. Titre\n2. Description\n3. Type de projet\n4. Estimation des revenus.\n\n"
-                    f"Projet : {description}"
-                ),
-            },
-        ],
-        "temperature": 0.4,   # 🔥 Moins de variabilité → plus cohérent
-        "max_tokens": 650,    # Suffisant pour un texte détaillé
-    }
+            # --- Champs modifiables par l’utilisateur ---
+            st.markdown("### ✏️ Tu peux modifier les champs avant d’enregistrer :")
 
-    try:
-        response = requests.post(API_URL, headers=headers, json=data, timeout=30)
-        response.raise_for_status()
-        result = response.json()
+            titre = st.text_input("📘 Titre :", value=data.get("Titre", ""))
+            desc = st.text_area("📄 Description :", value=data.get("Description", ""), height=150)
+            type_proj = st.text_input("🏷️ Type de projet :", value=data.get("Type", ""))
+            revenus = st.text_area("💰 Estimation des revenus :", value=data.get("Revenus", ""), height=100)
 
-        message = result.get("choices", [{}])[0].get("message", {}).get("content", "")
-        if not message.strip():
-            return {"error": "Réponse vide du modèle."}
+            # --- Affichage du JSON propre ---
+            st.markdown("### 🧾 Aperçu des données à enregistrer :")
+            st.json({
+                "Titre": titre,
+                "Description": desc,
+                "Type": type_proj,
+                "Revenus": revenus
+            })
 
-        # --- Nettoyage et extraction ---
-        message = message.strip()
-        titre = extract_field(message, r"Titre[:\-–]*", r"Description[:\-–]*")
-        desc = extract_field(message, r"Description[:\-–]*", r"Type[:\-–]*")
-        type_proj = extract_field(message, r"Type[:\-–]*", r"(Revenu|Estimation\s+des\s+revenus)[:\-–]*")
-        revenus = extract_field(message, r"Revenu[:\-–]*")
+            # --- Enregistrement dans NoCoDB ---
+            if st.button("💾 Enregistrer dans NoCoDB"):
+                new_data = {
+                    "Titre": titre,
+                    "Description": desc,
+                    "Type": type_proj,
+                    "Revenus": revenus
+                }
 
-        # --- Valeurs par défaut ---
-        titre = clean_text(titre or "Titre non précisé")
-        desc = clean_text(desc or message[:300])
-        type_proj = clean_text(type_proj or "Non défini")
-        revenus = clean_text(revenus or "À estimer")
+                with st.spinner("Enregistrement en cours..."):
+                    result = save_to_nocodb(new_data)
 
-        return {
-            "Titre": titre,
-            "Description": desc,
-            "Type": type_proj,
-            "Revenus": revenus,
-        }
+                if result.get("status") == "success":
+                    st.success("✅ Projet enregistré dans NoCoDB avec succès !")
+                else:
+                    st.error(f"❌ Erreur lors de l'enregistrement : {result.get('message')}")
 
-    except Exception as e:
-        return {"error": str(e)}
-
-
-# --- Envoi vers NoCoDB ---
-def save_to_nocodb(data: dict):
-    """
-    Enregistre les données dans la table NoCoDB.
-    """
-    NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/m6zxxbaq2f869a0/records"
-    NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"  # ⚠️ Ton token personnel
-
-    headers = {
-        "xc-token": NOCODB_API_TOKEN,
-        "Content-Type": "application/json",
-    }
-
-    payload = {
-        "Title": data.get("Titre"),
-        "Description": data.get("Description"),
-        "Type": data.get("Type"),
-        "Revenues": data.get("Revenus"),
-    }
-
-    try:
-        response = requests.post(NOCODB_API_URL, headers=headers, json=payload, timeout=15)
-        response.raise_for_status()
-        print("✅ Enregistrement réussi :", response.json())
-        return {"status": "success", "response": response.json()}
-
-    except Exception as e:
-        print("❌ Erreur lors de l’enregistrement :", str(e))
-        return {"status": "error", "message": str(e)}
 
 
