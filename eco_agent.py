@@ -4,26 +4,23 @@ import json
 
 # --- Configuration Hugging Face ---
 HF_TOKEN = os.getenv("HF_TOKEN")
-API_URL = "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct"
+API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill"
 
 headers = {"Authorization": f"Bearer {HF_TOKEN}"}
 
 # --- Fonction principale ---
 def ask_model(description: str):
     prompt = f"""
-    Tu es un assistant expert en projets écologiques.
-    Analyse le projet suivant et propose :
+    Tu es un assistant intelligent spécialisé dans les projets écologiques.
+    Analyse ce projet et rédige :
     - Un titre clair
-    - Une description complète
-    - Le type de projet (énergie, recyclage, mobilité, etc.)
+    - Une courte description
+    - Le type de projet (énergie, recyclage, éducation, etc.)
     - Une estimation des revenus ou bénéfices
     Projet : {description}
     """
 
-    payload = {
-        "inputs": prompt,
-        "parameters": {"temperature": 0.6, "max_new_tokens": 400}
-    }
+    payload = {"inputs": prompt}
 
     try:
         response = requests.post(API_URL, headers=headers, json=payload)
