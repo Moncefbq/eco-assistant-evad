@@ -1,5 +1,8 @@
-import streamlit as st
-from eco_agent import ask_model, save_to_nocodb
+import requests
+import os
+import json
+import re
+
 
 st.set_page_config(page_title="Assistant Éco-Intelligent", page_icon="🌱", layout="centered")
 
