@@ -1,52 +1,45 @@
-import requests
-import os
+import streamlit as st
 import json
+from eco_agent import ask_model, save_to_nocodb
 
-# --- Configuration OpenRouter ---
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-API_URL = "https://openrouter.ai/api/v1/chat/completions"
+# Configuration de la page
+st.set_page_config(page_title="Assistant Éco-Intelligent", page_icon="🌿", layout="centered")
 
-headers = {
-    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-    "Content-Type": "application/json"
-}
+st.title("🌿 Assistant Éco-Intelligent")
+st.markdown("""
+Décris ton projet écologique ci-dessous.  
+L’assistant va :
+1️⃣ Analyser ton idée  
+2️⃣ Proposer les champs (Titre, Description, Type, Revenus)  
+3️⃣ Et t’aider à l’enregistrer dans **NoCoDB**
+""")
 
-def ask_model(description: str):
-    data = {
-        "model": "mistralai/mistral-7b-instruct",
-        "messages": [
-            {"role": "system", "content": "Tu es un assistant expert en projets écologiques. Fournis une réponse claire et bien structurée."},
-            {"role": "user", "content": f"Analyse ce projet écologique et fournis :\n1️⃣ Un titre\n2️⃣ Une courte description\n3️⃣ Le type de projet\n4️⃣ Une estimation des revenus.\n\nProjet : {description}"}
-        ],
-        "temperature": 0.6,
-        "max_tokens": 600
-    }
+description = st.text_area("📝 Décris ton projet :", height=150, placeholder="Ex: Ferme solaire communautaire pour un village...")
 
-    try:
-        response = requests.post(API_URL, headers=headers, json=data)
-        response.raise_for_status()
-        result = response.json()
+if st.button("Analyser le projet 🌍"):
+    if not description.strip():
+        st.warning("⚠️ Merci d’ajouter une description avant de lancer l’analyse.")
+    else:
+        with st.spinner("Analyse en cours..."):
+            result = ask_model(description)
 
-        # ✅ Correction : gestion de plusieurs formats possibles
-        if "choices" in result and len(result["choices"]) > 0:
-            message = result["choices"][0].get("message", {}).get("content", "")
+        if "error" in result:
+            st.error(f"❌ Une erreur est survenue : {result['error']}")
         else:
-            message = json.dumps(result, indent=2, ensure_ascii=False)
+            st.success("💡 Proposition générée avec succès !")
 
-        if not message.strip():
-            message = "Le modèle n’a pas généré de description. Essaie un autre texte."
+            # --- Affichage stylisé ---
+            st.markdown("### 🪴 Résultat de l’analyse")
+            st.markdown(f"#### 🏷️ **{result['Titre']}**")
+            st.markdown(result["Description"])
+            st.markdown(f"**🧭 Type de projet :** {result['Type']}")
+            st.markdown(f"**💰 Revenus estimés :** {result['Revenus']}")
 
-        return {
-            "Titre": "Projet Écologique Proposé",
-            "Description": message.strip(),
-            "Type": "À déterminer",
-            "Revenus": "À estimer"
-        }
+            st.divider()
 
-    except Exception as e:
-        return {"error": str(e)}
-
-def save_to_nocodb(data: dict):
-    print("✅ Données prêtes à être envoyées à NoCoDB :")
-    print(json.dumps(data, indent=2, ensure_ascii=False))
-    return {"status": "success"}
+            if st.button("Enregistrer dans NoCoDB ✅"):
+                try:
+                    save_to_nocodb(result)
+                    st.success("🎉 Projet enregistré dans NoCoDB avec succès !")
+                except Exception as e:
+                    st.error(f"⚠️ Erreur lors de l’enregistrement : {e}")
