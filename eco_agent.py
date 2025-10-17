@@ -2,48 +2,42 @@ import requests
 import os
 import json
 
-# --- Configuration Hugging Face ---
-HF_TOKEN = os.getenv("HF_TOKEN")
-API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
+# --- Configuration OpenRouter ---
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+headers = {
+    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+    "Content-Type": "application/json"
+}
 
 # --- Fonction principale ---
 def ask_model(description: str):
-    prompt = f"""
-    Tu es un assistant intelligent spécialisé dans les projets écologiques.
-    Analyse ce projet et rédige :
-    - Un titre clair
-    - Une courte description
-    - Le type de projet (énergie, recyclage, éducation, etc.)
-    - Une estimation des revenus ou bénéfices
-    Projet : {description}
-    """
-
-    payload = {"inputs": prompt}
+    data = {
+        "model": "mistralai/mistral-7b-instruct",  # modèle rapide et gratuit
+        "messages": [
+            {"role": "system", "content": "Tu es un assistant expert en projets écologiques."},
+            {"role": "user", "content": f"Analyse ce projet et rédige : un titre, une description, un type, et une estimation des revenus.\nProjet : {description}"}
+        ],
+        "temperature": 0.6,
+        "max_tokens": 400
+    }
 
     try:
-        response = requests.post(API_URL, headers=headers, json=payload)
+        response = requests.post(API_URL, headers=headers, json=data)
         response.raise_for_status()
-        data = response.json()
-
-        # Extraction propre du texte
-        if isinstance(data, list) and "generated_text" in data[0]:
-            message = data[0]["generated_text"]
-        else:
-            message = json.dumps(data, indent=2, ensure_ascii=False)
-
+        result = response.json()
+        message = result["choices"][0]["message"]["content"]
         return {
             "Titre": "Projet Écologique Proposé",
             "Description": message,
             "Type": "À déterminer",
             "Revenus": "À estimer"
         }
-
     except Exception as e:
         return {"error": str(e)}
 
-# --- Simulation d'enregistrement NoCoDB ---
+# --- Simulation NoCoDB ---
 def save_to_nocodb(data: dict):
     print("✅ Données prêtes à être envoyées à NoCoDB :")
     print(json.dumps(data, indent=2, ensure_ascii=False))
