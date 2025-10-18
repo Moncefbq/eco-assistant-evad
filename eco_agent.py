@@ -12,32 +12,49 @@ headers = {
     "Content-Type": "application/json"
 }
 
+
 # --- Nettoyage du texte ---
 def clean_text(text: str) -> str:
-    """Nettoie le texte et supprime les répétitions et symboles inutiles."""
+    """Nettoie le texte et supprime les répétitions, symboles et débuts inutiles."""
     if not text:
         return ""
+
+    # Nettoyage général : suppression des symboles, balises et emojis
     text = re.sub(r"[*#`>_]+", "", text)
     text = re.sub(r"[0-9️⃣🧠💡⚡🌍🔹🔸•]+", "", text)
     text = re.sub(r"\s{2,}", " ", text)
     text = text.strip().strip('"').strip("'")
 
-    # Supprimer les débuts inutiles
-    text = re.sub(r"^(s:|de projet:|projet:)\s*", "", text, flags=re.IGNORECASE)
-    text = re.sub(r"^[:\-\s]+", "", text)
+    # Supprimer les préfixes ou débuts erronés (comme "s:", "de projet:", "projet:", etc.)
+    text = re.sub(
+        r"^(s\s*[:\-–]\s*|de\s*projet\s*[:\-–]\s*|projet\s*[:\-–]\s*|le\s*projet\s*[:\-–]\s*)",
+        "",
+        text.strip(),
+        flags=re.IGNORECASE,
+    )
 
-    # Supprimer phrases répétées
-    sentences = text.split(". ")
-    filtered = []
+    # Supprimer les doublons de phrases similaires
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
+    unique_sentences = []
     for s in sentences:
-        s_clean = s.strip().lower()
-        if not any(difflib.SequenceMatcher(None, s_clean, f.lower()).ratio() > 0.8 for f in filtered):
-            filtered.append(s.strip())
-    return ". ".join(filtered).strip(". ")
+        if not any(
+            difflib.SequenceMatcher(None, s.lower(), u.lower()).ratio() > 0.8
+            for u in unique_sentences
+        ):
+            unique_sentences.append(s)
+    text = " ".join(unique_sentences)
+
+    # Nettoyage final
+    text = re.sub(r"\s+([.,;:!?])", r"\1", text)
+    text = re.sub(r"\s{2,}", " ", text)
+    text = re.sub(r"[\s.]+$", "", text)
+
+    return text.strip()
+
 
 # --- Extraction de sections ---
 def extract_field(text, start, end=None):
-    """Extrait une section spécifique."""
+    """Extrait une section spécifique dans le texte du modèle."""
     if end:
         pattern = rf"{start}(.*?){end}"
     else:
@@ -45,8 +62,13 @@ def extract_field(text, start, end=None):
     match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
     return clean_text(match.group(1)) if match else ""
 
+
 # --- Appel du modèle ---
 def ask_model(description: str):
+    """
+    Analyse un projet écologique et retourne un dictionnaire propre (Titre, Description, Type, Revenus)
+    avec nettoyage automatique et sans redondance.
+    """
     data = {
         "model": "mistralai/mistral-nemo",
         "messages": [
@@ -82,7 +104,7 @@ def ask_model(description: str):
         if not message.strip():
             return {"error": "Réponse vide du modèle."}
 
-        # Extraction
+        # Extraction des sections
         titre = extract_field(message, r"Titre[:\-–]*", r"Description[:\-–]*")
         desc = extract_field(message, r"Description[:\-–]*", r"Type[:\-–]*")
         type_proj = extract_field(message, r"Type[:\-–]*", r"(Revenu|Estimation)[:\-–]*")
@@ -98,8 +120,12 @@ def ask_model(description: str):
     except Exception as e:
         return {"error": str(e)}
 
+
 # --- Envoi vers NoCoDB ---
 def save_to_nocodb(data: dict):
+    """
+    Envoie les données nettoyées vers la table NoCoDB configurée.
+    """
     NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/m6zxxbaq2f869a0/records"
     NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 
