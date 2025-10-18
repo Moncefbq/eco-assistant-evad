@@ -1,67 +1,60 @@
 import streamlit as st
+import json
 from eco_agent import ask_model, save_to_nocodb
 
 # --- Configuration de la page ---
 st.set_page_config(page_title="Assistant Éco-Intelligent", page_icon="🌿", layout="centered")
 
-# --- En-tête ---
 st.title("🌿 Assistant Éco-Intelligent")
 st.markdown("""
-Décris ton projet écologique ci-dessous.  
+Décris ton projet écologique ci-dessous :  
 L’assistant va :  
 1️⃣ Analyser ton idée  
 2️⃣ Proposer les champs (**Titre**, **Description**, **Type**, **Revenus**)  
-3️⃣ Et te permettre de **modifier le contenu** avant l’enregistrement dans **NoCoDB** 🌍
+3️⃣ Te permettre de les **modifier avant l’enregistrement dans NoCoDB**
 """)
 
-# --- Zone de saisie utilisateur ---
+# --- Entrée utilisateur ---
 description = st.text_area(
     "📝 Décris ton projet :",
-    height=150,
-    placeholder="Ex : Mettre en place des jardins potagers communautaires dans les écoles rurales..."
+    placeholder="Ex : Mettre en place des jardins potagers communautaires dans les écoles..."
 )
 
-# --- Bouton principal ---
-if st.button("Analyser le projet 🌍"):
+# --- Analyse du projet ---
+if st.button("🔍 Analyser le projet"):
     if not description.strip():
         st.warning("⚠️ Merci d’ajouter une description avant de lancer l’analyse.")
     else:
-        with st.spinner("🔎 Analyse du projet en cours..."):
-            result = ask_model(description)
+        with st.spinner("🧠 Analyse du projet en cours..."):
+            data = ask_model(description)
 
-        if "error" in result:
-            st.error(f"❌ Erreur : {result['error']}")
+        if "error" in data:
+            st.error(f"❌ Erreur : {data['error']}")
         else:
             st.success("💡 Proposition générée avec succès !")
 
-            # --- Champs modifiables par l'utilisateur ---
+            # --- Champs modifiables ---
             st.markdown("### ✏️ Modifie les champs si nécessaire avant enregistrement :")
 
-            titre_edit = st.text_input("📘 Titre :", value=result.get("Titre", ""))
-            desc_edit = st.text_area("📄 Description :", value=result.get("Description", ""), height=150)
-            type_edit = st.text_input("🏷️ Type de projet :", value=result.get("Type", ""))
-            revenus_edit = st.text_area("💰 Estimation des revenus :", value=result.get("Revenus", ""), height=100)
+            titre_edit = st.text_input("📘 Titre :", value=data.get("Titre", "").strip(": ").strip())
+            desc_edit = st.text_area("📄 Description :", value=data.get("Description", "").strip(": ").strip(), height=150)
+            type_edit = st.text_input("🏷️ Type de projet :", value=data.get("Type", "").strip(": ").strip())
+            rev_edit = st.text_area("💰 Estimation des revenus :", value=data.get("Revenus", "").strip(": ").strip(), height=100)
 
-            # --- Aperçu final ---
+            # --- Résumé final ---
             st.markdown("### 📊 Résumé final :")
-            st.json({
-                "Titre": titre_edit,
-                "Description": desc_edit,
-                "Type": type_edit,
-                "Revenus": revenus_edit
-            })
+            cleaned_data = {
+                "Titre": titre_edit.strip(": ").strip(),
+                "Description": desc_edit.strip(": ").strip(),
+                "Type": type_edit.strip(": ").strip(),
+                "Revenus": rev_edit.strip(": ").strip(),
+            }
+            st.json(cleaned_data)
 
-            # --- Enregistrement dans NoCoDB ---
+            # --- Enregistrement ---
             if st.button("💾 Enregistrer dans NoCoDB"):
-                data = {
-                    "Titre": titre_edit.strip(),
-                    "Description": desc_edit.strip(),
-                    "Type": type_edit.strip(),
-                    "Revenus": revenus_edit.strip()
-                }
-
-                result_noco = save_to_nocodb(data)
-                if result_noco.get("status") == "success":
+                result = save_to_nocodb(cleaned_data)
+                if result.get("status") == "success":
                     st.success("✅ Projet enregistré dans NoCoDB avec succès !")
                 else:
-                    st.error(f"⚠️ Erreur lors de l’enregistrement : {result_noco.get('message')}")
+                    st.error(f"❌ Erreur : {result.get('message')}")
