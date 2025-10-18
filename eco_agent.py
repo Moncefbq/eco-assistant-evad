@@ -1,7 +1,7 @@
 import requests
 import os
-import json
 import re
+import difflib
 
 # --- Configuration OpenRouter ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -14,48 +14,63 @@ headers = {
 
 # --- Nettoyage du texte ---
 def clean_text(text: str) -> str:
+    """Nettoie le texte et supprime les répétitions et symboles inutiles."""
     if not text:
         return ""
     text = re.sub(r"[*#`>_]+", "", text)
     text = re.sub(r"[0-9️⃣🧠💡⚡🌍🔹🔸•]+", "", text)
-    text = re.sub(r"^(s\s*[:\-–])", "", text.strip(), flags=re.IGNORECASE)
-    text = re.sub(r"^(de\s*projet\s*[:\-–]*)", "", text.strip(), flags=re.IGNORECASE)
-    text = re.sub(r"^(projet\s*[:\-–]*)", "", text.strip(), flags=re.IGNORECASE)
-    text = re.sub(r"^[\s:.,;-]+", "", text)
     text = re.sub(r"\s{2,}", " ", text)
-    text = re.sub(r"\s([.,;:!?])", r"\1", text)
-    text = re.sub(r"[\s.]+$", "", text)
     text = text.strip().strip('"').strip("'")
-    return text.strip()
 
-# --- Extraction de section ---
-def extract_field(text, start_pattern, end_pattern=None):
-    if end_pattern:
-        pattern = rf"{start_pattern}(.*?){end_pattern}"
+    # Supprimer les débuts inutiles
+    text = re.sub(r"^(s:|de projet:|projet:)\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"^[:\-\s]+", "", text)
+
+    # Supprimer phrases répétées
+    sentences = text.split(". ")
+    filtered = []
+    for s in sentences:
+        s_clean = s.strip().lower()
+        if not any(difflib.SequenceMatcher(None, s_clean, f.lower()).ratio() > 0.8 for f in filtered):
+            filtered.append(s.strip())
+    return ". ".join(filtered).strip(". ")
+
+# --- Extraction de sections ---
+def extract_field(text, start, end=None):
+    """Extrait une section spécifique."""
+    if end:
+        pattern = rf"{start}(.*?){end}"
     else:
-        pattern = rf"{start_pattern}(.*)"
+        pattern = rf"{start}(.*)"
     match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
     return clean_text(match.group(1)) if match else ""
 
-# --- Analyse du projet ---
+# --- Appel du modèle ---
 def ask_model(description: str):
     data = {
         "model": "mistralai/mistral-nemo",
         "messages": [
-            {"role": "system", "content": (
-                "Tu es un assistant expert en projets écologiques. "
-                "Analyse le projet et donne quatre sections claires : "
-                "Titre, Description, Type, Revenus. "
-                "Pas de Markdown, pas d’emoji, juste du texte clair."
-            )},
-            {"role": "user", "content": (
-                f"Analyse ce projet écologique et fournis :\n"
-                f"1. Titre\n2. Description\n3. Type de projet\n4. Estimation des revenus.\n\n"
-                f"Projet : {description}"
-            )}
+            {
+                "role": "system",
+                "content": (
+                    "Tu es un assistant expert en projets écologiques. "
+                    "Analyse le projet et retourne quatre sections claires : "
+                    "Titre, Description, Type, Revenus. "
+                    "Le type doit être précis (ex : énergie renouvelable, agriculture durable, gestion de l’eau, etc.). "
+                    "Ne répète pas les phrases entre les sections. Aucun emoji ni Markdown."
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Analyse ce projet écologique et fournis :\n"
+                    f"1. Titre\n2. Description\n3. Type\n4. Revenus\n\n"
+                    f"Projet : {description}"
+                ),
+            },
         ],
         "temperature": 0.4,
-        "max_tokens": 650
+        "max_tokens": 700,
     }
 
     try:
@@ -67,27 +82,32 @@ def ask_model(description: str):
         if not message.strip():
             return {"error": "Réponse vide du modèle."}
 
+        # Extraction
         titre = extract_field(message, r"Titre[:\-–]*", r"Description[:\-–]*")
         desc = extract_field(message, r"Description[:\-–]*", r"Type[:\-–]*")
-        type_proj = extract_field(message, r"Type[:\-–]*", r"(Revenu|Estimation\s+des\s+revenus)[:\-–]*")
+        type_proj = extract_field(message, r"Type[:\-–]*", r"(Revenu|Estimation)[:\-–]*")
         revenus = extract_field(message, r"Revenu[:\-–]*")
 
         return {
             "Titre": clean_text(titre or "Titre non précisé"),
-            "Description": clean_text(desc or message[:300]),
-            "Type": clean_text(type_proj or "Non défini"),
+            "Description": clean_text(desc or "Description non précisée"),
+            "Type": clean_text(type_proj or "Type non précisé"),
             "Revenus": clean_text(revenus or "À estimer"),
         }
 
     except Exception as e:
         return {"error": str(e)}
 
-# --- Enregistrement NoCoDB ---
+# --- Envoi vers NoCoDB ---
 def save_to_nocodb(data: dict):
     NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/m6zxxbaq2f869a0/records"
     NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 
-    headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
+    headers = {
+        "xc-token": NOCODB_API_TOKEN,
+        "Content-Type": "application/json",
+    }
+
     payload = {
         "Title": data.get("Titre"),
         "Description": data.get("Description"),
