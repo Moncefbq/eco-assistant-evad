@@ -12,6 +12,7 @@ headers = {
     "Content-Type": "application/json"
 }
 
+
 # --- Nettoyage du texte ---
 def clean_text(text: str) -> str:
     """Nettoie le texte : supprime les caractères inutiles, préfixes, espaces et redondances."""
@@ -24,7 +25,7 @@ def clean_text(text: str) -> str:
     text = re.sub(r"\s{2,}", " ", text)
     text = text.strip().strip('"').strip("'")
 
-    # Supprimer les débuts de texte inutiles (ex: "Projet :", "s:", etc.)
+    # Supprimer les débuts inutiles
     text = re.sub(
         r"^(s\s*[:\-–]\s*|de\s*projet\s*[:\-–]\s*|projet\s*[:\-–]\s*|le\s*projet\s*[:\-–]\s*|[:\-–]\s*)",
         "",
@@ -32,10 +33,10 @@ def clean_text(text: str) -> str:
         flags=re.IGNORECASE,
     )
 
-    # Supprimer les ":" ou ";" restants au début
+    # Supprimer ":" ou ";" restants en début
     text = re.sub(r"^[\s:;,\-–]+", "", text)
 
-    # Supprimer les phrases répétées
+    # Supprimer doublons internes dans une même section
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
     unique_sentences = []
     for s in sentences:
@@ -53,7 +54,7 @@ def clean_text(text: str) -> str:
     return text.strip()
 
 
-# --- Extraction d’une section ---
+# --- Extraction d'une section ---
 def extract_field(text, start, end=None):
     """Extrait une section entre deux titres (Titre, Description, etc.)."""
     if end:
@@ -64,12 +65,45 @@ def extract_field(text, start, end=None):
     return clean_text(match.group(1)) if match else ""
 
 
+# --- Nettoyage global entre sections ---
+def remove_cross_redundancy(fields: dict) -> dict:
+    """
+    Supprime les phrases redondantes entre Description, Type et Revenus.
+    """
+    desc_sentences = set(re.split(r"(?<=[.!?])\s+", fields.get("Description", "")))
+    type_sentences = set(re.split(r"(?<=[.!?])\s+", fields.get("Type", "")))
+    rev_sentences = set(re.split(r"(?<=[.!?])\s+", fields.get("Revenus", "")))
+
+    # Supprimer les phrases très similaires entre sections
+    def filter_unique(sentences, others):
+        result = []
+        for s in sentences:
+            s_clean = s.strip()
+            if s_clean and not any(
+                difflib.SequenceMatcher(None, s_clean.lower(), o.strip().lower()).ratio() > 0.75
+                for o in others
+            ):
+                result.append(s_clean)
+        return result
+
+    fields["Description"] = " ".join(
+        filter_unique(desc_sentences, type_sentences.union(rev_sentences))
+    ).strip()
+
+    fields["Type"] = " ".join(
+        filter_unique(type_sentences, desc_sentences.union(rev_sentences))
+    ).strip()
+
+    fields["Revenus"] = " ".join(
+        filter_unique(rev_sentences, desc_sentences.union(type_sentences))
+    ).strip()
+
+    return fields
+
+
 # --- Appel du modèle OpenRouter ---
 def ask_model(description: str):
-    """
-    Analyse un projet écologique et retourne un dictionnaire structuré :
-    Titre, Description, Type, Revenus.
-    """
+    """Analyse un projet écologique et retourne un dictionnaire propre sans redondance."""
     data = {
         "model": "mistralai/mistral-nemo",
         "messages": [
@@ -79,7 +113,7 @@ def ask_model(description: str):
                     "Tu es un assistant expert en projets écologiques. "
                     "Analyse le projet et retourne quatre sections claires : "
                     "Titre, Description, Type, Revenus. "
-                    "Le type doit être précis (ex : énergie renouvelable, agriculture durable, gestion de l’eau, etc.). "
+                    "Le type doit être précis (énergie renouvelable, agriculture durable, gestion de l’eau, etc.). "
                     "Ne répète pas les phrases entre les sections. Aucun emoji ni Markdown."
                 ),
             },
@@ -111,12 +145,15 @@ def ask_model(description: str):
         type_proj = extract_field(message, r"Type", r"(Revenu|Estimation)")
         revenus = extract_field(message, r"Revenu")
 
-        return {
+        fields = {
             "Titre": clean_text(titre or "Titre non précisé"),
             "Description": clean_text(desc or "Description non précisée"),
             "Type": clean_text(type_proj or "Type non précisé"),
             "Revenus": clean_text(revenus or "À estimer"),
         }
+
+        # ✅ Supprimer les redondances entre sections
+        return remove_cross_redundancy(fields)
 
     except Exception as e:
         return {"error": str(e)}
