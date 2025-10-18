@@ -12,11 +12,13 @@ Décris ton projet écologique ci-dessous :
 3️⃣ Te permet de les **modifier avant l’enregistrement dans NoCoDB**
 """)
 
-# --- Initialisation de l'état ---
+# --- Initialisation persistante ---
 if "data" not in st.session_state:
     st.session_state.data = None
+if "edited" not in st.session_state:
+    st.session_state.edited = {}
 
-# --- Saisie utilisateur ---
+# --- Entrée utilisateur ---
 description = st.text_area(
     "📝 Décris ton projet :",
     placeholder="Ex : Installer des panneaux solaires pour produire de l’énergie propre."
@@ -33,35 +35,35 @@ if st.button("🔍 Analyser le projet"):
             st.error(f"❌ Erreur : {result['error']}")
         else:
             st.success("💡 Proposition générée avec succès !")
-            st.session_state.data = result  # 🔥 Stocke les données pour les garder persistantes
+            st.session_state.data = result
+            st.session_state.edited = result.copy()  # 🔥 synchronise la première fois
 
-# --- Si une analyse a été faite ---
+# --- Interface d'édition ---
 if st.session_state.data:
-    data = st.session_state.data
-
     st.markdown("### ✏️ Modifie les champs si nécessaire avant enregistrement :")
 
-    # Champs modifiables
-    titre_edit = st.text_input("📘 Titre :", value=data.get("Titre", ""), key="titre_edit")
-    desc_edit = st.text_area("📄 Description :", value=data.get("Description", ""), height=150, key="desc_edit")
-    type_edit = st.text_input("🏷️ Type de projet :", value=data.get("Type", ""), key="type_edit")
-    rev_edit = st.text_area("💰 Estimation des revenus :", value=data.get("Revenus", ""), height=100, key="rev_edit")
+    # Champs modifiables directement reliés à session_state
+    st.session_state.edited["Titre"] = st.text_input(
+        "📘 Titre :", value=st.session_state.edited.get("Titre", "")
+    )
+    st.session_state.edited["Description"] = st.text_area(
+        "📄 Description :", value=st.session_state.edited.get("Description", ""), height=150
+    )
+    st.session_state.edited["Type"] = st.text_input(
+        "🏷️ Type de projet :", value=st.session_state.edited.get("Type", "")
+    )
+    st.session_state.edited["Revenus"] = st.text_area(
+        "💰 Estimation des revenus :", value=st.session_state.edited.get("Revenus", ""), height=100
+    )
 
-    # Données finales mises à jour
-    final_data = {
-        "Titre": titre_edit.strip(),
-        "Description": desc_edit.strip(),
-        "Type": type_edit.strip(),
-        "Revenus": rev_edit.strip()
-    }
-
+    # --- Résumé final uniquement à partir des valeurs modifiées ---
     st.markdown("### 📊 Résumé final :")
-    st.json(final_data)  # 🔥 Affiche UNIQUEMENT les champs modifiés
+    st.json(st.session_state.edited)
 
     # --- Enregistrement dans NoCoDB ---
     if st.button("💾 Enregistrer dans NoCoDB"):
         with st.spinner("Enregistrement en cours..."):
-            result = save_to_nocodb(final_data)
+            result = save_to_nocodb(st.session_state.edited)
         if result.get("status") == "success":
             st.success("✅ Projet enregistré dans NoCoDB avec succès !")
         else:
