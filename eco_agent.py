@@ -12,20 +12,19 @@ headers = {
     "Content-Type": "application/json"
 }
 
-
 # --- Nettoyage du texte ---
 def clean_text(text: str) -> str:
     """Nettoie le texte : supprime les caractères inutiles, préfixes, espaces et redondances."""
     if not text:
         return ""
 
-    # Supprimer symboles, markdown, numéros et emojis
+    # Supprimer symboles et caractères parasites
     text = re.sub(r"[*#`>_]+", "", text)
     text = re.sub(r"[0-9️⃣🧠💡⚡🌍🔹🔸•]+", "", text)
     text = re.sub(r"\s{2,}", " ", text)
     text = text.strip().strip('"').strip("'")
 
-    # 🔥 Supprimer les préfixes ou débuts inutiles (ex: "s:", "projet:", "le projet:", etc.)
+    # Supprimer les débuts de texte inutiles (ex: "Projet :", "s:", etc.)
     text = re.sub(
         r"^(s\s*[:\-–]\s*|de\s*projet\s*[:\-–]\s*|projet\s*[:\-–]\s*|le\s*projet\s*[:\-–]\s*|[:\-–]\s*)",
         "",
@@ -33,10 +32,10 @@ def clean_text(text: str) -> str:
         flags=re.IGNORECASE,
     )
 
-    # Supprimer ':' ou ';' restants en tout début après espaces
+    # Supprimer les ":" ou ";" restants au début
     text = re.sub(r"^[\s:;,\-–]+", "", text)
 
-    # Supprimer doublons de phrases similaires
+    # Supprimer les phrases répétées
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
     unique_sentences = []
     for s in sentences:
@@ -47,17 +46,16 @@ def clean_text(text: str) -> str:
             unique_sentences.append(s)
     text = " ".join(unique_sentences)
 
-    # Nettoyage final (espaces / ponctuation)
+    # Nettoyage final
     text = re.sub(r"\s+([.,;:!?])", r"\1", text)
     text = re.sub(r"\s{2,}", " ", text)
     text = re.sub(r"[\s.]+$", "", text)
-
     return text.strip()
 
 
-# --- Extraction de sections ---
+# --- Extraction d’une section ---
 def extract_field(text, start, end=None):
-    """Extrait proprement une section (Titre, Description, etc.) sans préfixe ni deux-points."""
+    """Extrait une section entre deux titres (Titre, Description, etc.)."""
     if end:
         pattern = rf"{start}\s*[:\-–]?\s*(.*?){end}"
     else:
@@ -66,11 +64,11 @@ def extract_field(text, start, end=None):
     return clean_text(match.group(1)) if match else ""
 
 
-# --- Appel du modèle ---
+# --- Appel du modèle OpenRouter ---
 def ask_model(description: str):
     """
-    Analyse un projet écologique et retourne un dictionnaire propre (Titre, Description, Type, Revenus)
-    avec nettoyage automatique et sans redondance.
+    Analyse un projet écologique et retourne un dictionnaire structuré :
+    Titre, Description, Type, Revenus.
     """
     data = {
         "model": "mistralai/mistral-nemo",
@@ -102,18 +100,17 @@ def ask_model(description: str):
         response = requests.post(API_URL, headers=headers, json=data, timeout=30)
         response.raise_for_status()
         result = response.json()
-
         message = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+
         if not message.strip():
             return {"error": "Réponse vide du modèle."}
 
-        # --- Extraction des champs ---
+        # Extraction des champs
         titre = extract_field(message, r"Titre", r"Description")
         desc = extract_field(message, r"Description", r"Type")
         type_proj = extract_field(message, r"Type", r"(Revenu|Estimation)")
         revenus = extract_field(message, r"Revenu")
 
-        # --- Nettoyage final et valeur par défaut
         return {
             "Titre": clean_text(titre or "Titre non précisé"),
             "Description": clean_text(desc or "Description non précisée"),
@@ -125,18 +122,13 @@ def ask_model(description: str):
         return {"error": str(e)}
 
 
-# --- Envoi vers NoCoDB ---
+# --- Enregistrement NoCoDB ---
 def save_to_nocodb(data: dict):
-    """
-    Envoie les données nettoyées vers la table NoCoDB configurée.
-    """
+    """Enregistre les données nettoyées dans NoCoDB."""
     NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/m6zxxbaq2f869a0/records"
     NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 
-    headers = {
-        "xc-token": NOCODB_API_TOKEN,
-        "Content-Type": "application/json",
-    }
+    headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
 
     payload = {
         "Title": data.get("Titre"),
