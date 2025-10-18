@@ -15,36 +15,39 @@ headers = {
 
 # --- Nettoyage du texte ---
 def clean_text(text: str) -> str:
-    """Nettoie le texte et supprime les répétitions, symboles et débuts inutiles."""
+    """Nettoie le texte : supprime les caractères inutiles, préfixes, espaces et redondances."""
     if not text:
         return ""
 
-    # Nettoyage général : suppression des symboles, balises et emojis
+    # Supprimer symboles, markdown, numéros et emojis
     text = re.sub(r"[*#`>_]+", "", text)
     text = re.sub(r"[0-9️⃣🧠💡⚡🌍🔹🔸•]+", "", text)
     text = re.sub(r"\s{2,}", " ", text)
     text = text.strip().strip('"').strip("'")
 
-    # Supprimer les préfixes ou débuts erronés (comme "s:", "de projet:", "projet:", etc.)
+    # 🔥 Supprimer les préfixes ou débuts inutiles (ex: "s:", "projet:", "le projet:", etc.)
     text = re.sub(
-        r"^(s\s*[:\-–]\s*|de\s*projet\s*[:\-–]\s*|projet\s*[:\-–]\s*|le\s*projet\s*[:\-–]\s*)",
+        r"^(s\s*[:\-–]\s*|de\s*projet\s*[:\-–]\s*|projet\s*[:\-–]\s*|le\s*projet\s*[:\-–]\s*|[:\-–]\s*)",
         "",
         text.strip(),
         flags=re.IGNORECASE,
     )
 
-    # Supprimer les doublons de phrases similaires
+    # Supprimer ':' ou ';' restants en tout début après espaces
+    text = re.sub(r"^[\s:;,\-–]+", "", text)
+
+    # Supprimer doublons de phrases similaires
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
     unique_sentences = []
     for s in sentences:
         if not any(
-            difflib.SequenceMatcher(None, s.lower(), u.lower()).ratio() > 0.8
+            difflib.SequenceMatcher(None, s.lower(), u.lower()).ratio() > 0.85
             for u in unique_sentences
         ):
             unique_sentences.append(s)
     text = " ".join(unique_sentences)
 
-    # Nettoyage final
+    # Nettoyage final (espaces / ponctuation)
     text = re.sub(r"\s+([.,;:!?])", r"\1", text)
     text = re.sub(r"\s{2,}", " ", text)
     text = re.sub(r"[\s.]+$", "", text)
@@ -54,11 +57,11 @@ def clean_text(text: str) -> str:
 
 # --- Extraction de sections ---
 def extract_field(text, start, end=None):
-    """Extrait une section spécifique dans le texte du modèle."""
+    """Extrait proprement une section (Titre, Description, etc.) sans préfixe ni deux-points."""
     if end:
-        pattern = rf"{start}(.*?){end}"
+        pattern = rf"{start}\s*[:\-–]?\s*(.*?){end}"
     else:
-        pattern = rf"{start}(.*)"
+        pattern = rf"{start}\s*[:\-–]?\s*(.*)"
     match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
     return clean_text(match.group(1)) if match else ""
 
@@ -104,12 +107,13 @@ def ask_model(description: str):
         if not message.strip():
             return {"error": "Réponse vide du modèle."}
 
-        # Extraction des sections
-        titre = extract_field(message, r"Titre[:\-–]*", r"Description[:\-–]*")
-        desc = extract_field(message, r"Description[:\-–]*", r"Type[:\-–]*")
-        type_proj = extract_field(message, r"Type[:\-–]*", r"(Revenu|Estimation)[:\-–]*")
-        revenus = extract_field(message, r"Revenu[:\-–]*")
+        # --- Extraction des champs ---
+        titre = extract_field(message, r"Titre", r"Description")
+        desc = extract_field(message, r"Description", r"Type")
+        type_proj = extract_field(message, r"Type", r"(Revenu|Estimation)")
+        revenus = extract_field(message, r"Revenu")
 
+        # --- Nettoyage final et valeur par défaut
         return {
             "Titre": clean_text(titre or "Titre non précisé"),
             "Description": clean_text(desc or "Description non précisée"),
