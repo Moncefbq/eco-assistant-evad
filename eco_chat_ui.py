@@ -1,58 +1,68 @@
 import streamlit as st
 from eco_agent import ask_model, save_to_nocodb
 
-st.set_page_config(page_title="Assistant Éco-Intelligent", page_icon="🌱", layout="centered")
+# --- Configuration de la page ---
+st.set_page_config(page_title="Assistant Éco-Intelligent", page_icon="🌿", layout="centered")
 
 st.title("🌿 Assistant Éco-Intelligent")
 st.markdown("""
-Décris ton projet écologique ci-dessous :
-1️⃣ Analyser ton idée  
-2️⃣ Proposer les champs (**Titre**, **Description**, **Type**, **Revenus**)  
-3️⃣ Te permettre de les **modifier avant l’enregistrement dans NoCoDB**
+Décris ton projet écologique ci-dessous :  
+1️⃣ Analyse ton idée  
+2️⃣ Propose les champs (**Titre**, **Description**, **Type**, **Revenus**)  
+3️⃣ Te permet de les **modifier avant l’enregistrement dans NoCoDB**
 """)
 
-# --- Entrée utilisateur ---
+# --- Initialisation de l'état ---
+if "data" not in st.session_state:
+    st.session_state.data = None
+
+# --- Saisie utilisateur ---
 description = st.text_area(
-    "📄 Décris ton projet :",
-    placeholder="Ex : Installer des panneaux solaires sur les toits des bâtiments municipaux pour produire de l’énergie propre"
+    "📝 Décris ton projet :",
+    placeholder="Ex : Installer des panneaux solaires pour produire de l’énergie propre."
 )
 
 # --- Bouton d’analyse ---
 if st.button("🔍 Analyser le projet"):
     if not description.strip():
-        st.warning("Veuillez décrire votre projet avant de lancer l’analyse.")
+        st.warning("⚠️ Merci d’ajouter une description avant de lancer l’analyse.")
     else:
-        with st.spinner("Analyse du projet en cours... ⏳"):
-            data = ask_model(description)
-
-        if "error" in data:
-            st.error(f"❌ Erreur : {data['error']}")
+        with st.spinner("Analyse du projet en cours..."):
+            result = ask_model(description)
+        if "error" in result:
+            st.error(f"❌ Erreur : {result['error']}")
         else:
             st.success("💡 Proposition générée avec succès !")
+            st.session_state.data = result  # 🔥 Stocke les données pour les garder persistantes
 
-            # --- Champs modifiables par l'utilisateur ---
-            st.markdown("### ✏️ Modifie les champs si nécessaire avant enregistrement :")
+# --- Si une analyse a été faite ---
+if st.session_state.data:
+    data = st.session_state.data
 
-            titre_edit = st.text_input("📘 Titre :", value=data.get("Titre", ""))
-            desc_edit = st.text_area("📝 Description :", value=data.get("Description", ""), height=150)
-            type_edit = st.text_input("🏷️ Type de projet :", value=data.get("Type", ""))
-            rev_edit = st.text_area("💰 Estimation des revenus :", value=data.get("Revenus", ""), height=100)
+    st.markdown("### ✏️ Modifie les champs si nécessaire avant enregistrement :")
 
-            # --- On affiche uniquement les valeurs modifiées (finales) ---
-            st.markdown("### 📊 Résumé final :")
-            final_data = {
-                "Titre": titre_edit.strip(),
-                "Description": desc_edit.strip(),
-                "Type": type_edit.strip(),
-                "Revenus": rev_edit.strip()
-            }
-            st.json(final_data)
+    # Champs modifiables
+    titre_edit = st.text_input("📘 Titre :", value=data.get("Titre", ""), key="titre_edit")
+    desc_edit = st.text_area("📄 Description :", value=data.get("Description", ""), height=150, key="desc_edit")
+    type_edit = st.text_input("🏷️ Type de projet :", value=data.get("Type", ""), key="type_edit")
+    rev_edit = st.text_area("💰 Estimation des revenus :", value=data.get("Revenus", ""), height=100, key="rev_edit")
 
-            # --- Enregistrement dans NoCoDB ---
-            if st.button("💾 Enregistrer dans NoCoDB"):
-                result = save_to_nocodb(final_data)
+    # Données finales mises à jour
+    final_data = {
+        "Titre": titre_edit.strip(),
+        "Description": desc_edit.strip(),
+        "Type": type_edit.strip(),
+        "Revenus": rev_edit.strip()
+    }
 
-                if result.get("status") == "success":
-                    st.success("✅ Projet enregistré dans NoCoDB avec succès !")
-                else:
-                    st.error(f"❌ Erreur : {result.get('message')}")
+    st.markdown("### 📊 Résumé final :")
+    st.json(final_data)  # 🔥 Affiche UNIQUEMENT les champs modifiés
+
+    # --- Enregistrement dans NoCoDB ---
+    if st.button("💾 Enregistrer dans NoCoDB"):
+        with st.spinner("Enregistrement en cours..."):
+            result = save_to_nocodb(final_data)
+        if result.get("status") == "success":
+            st.success("✅ Projet enregistré dans NoCoDB avec succès !")
+        else:
+            st.error(f"❌ Erreur : {result.get('message')}")
