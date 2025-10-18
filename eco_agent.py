@@ -8,39 +8,52 @@ API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 HEADERS = {
     "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-    "Content-Type": "application/json",
+    "Content-Type": "application/json"
 }
 
 
 # --- Nettoyage du texte ---
 def clean_text(text: str) -> str:
-    """Nettoie le texte des caractères parasites, préfixes inutiles et espaces."""
+    """Nettoie le texte : supprime les caractères inutiles et les redondances simples."""
     if not text:
         return ""
 
-    text = re.sub(r"[*#`>_]+", "", text)  # caractères Markdown
+    # Nettoyage basique
+    text = re.sub(r"[*#`>_]+", "", text)
     text = re.sub(r"[0-9️⃣🧠💡⚡🌍🔹🔸•]+", "", text)
     text = re.sub(r"\s{2,}", " ", text)
-
-    # Supprimer préfixes inutiles
-    text = re.sub(
-        r"^(s\s*[:\-–]\s*|de\s*projet\s*[:\-–]\s*|projet\s*[:\-–]\s*|le\s*projet\s*[:\-–]\s*|[:\-–]\s*)",
-        "",
-        text.strip(),
-        flags=re.IGNORECASE,
-    )
-
-    # Nettoyage final
-    text = text.strip().strip('"').strip("'")
-    text = re.sub(r"^[\s:;,\-–]+", "", text)
     text = re.sub(r"\s+([.,;:!?])", r"\1", text)
-    text = re.sub(r"\s{2,}", " ", text)
+    text = re.sub(r"[\s.]+$", "", text)
+    text = text.strip().strip('"').strip("'")
+
+    # Supprimer les préfixes comme "Projet:", "s:", etc.
+    text = re.sub(r"^(s\s*[:\-–]|de\s*projet\s*[:\-–]|projet\s*[:\-–]|le\s*projet\s*[:\-–]|[:\-–])", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"^[\s:;,\-–]+", "", text)
     return text.strip()
 
 
-# --- Extraction simple ---
+# --- Détection automatique du type ---
+def detect_type(description: str) -> str:
+    """Déduit automatiquement le type de projet à partir de mots-clés."""
+    description = description.lower()
+    if any(k in description for k in ["solaire", "énergie", "panneau", "photovoltaïque", "éolien", "renouvelable"]):
+        return "Énergie renouvelable"
+    if any(k in description for k in ["eau", "pluie", "irrigation", "hydrique"]):
+        return "Gestion de l’eau"
+    if any(k in description for k in ["agriculture", "potager", "semence", "culture"]):
+        return "Agriculture durable"
+    if any(k in description for k in ["recyclage", "déchet", "tri", "compost"]):
+        return "Gestion des déchets"
+    if any(k in description for k in ["école", "sensibiliser", "formation", "atelier", "éducation"]):
+        return "Éducation environnementale"
+    if any(k in description for k in ["forêt", "arbre", "reboisement", "biodiversité"]):
+        return "Reforestation et biodiversité"
+    return "Projet écologique"
+
+
+# --- Extraction ---
 def extract_field(text, start, end=None):
-    """Extrait une section spécifique avec une recherche rapide."""
+    """Extrait une section entre deux mots-clés."""
     if end:
         pattern = rf"{start}\s*[:\-–]?\s*(.*?){end}"
     else:
@@ -49,23 +62,20 @@ def extract_field(text, start, end=None):
     return clean_text(match.group(1)) if match else ""
 
 
-# --- Suppression légère de redondances entre sections ---
+# --- Dé-duplication intelligente ---
 def deduplicate_fields(fields: dict) -> dict:
-    """Élimine les phrases répétées entre sections (rapide et léger)."""
-    desc = fields.get("Description", "")
-    type_proj = fields.get("Type", "")
-    revenus = fields.get("Revenus", "")
+    """Supprime les phrases redondantes entre sections."""
+    desc, type_proj, revenus = fields["Description"], fields["Type"], fields["Revenus"]
 
-    # Retirer phrases dupliquées par simple inclusion de texte
+    # Enlever les répétitions directes
     for phrase in type_proj.split(". "):
         if phrase.strip() and phrase.strip() in desc:
-            desc = desc.replace(phrase, "").strip()
-
+            desc = desc.replace(phrase, "")
     for phrase in revenus.split(". "):
         if phrase.strip() and phrase.strip() in desc:
-            desc = desc.replace(phrase, "").strip()
+            desc = desc.replace(phrase, "")
         if phrase.strip() and phrase.strip() in type_proj:
-            type_proj = type_proj.replace(phrase, "").strip()
+            type_proj = type_proj.replace(phrase, "")
 
     fields["Description"] = clean_text(desc)
     fields["Type"] = clean_text(type_proj)
@@ -75,18 +85,17 @@ def deduplicate_fields(fields: dict) -> dict:
 
 # --- Appel du modèle ---
 def ask_model(description: str):
-    """Analyse le projet écologique et renvoie un dictionnaire propre sans redondances."""
+    """Analyse un projet écologique et renvoie des champs nettoyés et cohérents."""
     payload = {
         "model": "mistralai/mistral-nemo",
         "messages": [
             {
                 "role": "system",
                 "content": (
-                    "Tu es un assistant expert en projets écologiques. "
-                    "Analyse le projet et retourne quatre sections claires : "
+                    "Tu es un expert en analyse de projets écologiques. "
+                    "Analyse le projet et retourne 4 champs clairs : "
                     "Titre, Description, Type, Revenus. "
-                    "Le type doit être précis (ex : énergie renouvelable, agriculture durable, gestion de l’eau, etc.). "
-                    "Ne répète pas les phrases entre les sections. Aucun emoji ni Markdown."
+                    "Sois concis, pas de répétitions entre les sections. Aucun emoji ni Markdown."
                 ),
             },
             {
@@ -95,7 +104,7 @@ def ask_model(description: str):
             },
         ],
         "temperature": 0.4,
-        "max_tokens": 600,
+        "max_tokens": 700,
     }
 
     try:
@@ -114,10 +123,11 @@ def ask_model(description: str):
         result = {
             "Titre": clean_text(titre or "Titre non précisé"),
             "Description": clean_text(desc or "Description non précisée"),
-            "Type": clean_text(type_proj or "Type non précisé"),
+            "Type": clean_text(type_proj or detect_type(description)),
             "Revenus": clean_text(revenus or "À estimer"),
         }
 
+        # 🔥 Supprimer les redondances globales
         return deduplicate_fields(result)
 
     except Exception as e:
@@ -126,7 +136,7 @@ def ask_model(description: str):
 
 # --- Enregistrement NoCoDB ---
 def save_to_nocodb(data: dict):
-    """Enregistre les données nettoyées dans NoCoDB."""
+    """Enregistre les données dans NoCoDB."""
     NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/m6zxxbaq2f869a0/records"
     NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 
