@@ -113,24 +113,31 @@ def save_to_nocodb(data: dict):
     """Sauvegarde les données dans la table Places."""
     NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/m6zxxbaq2f869a0/records"
     NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
+
     headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
 
-    # 🔹 Upload image si elle existe
-    picture_url = None
+    # 🔹 Upload de l’image si présente
+    picture_data = []
     if data.get("Picture"):
-        picture_url = upload_image_to_nocodb(data["Picture"], NOCODB_API_TOKEN)
+        image_url = upload_image_to_nocodb(data["Picture"], NOCODB_API_TOKEN)
+        if image_url:
+            # ✅ format obligatoire pour NoCoDB : liste d’objets avec "url"
+            picture_data = [{"url": image_url}]
 
+    # 🔹 Construction du payload
     payload = {
-        "Title": data.get("Titre"),
-        "Description": data.get("Description"),
-        "Type": data.get("Type"),
-        "Revenues": data.get("Revenus"),
-        "Picture": [picture_url] if picture_url else []
+        "Title": data.get("Titre", ""),
+        "Description": data.get("Description", ""),
+        "Type": data.get("Type", ""),
+        "Revenues": data.get("Revenus", ""),
+        "Picture": picture_data
     }
 
     try:
-        response = requests.post(NOCODB_API_URL, headers=headers, json=payload, timeout=15)
-        response.raise_for_status()
-        return {"status": "success", "response": response.json()}
+        response = requests.post(NOCODB_API_URL, headers=headers, json=payload, timeout=20)
+        if response.status_code == 200 or response.status_code == 201:
+            return {"status": "success", "response": response.json()}
+        else:
+            return {"status": "error", "message": f"HTTP {response.status_code}: {response.text}"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
