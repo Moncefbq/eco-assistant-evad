@@ -36,13 +36,13 @@ if st.button("🔍 Analyser le projet"):
         else:
             st.success("💡 Proposition générée avec succès !")
             st.session_state.data = result
-            st.session_state.edited = result.copy()  # 🔥 synchronise la première fois
+            st.session_state.edited = result.copy()  # Synchronise la première fois
 
 # --- Interface d'édition ---
 if st.session_state.data:
     st.markdown("### ✏️ Modifie les champs si nécessaire avant enregistrement :")
 
-    # Champs modifiables directement reliés à session_state
+    # Champs modifiables
     st.session_state.edited["Titre"] = st.text_input(
         "📘 Titre :", value=st.session_state.edited.get("Titre", "")
     )
@@ -56,9 +56,13 @@ if st.session_state.data:
         "💰 Estimation des revenus :", value=st.session_state.edited.get("Revenus", ""), height=100
     )
 
-    # --- Résumé final uniquement à partir des valeurs modifiées ---
-    st.markdown("### 📊 Résumé final :")
-    st.json(st.session_state.edited)
+    # --- 🖼️ Champ upload image ---
+    uploaded_file = st.file_uploader("📸 Ajoute une image liée au projet (optionnel)", type=["jpg", "jpeg", "png"])
+    if uploaded_file:
+        st.image(uploaded_file, caption="Aperçu de l’image", use_column_width=True)
+        st.session_state.edited["Picture"] = uploaded_file
+    else:
+        st.session_state.edited["Picture"] = None
 
     # --- Enregistrement dans NoCoDB ---
     if st.button("💾 Enregistrer dans NoCoDB"):
