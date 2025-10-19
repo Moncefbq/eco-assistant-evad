@@ -30,22 +30,27 @@ if st.button("🔍 Analyser le projet"):
         st.warning("⚠️ Merci d’ajouter une description avant de lancer l’analyse.")
     else:
         with st.spinner("Analyse du projet en cours..."):
-            st.session_state.data = ask_model(description)
-        if "error" in st.session_state.data:
-            st.error(f"❌ Erreur : {st.session_state.data['error']}")
+            result = ask_model(description)
+        if "error" in result:
+            st.error(f"❌ Erreur : {result['error']}")
         else:
             st.success("💡 Proposition générée avec succès !")
-            st.session_state.edited = st.session_state.data.copy()
+            st.session_state.data = result
+            st.session_state.edited = result.copy()
 
 # --- Interface d’édition ---
 if st.session_state.data:
     st.markdown("### ✏️ Modifie les champs si nécessaire avant enregistrement :")
 
-    st.session_state.edited["Titre"] = st.text_input("📘 Titre :", value=st.session_state.edited.get("Titre", ""))
+    st.session_state.edited["Titre"] = st.text_input(
+        "📘 Titre :", value=st.session_state.edited.get("Titre", "")
+    )
     st.session_state.edited["Description"] = st.text_area(
         "📄 Description :", value=st.session_state.edited.get("Description", ""), height=150
     )
-    st.session_state.edited["Type"] = st.text_input("🏷️ Type de projet :", value=st.session_state.edited.get("Type", ""))
+    st.session_state.edited["Type"] = st.text_input(
+        "🏷️ Type de projet :", value=st.session_state.edited.get("Type", "")
+    )
     st.session_state.edited["Revenus"] = st.text_area(
         "💰 Estimation des revenus :", value=st.session_state.edited.get("Revenus", ""), height=100
     )
