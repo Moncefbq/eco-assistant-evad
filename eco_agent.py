@@ -140,13 +140,18 @@ def save_to_nocodb(data: dict):
     NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/m6zxxbaq2f869a0/records"
     NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 
-    headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
+    headers = {
+        "xc-token": NOCODB_API_TOKEN,
+        "Content-Type": "application/json"
+    }
 
+    # ✅ Ajout du champ "Projects" pour éviter l’erreur 400
     payload = {
         "Title": data.get("Titre"),
         "Description": data.get("Description"),
         "Type": data.get("Type"),
         "Revenues": data.get("Revenus"),
+        "Projects": None,  # ou un ID de projet existant si la relation est obligatoire
     }
 
     try:
