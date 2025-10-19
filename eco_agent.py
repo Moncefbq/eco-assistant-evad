@@ -1,6 +1,7 @@
 import requests
 import os
 import re
+import base64
 
 # --- Configuration OpenRouter ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -135,6 +136,9 @@ def ask_model(description: str):
 
 
 # --- Enregistrement NoCoDB ---
+import requests
+import base64
+
 def save_to_nocodb(data: dict):
     """Enregistre les données dans NoCoDB."""
     NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/m6zxxbaq2f869a0/records"
@@ -145,13 +149,19 @@ def save_to_nocodb(data: dict):
         "Content-Type": "application/json"
     }
 
-    # ✅ Ajout du champ "Projects" pour éviter l’erreur 400
+    # --- Image optionnelle ---
+    picture_data = None
+    if data.get("Picture"):
+        file_bytes = data["Picture"].read()
+        # Encodage en base64 pour NoCoDB
+        picture_data = [{"path": f"data:image/png;base64,{base64.b64encode(file_bytes).decode()}"}]
+
     payload = {
-        "Title": data.get("Titre"),
-        "Description": data.get("Description"),
-        "Type": data.get("Type"),
-        "Revenues": data.get("Revenus"),
-        "Projects": None,  # ou un ID de projet existant si la relation est obligatoire
+        "title": data.get("Titre"),
+        "description": data.get("Description"),
+        "type": data.get("Type"),
+        "revenues": data.get("Revenus"),
+        "picture": picture_data or []  # ✅ champ image géré correctement
     }
 
     try:
