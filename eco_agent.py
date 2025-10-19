@@ -83,6 +83,19 @@ def ask_model(description: str):
     except Exception as e:
         return {"error": str(e)}
 
+def upload_image_to_nocodb(file, token):
+    """Upload une image vers NoCoDB et renvoie son URL pour l’ajouter dans Picture."""
+    upload_url = "https://app.nocodb.com/api/v2/storage/upload"
+    headers = {"xc-token": token}
+    files = {"files": (file.name, file, file.type)}
+    try:
+        response = requests.post(upload_url, headers=headers, files=files, timeout=10)
+        response.raise_for_status()
+        return response.json()[0]["url"]  # ✅ URL publique renvoyée par NoCoDB
+    except Exception as e:
+        return None
+
+
 
 def save_to_nocodb(data: dict):
     """Sauvegarde les données dans la table Places."""
@@ -91,19 +104,17 @@ def save_to_nocodb(data: dict):
 
     headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
 
-    # 🔹 Si image présente → encoder base64
-    picture_data = []
+    # 🔹 Upload l’image si présente
+    picture_url = None
     if data.get("Picture"):
-        file_bytes = data["Picture"].read()
-        base64_data = base64.b64encode(file_bytes).decode()
-        picture_data = [{"path": f"data:image/png;base64,{base64_data}"}]
+        picture_url = upload_image_to_nocodb(data["Picture"], NOCODB_API_TOKEN)
 
     payload = {
         "Title": data.get("Titre"),
         "Description": data.get("Description"),
         "Type": data.get("Type"),
         "Revenues": data.get("Revenus"),
-        "Picture": picture_data
+        "Picture": [picture_url] if picture_url else []
     }
 
     try:
