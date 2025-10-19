@@ -39,17 +39,30 @@ def detect_type(description: str) -> str:
 
 # --- Mapping entre tes types et ceux acceptés par NoCoDB ---
 def map_type_to_valid(value: str) -> str:
-    """Convertit les types écologiques en options valides pour la colonne Type dans NoCoDB."""
+    """Convertit les types écologiques vers les valeurs valides de la table NoCoDB."""
     mapping = {
-        "Énergie renouvelable": "Parc solaire",
-        "Reforestation et biodiversité": "Parc national",
-        "Éducation environnementale": "Exposition center",
-        "Gestion des déchets": "Ferme urbaine",
-        "Gestion de l’eau": "Jardin partagé",
-        "Projet écologique": "Experimental lab"
+        "énergie renouvelable": "Parc solaire",
+        "reforestation": "Parc national",
+        "biodiversité": "Parc national",
+        "éducation": "Exposition center",
+        "environnementale": "Exposition center",
+        "déchet": "Ferme urbaine",
+        "recyclage": "Ferme urbaine",
+        "eau": "Jardin partagé",
+        "irrigation": "Jardin partagé",
+        "écologique": "Coworking",
+        "projet": "Coworking",
+        "expérimental": "Experimental lab",
     }
+
+    value_norm = value.strip().lower()
+    for keyword, valid in mapping.items():
+        if keyword in value_norm:
+            return valid
+
     # Valeur par défaut
-    return mapping.get(value, "Experimental lab")
+    return "Coworking"
+
 
 # --- Extraction ---
 def extract_field(text, start, end=None):
