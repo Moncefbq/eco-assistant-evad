@@ -1,20 +1,18 @@
 import requests
 import os
 import re
-import base64
 
 # --- Configuration OpenRouter ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
-
 HEADERS = {
     "Authorization": f"Bearer {OPENROUTER_API_KEY}",
     "Content-Type": "application/json"
 }
 
 
+# --- Nettoyage du texte ---
 def clean_text(text: str) -> str:
-    """Nettoie le texte (suppression des symboles et redondances)."""
     if not text:
         return ""
     text = re.sub(r"[*#`>_]+", "", text)
@@ -26,6 +24,7 @@ def clean_text(text: str) -> str:
     return text
 
 
+# --- Détection automatique du type ---
 def detect_type(description: str) -> str:
     description = description.lower()
     if any(k in description for k in ["solaire", "énergie", "panneau", "éolien", "renouvelable"]):
@@ -41,6 +40,7 @@ def detect_type(description: str) -> str:
     return "Projet écologique"
 
 
+# --- Extraction ---
 def extract_field(text, start, end=None):
     if end:
         pattern = rf"{start}\s*[:\-–]?\s*(.*?){end}"
@@ -50,22 +50,24 @@ def extract_field(text, start, end=None):
     return clean_text(match.group(1)) if match else ""
 
 
+# --- Appel du modèle ---
 def ask_model(description: str):
-    """Analyse du projet écologique."""
+    """Analyse le projet écologique."""
     payload = {
         "model": "mistralai/mistral-nemo",
         "messages": [
-            {"role": "system",
-             "content": "Analyse le projet écologique et renvoie : Titre, Description, Type, Revenus (clairs et sans répétition)."},
-            {"role": "user",
-             "content": f"Analyse ce projet écologique : {description}"}
+            {
+                "role": "system",
+                "content": "Analyse le projet écologique et renvoie : Titre, Description, Type, Revenus (sans répétition, sans emoji)."
+            },
+            {"role": "user", "content": f"Projet : {description}"}
         ],
         "temperature": 0.4,
         "max_tokens": 600
     }
 
     try:
-        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=20)
+        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=25)
         response.raise_for_status()
         message = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
 
@@ -80,31 +82,40 @@ def ask_model(description: str):
             "Type": clean_text(type_proj or detect_type(description)),
             "Revenus": clean_text(revenus or "À estimer"),
         }
+
     except Exception as e:
         return {"error": str(e)}
 
+
+# --- Upload d'image ---
 def upload_image_to_nocodb(file, token):
-    """Upload une image vers NoCoDB et renvoie son URL pour l’ajouter dans Picture."""
+    """Upload une image vers NoCoDB et renvoie son URL."""
     upload_url = "https://app.nocodb.com/api/v2/storage/upload"
     headers = {"xc-token": token}
-    files = {"files": (file.name, file, file.type)}
+
+    # ✅ Correction essentielle
+    file.seek(0)
+    files = {"files": (file.name, file, file.type or "image/png")}
     try:
-        response = requests.post(upload_url, headers=headers, files=files, timeout=10)
+        response = requests.post(upload_url, headers=headers, files=files, timeout=15)
         response.raise_for_status()
-        return response.json()[0]["url"]  # ✅ URL publique renvoyée par NoCoDB
+        result = response.json()
+        if isinstance(result, list) and len(result) > 0 and "url" in result[0]:
+            return result[0]["url"]
+        return None
     except Exception as e:
+        print("❌ Erreur upload image :", e)
         return None
 
 
-
+# --- Sauvegarde dans NoCoDB ---
 def save_to_nocodb(data: dict):
     """Sauvegarde les données dans la table Places."""
     NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/m6zxxbaq2f869a0/records"
     NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
-
     headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
 
-    # 🔹 Upload l’image si présente
+    # 🔹 Upload image si elle existe
     picture_url = None
     if data.get("Picture"):
         picture_url = upload_image_to_nocodb(data["Picture"], NOCODB_API_TOKEN)
