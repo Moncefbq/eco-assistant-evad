@@ -59,7 +59,7 @@ if st.session_state.data:
     # --- 🖼️ Champ upload image ---
     uploaded_file = st.file_uploader("📸 Ajoute une image liée au projet (optionnel)", type=["jpg", "jpeg", "png"])
     if uploaded_file:
-        st.image(uploaded_file, caption="Aperçu de l’image", use_column_width=True)
+        st.image(uploaded_file, caption="Aperçu de l’image", use_container_width=True)
         st.session_state.edited["Picture"] = uploaded_file
     else:
         st.session_state.edited["Picture"] = None
