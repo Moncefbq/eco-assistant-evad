@@ -10,7 +10,6 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-
 # --- Nettoyage du texte ---
 def clean_text(text: str) -> str:
     if not text:
@@ -22,7 +21,6 @@ def clean_text(text: str) -> str:
     text = re.sub(r"[\s.]+$", "", text)
     text = text.strip().strip('"').strip("'")
     return text
-
 
 # --- Détection automatique du type ---
 def detect_type(description: str) -> str:
@@ -39,6 +37,19 @@ def detect_type(description: str) -> str:
         return "Reforestation et biodiversité"
     return "Projet écologique"
 
+# --- Mapping entre tes types et ceux acceptés par NoCoDB ---
+def map_type_to_valid(value: str) -> str:
+    """Convertit les types écologiques en options valides pour la colonne Type dans NoCoDB."""
+    mapping = {
+        "Énergie renouvelable": "Parc solaire",
+        "Reforestation et biodiversité": "Parc national",
+        "Éducation environnementale": "Exposition center",
+        "Gestion des déchets": "Ferme urbaine",
+        "Gestion de l’eau": "Jardin partagé",
+        "Projet écologique": "Experimental lab"
+    }
+    # Valeur par défaut
+    return mapping.get(value, "Experimental lab")
 
 # --- Extraction ---
 def extract_field(text, start, end=None):
@@ -48,7 +59,6 @@ def extract_field(text, start, end=None):
         pattern = rf"{start}\s*[:\-–]?\s*(.*)"
     match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
     return clean_text(match.group(1)) if match else ""
-
 
 # --- Appel du modèle ---
 def ask_model(description: str):
@@ -86,14 +96,12 @@ def ask_model(description: str):
     except Exception as e:
         return {"error": str(e)}
 
-
 # --- Upload d'image ---
 def upload_image_to_nocodb(file, token):
     """Upload une image vers NoCoDB et renvoie son URL."""
     upload_url = "https://app.nocodb.com/api/v2/storage/upload"
     headers = {"xc-token": token}
 
-    # ✅ Correction essentielle
     file.seek(0)
     files = {"files": (file.name, file, file.type or "image/png")}
     try:
@@ -106,7 +114,6 @@ def upload_image_to_nocodb(file, token):
     except Exception as e:
         print("❌ Erreur upload image :", e)
         return None
-
 
 # --- Sauvegarde dans NoCoDB ---
 def save_to_nocodb(data: dict):
@@ -121,21 +128,23 @@ def save_to_nocodb(data: dict):
     if data.get("Picture"):
         image_url = upload_image_to_nocodb(data["Picture"], NOCODB_API_TOKEN)
         if image_url:
-            # ✅ format obligatoire pour NoCoDB : liste d’objets avec "url"
             picture_data = [{"url": image_url}]
+
+    # 🔹 Conversion du type vers une valeur valide pour NoCoDB
+    type_value = map_type_to_valid(data.get("Type", ""))
 
     # 🔹 Construction du payload
     payload = {
         "Title": data.get("Titre", ""),
         "Description": data.get("Description", ""),
-        "Type": data.get("Type", ""),
+        "Type": type_value,
         "Revenues": data.get("Revenus", ""),
         "Picture": picture_data
     }
 
     try:
         response = requests.post(NOCODB_API_URL, headers=headers, json=payload, timeout=20)
-        if response.status_code == 200 or response.status_code == 201:
+        if response.status_code in (200, 201):
             return {"status": "success", "response": response.json()}
         else:
             return {"status": "error", "message": f"HTTP {response.status_code}: {response.text}"}
