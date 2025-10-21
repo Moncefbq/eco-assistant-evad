@@ -103,7 +103,8 @@ def ask_model(description: str):
             "Titre": clean_text(titre or "Titre non précisé"),
             "Description": clean_text(desc or "Description non précisée"),
             "Type": clean_text(type_proj or detect_type(description)),
-            "Revenus": clean_text(revenus or "À estimer"),
+            "Revenus": clean_text(re.sub(r'^[sS]\s*[:\-]\s*', '', revenus or "À estimer")),
+
         }
 
     except Exception as e:
