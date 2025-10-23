@@ -100,22 +100,31 @@ def extract_field(text, start, end=None):
 
 # --- Appel du modèle ---
 def ask_model(description: str):
-    """Analyse le projet écologique et renvoie les champs."""
+    """Analyse le projet écologique et génère les champs avec revenus automatiques."""
     payload = {
         "model": "mistralai/mistral-nemo",
         "messages": [
             {
                 "role": "system",
-                "content": "Analyse le projet écologique et renvoie : Titre, Description, Type, Revenus (sans répétition, sans emoji)."
+                "content": (
+                    "Tu es un assistant expert en analyse de projets écologiques et durables. "
+                    "Analyse attentivement la description du projet et produis une réponse avec les sections suivantes :\n\n"
+                    "Titre : (formule claire et concise du projet)\n"
+                    "Description : (résumé structuré et professionnel, sans répétition inutile)\n"
+                    "Type : (catégorie principale du projet — choisis parmi : Parc solaire, Jardin partagé, Ferme urbaine, Parc national, Exposition center, Coworking, Experimental lab)\n"
+                    "Revenus : (décris les sources possibles de revenus ou de financement : subventions, ventes, partenariats, tourisme, ateliers, production d'énergie, etc. "
+                    "Si elles ne sont pas mentionnées, déduis-les logiquement selon le type de projet.)\n\n"
+                    "⚠️ Réponds uniquement avec ces quatre champs dans cet ordre, sans texte supplémentaire ni emojis."
+                )
             },
             {"role": "user", "content": f"Projet : {description}"}
         ],
-        "temperature": 0.4,
-        "max_tokens": 600
+        "temperature": 0.7,
+        "max_tokens": 700
     }
 
     try:
-        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=25)
+        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=30)
         response.raise_for_status()
         message = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
 
@@ -124,12 +133,12 @@ def ask_model(description: str):
         type_proj = extract_field(message, r"Type", r"(Revenu|Estimation)")
         revenus = extract_field(message, r"Revenu")
 
-        # --- Application du mapping sur le type + description ---
+        # --- Application du mapping sur le type ---
         raw_type = clean_text(type_proj or detect_type(description))
         mapped_type = map_type_to_valid(raw_type, description)
 
-        # --- Nettoyage du revenu ---
-        revenus_clean = clean_text(re.sub(r'^[sS]\s*[:\-]\s*', '', revenus or "À estimer"))
+        # --- Nettoyage du revenu généré par Mistral ---
+        revenus_clean = clean_text(revenus or "À estimer")
 
         return {
             "Titre": clean_text(titre or "Titre non précisé"),
@@ -197,4 +206,3 @@ def save_to_nocodb(data: dict):
             return {"status": "error", "message": f"HTTP {response.status_code}: {response.text}"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
-
