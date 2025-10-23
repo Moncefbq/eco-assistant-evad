@@ -63,7 +63,11 @@ def map_type_to_valid(value: str) -> str:
     for keyword, valid in mapping.items():
         if keyword in value_norm:
             return valid
-    return "Coworking"
+        # Valeur par défaut si aucun mot-clé ne correspond
+    if "jardin" in value_norm or "urbain" in value_norm or "partagé" in value_norm:
+        return "Jardin partagé"
+    return "Parc solaire"
+
 
 # --- Extraction d'informations à partir du texte du modèle ---
 def extract_field(text, start, end=None):
