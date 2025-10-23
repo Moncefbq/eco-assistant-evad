@@ -40,8 +40,8 @@ def detect_type(description: str) -> str:
 
 
 # --- Mapping des types valides NoCoDB ---
-def map_type_to_valid(value: str) -> str:
-    """Convertit les types écologiques vers les valeurs valides dans NoCoDB."""
+def map_type_to_valid(value: str, description: str = "") -> str:
+    """Associe un type écologique ou une description à un type NoCoDB."""
     mapping = {
         "solaire": "Parc solaire",
         "énergie": "Parc solaire",
@@ -67,13 +67,22 @@ def map_type_to_valid(value: str) -> str:
         "entreprise": "Coworking"
     }
 
-    value_norm = value.strip().lower()
+    value_norm = (value or "").strip().lower()
+    desc_norm = (description or "").strip().lower()
+
+    # 🔍 Analyse des mots-clés du type
     for keyword, valid in mapping.items():
         if keyword in value_norm:
             return valid
 
-    # Valeur par défaut si rien ne correspond
-    if "jardin" in value_norm or "urbain" in value_norm or "partagé" in value_norm:
+    # 🔍 Analyse secondaire dans la description si "écologique" ou "projet" est trop vague
+    if "écologique" in value_norm or "projet" in value_norm:
+        for keyword, valid in mapping.items():
+            if keyword in desc_norm:
+                return valid
+
+    # Valeur par défaut plus logique
+    if any(k in desc_norm for k in ["jardin", "urbain", "partagé"]):
         return "Jardin partagé"
 
     return "Parc solaire"
@@ -115,11 +124,9 @@ def ask_model(description: str):
         type_proj = extract_field(message, r"Type", r"(Revenu|Estimation)")
         revenus = extract_field(message, r"Revenu")
 
-        # --- Application du mapping sur le type ---
+        # --- Application du mapping sur le type + description ---
         raw_type = clean_text(type_proj or detect_type(description))
-
-        # ⚙️ Vérifie dans la description si des mots-clés orientent mieux le type
-        mapped_type = map_type_to_valid(description or raw_type)
+        mapped_type = map_type_to_valid(raw_type, description)
 
         # --- Nettoyage du revenu ---
         revenus_clean = clean_text(re.sub(r'^[sS]\s*[:\-]\s*', '', revenus or "À estimer"))
@@ -171,7 +178,7 @@ def save_to_nocodb(data: dict):
             picture_data = [{"url": image_url}]
 
     # 🔹 Conversion du type vers une valeur valide pour NoCoDB
-    type_value = map_type_to_valid(data.get("Type", ""))
+    type_value = map_type_to_valid(data.get("Type", ""), data.get("Description", ""))
 
     # 🔹 Construction du payload
     payload = {
