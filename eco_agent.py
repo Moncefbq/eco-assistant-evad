@@ -37,66 +37,35 @@ def detect_type(description: str) -> str:
         return "Reforestation et biodiversité"
     return "Projet écologique"
 
-#-----------
-def map_to_nocodb_type(predicted_type: str) -> str:
-    """Associe un type de projet du modèle à un type valide dans NoCoDB."""
-    predicted_type = predicted_type.lower()
-
-    mapping = {
-        "énergie": "Parc solaire",
-        "solaire": "Parc solaire",
-        "panneau": "Parc solaire",
-        "renouvelable": "Parc solaire",
-        "expérimental": "Experimental lab",
-        "laboratoire": "Experimental lab",
-        "expo": "Exposition center",
-        "exposition": "Exposition center",
-        "national": "Parc national",
-        "forêt": "Parc national",
-        "biodiversité": "Parc national",
-        "urbain": "Ferme urbaine",
-        "ferme": "Ferme urbaine",
-        "jardin": "Jardin partagé",
-        "partagé": "Jardin partagé",
-        "coworking": "Coworking",
-        "entreprise": "Coworking"
-    }
-
-    for keyword, nocodb_type in mapping.items():
-        if keyword in predicted_type:
-            return nocodb_type
-
-    return "Exposition center"  # valeur par défaut si rien ne correspond
-
-
-# --- Mapping entre tes types et ceux acceptés par NoCoDB ---
+# --- Mapping NoCoDB (types valides) ---
 def map_type_to_valid(value: str) -> str:
-    """Convertit les types écologiques vers les valeurs valides de la table NoCoDB."""
     mapping = {
         "énergie renouvelable": "Parc solaire",
+        "solaire": "Parc solaire",
+        "énergie": "Parc solaire",
         "reforestation": "Parc national",
         "biodiversité": "Parc national",
         "éducation": "Exposition center",
         "environnementale": "Exposition center",
         "déchet": "Ferme urbaine",
         "recyclage": "Ferme urbaine",
+        "compost": "Ferme urbaine",
         "eau": "Jardin partagé",
         "irrigation": "Jardin partagé",
         "écologique": "Coworking",
         "projet": "Coworking",
         "expérimental": "Experimental lab",
+        "laboratoire": "Experimental lab",
+        "jardin": "Jardin partagé",
+        "urbain": "Ferme urbaine",
     }
-
     value_norm = value.strip().lower()
     for keyword, valid in mapping.items():
         if keyword in value_norm:
             return valid
-
-    # Valeur par défaut
     return "Coworking"
 
-
-# --- Extraction ---
+# --- Extraction d'informations à partir du texte du modèle ---
 def extract_field(text, start, end=None):
     if end:
         pattern = rf"{start}\s*[:\-–]?\s*(.*?){end}"
@@ -105,7 +74,7 @@ def extract_field(text, start, end=None):
     match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
     return clean_text(match.group(1)) if match else ""
 
-# --- Appel du modèle ---
+# --- Analyse du projet via le modèle ---
 def ask_model(description: str):
     """Analyse le projet écologique."""
     payload = {
@@ -131,18 +100,33 @@ def ask_model(description: str):
         type_proj = extract_field(message, r"Type", r"(Revenu|Estimation)")
         revenus = extract_field(message, r"Revenu")
 
+        # --- Nettoyage et détection du type ---
+        raw_type = clean_text(type_proj or detect_type(description))
+        mapped_type = map_type_to_valid(raw_type)
+
+        # --- Détection automatique du revenu ---
+        if "vente" in description.lower():
+            revenus_clean = "Vente de produits ou services"
+        elif any(k in description.lower() for k in ["énergie", "solaire", "panneau", "renouvelable"]):
+            revenus_clean = "Vente d’électricité et subventions publiques"
+        elif any(k in description.lower() for k in ["jardin", "ferme", "urbain"]):
+            revenus_clean = "Subventions municipales et ateliers participatifs"
+        elif any(k in description.lower() for k in ["exposition", "sensibilisation", "formation"]):
+            revenus_clean = "Billetterie, partenariats et subventions éducatives"
+        else:
+            revenus_clean = "À estimer"
+
         return {
             "Titre": clean_text(titre or "Titre non précisé"),
             "Description": clean_text(desc or "Description non précisée"),
-            "Type": clean_text(type_proj or detect_type(description)),
-            "Revenus": clean_text(re.sub(r'^[sS]\s*[:\-]\s*', '', revenus or "À estimer")),
-
+            "Type": mapped_type,
+            "Revenus": clean_text(revenus_clean),
         }
 
     except Exception as e:
         return {"error": str(e)}
 
-# --- Upload d'image ---
+# --- Upload d'image vers NoCoDB ---
 def upload_image_to_nocodb(file, token):
     """Upload une image vers NoCoDB et renvoie son URL."""
     upload_url = "https://app.nocodb.com/api/v2/storage/upload"
@@ -169,17 +153,16 @@ def save_to_nocodb(data: dict):
 
     headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
 
-    # 🔹 Upload de l’image si présente
+    # Upload de l’image si présente
     picture_data = []
     if data.get("Picture"):
         image_url = upload_image_to_nocodb(data["Picture"], NOCODB_API_TOKEN)
         if image_url:
             picture_data = [{"url": image_url}]
 
-    # 🔹 Conversion du type vers une valeur valide pour NoCoDB
+    # Conversion du type vers une valeur valide
     type_value = map_type_to_valid(data.get("Type", ""))
 
-    # 🔹 Construction du payload
     payload = {
         "Title": data.get("Titre", ""),
         "Description": data.get("Description", ""),
@@ -196,3 +179,4 @@ def save_to_nocodb(data: dict):
             return {"status": "error", "message": f"HTTP {response.status_code}: {response.text}"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
