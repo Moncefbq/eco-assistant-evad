@@ -14,7 +14,7 @@ HEADERS = {
 }
 
 NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
-NOCODB_PROJECTS_TABLE = "https://app.nocodb.com/api/v2/tables/<mzaor3uiob3gbe2>/records"
+NOCODB_PROJECTS_TABLE = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
 
 # --- Titre principal ---
 st.title("🌱 Créateur de Projets Écologiques Intelligents")
