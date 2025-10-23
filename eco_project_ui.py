@@ -5,7 +5,9 @@ import os
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Assistant Projet Écologique", page_icon="🌱", layout="centered")
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
+NOCODB_API_TOKEN = st.secrets["NOCODB_API_TOKEN"]
+NOCODB_API_URL = st.secrets["NOCODB_API_URL"]
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 HEADERS = {
     "Authorization": f"Bearer {OPENROUTER_API_KEY}",
