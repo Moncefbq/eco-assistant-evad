@@ -13,7 +13,7 @@ HEADERS = {
 }
 
 NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
-NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/<ID_DE_TA_TABLE_PROJECTS>/records"
+NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
 UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
 
 # --- FONCTION : Upload fichier vers NoCoDB ---
