@@ -139,6 +139,7 @@ def ask_model(description: str):
 
         # --- Nettoyage du revenu généré par Mistral ---
         revenus_clean = clean_text(revenus or "À estimer")
+        revenus_clean = re.sub(r'^[Ss]\s*[:\-–]?\s*', '', revenus_clean)  # 🔹 enlève les "s:" ou "S:" au début
 
         return {
             "Titre": clean_text(titre or "Titre non précisé"),
