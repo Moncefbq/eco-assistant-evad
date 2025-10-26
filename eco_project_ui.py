@@ -37,7 +37,31 @@ def upload_to_nocodb(file):
 
 # --- 🏡 Interface principale ---
 st.title("🏡 Formulaire Pilote d'impact")
-st.markdown("Décris ton idée, et l'IA t’aide à la structurer selon ton modèle NoCoDB.")
+
+st.markdown("""
+### 🌍 Rejoignez EVAD pour co-développer votre projet de lieux régénératif !
+
+Bienvenue dans **EVAD - Ecosystème Vivant Autonome et Décentralisé** — une platefome de pilotage d’impact nouvelle génération conçue pour faciliter la création de lieux partagés durables *(tiers-lieux, éco-lieux, coworking, ferme, etc.)* grâce à des outils open-source, une économie régénérative et une intelligence collaborative.
+
+Nous invitons des porteurs de projet de lieux à rejoindre l'aventure pour co-construire un système résilient, décentralisé et gamifié, alignant les personnes, les projets et les ressources vers des résultats régénératifs mesurables.
+
+---
+
+### 🌱 Pourquoi EVAD ?
+
+Le monde a besoin de nouveaux modèles de vie et de travail collectif, transparents, adaptatifs et ancrés dans une régénération concrète.
+
+Pour cela, **EVAD intègre :**
+
+✅ **Un commun régénératif open-source** : une base collaborative de solutions durables, d’indicateurs d’impact et de compétences pour créer le monde de demain.  
+✅ **Un tableau de bord dynamique** : des widgets gamifiés pour suivre l'avancement du projet et ses métriques écologiques, sociales et économiques.  
+✅ **Une modélisation 3D** : simulez et validez vos initiatives avant leur mise en œuvre réelle.  
+✅ **Une assistance IA (Deva)** : aide locale pour l’audit, la sélection d’indicateurs et le suivi de projet.
+
+EVAD n’est pas qu’un outil, c’est un écosystème vivant où **pilotes d'impact (porteurs de projet)**, **bâtisseurs d'impact (particuliers)** et **semeurs d'impact (financeurs)** co-créent des hubs autonomes et florissants fonctionnant en réseau.
+
+✨ Imaginons un avenir durable… et construisons-le ensemble ! 🌱
+""")
 
 # --- 1️⃣ Formulaire utilisateur ---
 with st.form("user_form"):
@@ -45,14 +69,14 @@ with st.form("user_form"):
     description = st.text_area("📝 Description du projet")
     localisation = st.text_input("📍 Localisation")
 
-    # ✅ Liste de types conforme à NoCoDB
+    # 🌿 Type de projet (vide par défaut)
     project_types = st.multiselect(
         "🌿 Type de projet",
-        ["Third-place", "Eco-lieu", "Association", "Coworking", "Other", "Minecraft", "Permaculture"],
-        default=["Eco-lieu"]
+        ["Third-place", "Eco-lieu", "Association", "Coworking", "Autres", "Permaculture"],
+        default=[]
     )
 
-    # ✅ Upload de document
+    # 📄 Document lié
     uploaded_doc = st.file_uploader("📄 Document lié au projet (optionnel)", type=["pdf", "png", "jpg", "jpeg", "docx"])
 
     submitted = st.form_submit_button("🚀 Lancer l’analyse")
@@ -62,7 +86,7 @@ if submitted:
     if not all([title, description, localisation]):
         st.warning("Merci de remplir tous les champs avant l’analyse.")
     else:
-        with st.spinner("Analyse IA en cours..."):
+        with st.spinner("🔎 Recherche en cours..."):
             payload = {
                 "model": "mistralai/mistral-nemo",
                 "messages": [
@@ -76,7 +100,7 @@ if submitted:
                             "Impact social : ...\n"
                             "Impact économique : ...\n"
                             "Plan d’action : ...\n"
-                            "Type suggéré : (choisir parmi : Third-place, Eco-lieu, Association, Coworking, Other, Minecraft, Permaculture)\n"
+                            "Type suggéré : (Third-place, Eco-lieu, Association, Coworking, Autres, Permaculture)\n"
                             "Statut suggéré : (Thinking, Modélisation, Construction, Développement, Financement, Student)"
                         )
                     },
@@ -94,7 +118,7 @@ if submitted:
                 response.raise_for_status()
                 ai_result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
                 st.session_state.ai_result = ai_result
-                st.success("✅ Analyse IA terminée avec succès !")
+                st.success("✅ Recherche terminée avec succès !")
             except Exception as e:
                 st.error(f"Erreur IA : {e}")
 
@@ -106,7 +130,7 @@ if "ai_result" in st.session_state:
     st.markdown("### 🔖 Ajuste le type et le statut")
     selected_type = st.multiselect(
         "Type de projet",
-        ["Third-place", "Eco-lieu", "Association", "Coworking", "Other", "Minecraft", "Permaculture"],
+        ["Third-place", "Eco-lieu", "Association", "Coworking", "Autres", "Permaculture"],
         default=project_types
     )
     selected_status = st.selectbox(
@@ -160,3 +184,4 @@ if st.session_state.get("validation_ok"):
                         st.error(f"Erreur API {r.status_code} : {r.text}")
                 except Exception as e:
                     st.error(f"Erreur de sauvegarde : {e}")
+
