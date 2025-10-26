@@ -3,7 +3,7 @@ import requests
 import os
 
 # --- CONFIGURATION ---
-st.set_page_config(page_title="Assistant Projet Écologique", page_icon="🌱", layout="centered")
+st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
 
 OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
 NOCODB_API_TOKEN = st.secrets["NOCODB_API_TOKEN"]
@@ -14,14 +14,16 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
+# ⚙️ Données NoCoDB
 NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
 UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
 
+
 # --- Upload fichier vers NoCoDB ---
 def upload_to_nocodb(file):
     headers = {"xc-token": NOCODB_API_TOKEN}
-    files = {"files": (file.name, file, file.type or "image/png")}
+    files = {"files": (file.name, file, file.type or "application/octet-stream")}
     try:
         response = requests.post(UPLOAD_URL, headers=headers, files=files, timeout=15)
         response.raise_for_status()
@@ -33,8 +35,8 @@ def upload_to_nocodb(file):
     return None
 
 
-# --- Interface principale ---
-st.title("🌍 Créateur de Projets Écologiques")
+# --- 🏡 Interface principale ---
+st.title("🏡 Formulaire Pilote d'impact")
 st.markdown("Décris ton idée, et l'IA t’aide à la structurer selon ton modèle NoCoDB.")
 
 # --- 1️⃣ Formulaire utilisateur ---
@@ -42,7 +44,18 @@ with st.form("user_form"):
     title = st.text_input("🏷️ Nom du projet")
     description = st.text_area("📝 Description du projet")
     localisation = st.text_input("📍 Localisation")
-    submitted = st.form_submit_button("🚀 Analyser avec l’IA")
+
+    # ✅ Liste de types conforme à NoCoDB
+    project_types = st.multiselect(
+        "🌿 Type de projet",
+        ["Third-place", "Eco-lieu", "Association", "Coworking", "Other", "Minecraft", "Permaculture"],
+        default=["Eco-lieu"]
+    )
+
+    # ✅ Upload de document
+    uploaded_doc = st.file_uploader("📄 Document lié au projet (optionnel)", type=["pdf", "png", "jpg", "jpeg", "docx"])
+
+    submitted = st.form_submit_button("🚀 Lancer l’analyse")
 
 # --- 2️⃣ Appel au modèle IA ---
 if submitted:
@@ -56,15 +69,15 @@ if submitted:
                     {
                         "role": "system",
                         "content": (
-                            "Tu es un expert en gestion de projets écologiques. "
-                            "Analyse les informations données et renvoie une réponse formatée ainsi :\n\n"
+                            "Tu es un expert en gestion de projets à impact écologique et social. "
+                            "Analyse les informations fournies et renvoie une réponse formatée ainsi :\n\n"
                             "Solution : ...\n"
                             "Impact écologique : ...\n"
                             "Impact social : ...\n"
                             "Impact économique : ...\n"
                             "Plan d’action : ...\n"
-                            "Type suggéré : (choisir parmi : Third-place, Eco-lieu, Association, Coworking, Permaculture, Other)\n"
-                            "Statut suggéré : (choisir parmi : Thinking, Modélisation, Construction, Développement, Financement, Student)"
+                            "Type suggéré : (choisir parmi : Third-place, Eco-lieu, Association, Coworking, Other, Minecraft, Permaculture)\n"
+                            "Statut suggéré : (Thinking, Modélisation, Construction, Développement, Financement, Student)"
                         )
                     },
                     {
@@ -81,7 +94,7 @@ if submitted:
                 response.raise_for_status()
                 ai_result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
                 st.session_state.ai_result = ai_result
-                st.success("✅ Analyse IA terminée !")
+                st.success("✅ Analyse IA terminée avec succès !")
             except Exception as e:
                 st.error(f"Erreur IA : {e}")
 
@@ -94,7 +107,7 @@ if "ai_result" in st.session_state:
     selected_type = st.multiselect(
         "Type de projet",
         ["Third-place", "Eco-lieu", "Association", "Coworking", "Other", "Minecraft", "Permaculture"],
-        default=["Eco-lieu"]
+        default=project_types
     )
     selected_status = st.selectbox(
         "Statut du projet",
@@ -106,24 +119,25 @@ if "ai_result" in st.session_state:
         st.session_state.validation_ok = True
         st.session_state.type = selected_type
         st.session_state.status = selected_status
+        st.session_state.uploaded_doc = uploaded_doc
 
-# --- 4️⃣ Informations du porteur + upload ---
+
+# --- 4️⃣ Informations du porteur + sauvegarde ---
 if st.session_state.get("validation_ok"):
     st.markdown("### 👤 Informations du porteur")
     leader = st.text_input("Nom du porteur de projet")
     email = st.text_input("Email de contact")
-    uploaded_file = st.file_uploader("📎 Logo ou document (optionnel)", type=["png", "jpg", "jpeg", "pdf"])
 
     if st.button("💾 Enregistrer dans NoCoDB"):
         if not leader or not email:
             st.warning("Merci de remplir le nom et l’email.")
         else:
             with st.spinner("Sauvegarde du projet..."):
-                logo_data = []
-                if uploaded_file:
-                    url = upload_to_nocodb(uploaded_file)
+                doc_data = []
+                if st.session_state.uploaded_doc:
+                    url = upload_to_nocodb(st.session_state.uploaded_doc)
                     if url:
-                        logo_data = [{"url": url}]
+                        doc_data = [{"url": url}]
 
                 payload = {
                     "Title": title,
@@ -133,7 +147,7 @@ if st.session_state.get("validation_ok"):
                     "Status": st.session_state.status,
                     "Project Leader": leader,
                     "Email": email,
-                    "Logo + docs": logo_data
+                    "Documents": doc_data
                 }
 
                 headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
