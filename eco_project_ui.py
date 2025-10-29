@@ -69,7 +69,7 @@ with st.form("user_form"):
     description = st.text_area("📝 Description du projet")
     localisation = st.text_input("📍 Localisation")
 
-    # 🌿 Type de projet
+    # 🌿 Type de projet (vide par défaut)
     project_types = st.multiselect(
         "🌿 Type de projet",
         ["Third-place", "Eco-lieu", "Association", "Coworking", "Autres", "Permaculture"],
@@ -121,10 +121,11 @@ if submitted:
                 st.error(f"Erreur pendant la génération : {e}")
 
 
-# --- 3️⃣ Synthèse structurée et modifiable ---
+# --- 3️⃣ Résultat affiché et modifiable ---
 if "ai_result" in st.session_state:
-    st.markdown("## ✏️ Synthèse du projet (modifiable avant validation)")
+    st.markdown("### ✏️ Synthèse du projet (modifiable avant validation)")
 
+    # Extraction des sections
     def extract_section(text, section):
         pattern = rf"{section}\s*:\s*(.*?)(?=\n[A-ZÉÈÊÂÎÔÙÇ]|$)"
         match = re.search(pattern, text, re.DOTALL)
@@ -136,20 +137,11 @@ if "ai_result" in st.session_state:
     impact_econ = extract_section(st.session_state.ai_result, "Impact économique")
     plan_action = extract_section(st.session_state.ai_result, "Plan d’action")
 
-    st.markdown('<div style="background-color:#e6f5ec; padding:12px; border-radius:10px;">💡 **Solution**</div>', unsafe_allow_html=True)
-    solution = st.text_area("", value=solution, height=90, label_visibility="collapsed")
-
-    st.markdown('<div style="background-color:#dff5e3; padding:12px; border-radius:10px;">🌿 **Impact écologique**</div>', unsafe_allow_html=True)
-    impact_eco = st.text_area("", value=impact_eco, height=90, label_visibility="collapsed")
-
-    st.markdown('<div style="background-color:#eaf6ff; padding:12px; border-radius:10px;">🤝 **Impact social**</div>', unsafe_allow_html=True)
-    impact_social = st.text_area("", value=impact_social, height=90, label_visibility="collapsed")
-
-    st.markdown('<div style="background-color:#fff4e6; padding:12px; border-radius:10px;">💰 **Impact économique**</div>', unsafe_allow_html=True)
-    impact_econ = st.text_area("", value=impact_econ, height=90, label_visibility="collapsed")
-
-    st.markdown('<div style="background-color:#f9eefb; padding:12px; border-radius:10px;">🧭 **Plan d’action**</div>', unsafe_allow_html=True)
-    plan_action = st.text_area("", value=plan_action, height=110, label_visibility="collapsed")
+    solution = st.text_area("💡 Solution", value=solution, height=100)
+    impact_eco = st.text_area("🌿 Impact écologique", value=impact_eco, height=100)
+    impact_social = st.text_area("🤝 Impact social", value=impact_social, height=100)
+    impact_econ = st.text_area("💰 Impact économique", value=impact_econ, height=100)
+    plan_action = st.text_area("🧭 Plan d’action", value=plan_action, height=120)
 
     if st.button("✅ Valider et ajouter les informations du porteur"):
         st.session_state.validation_ok = True
@@ -162,7 +154,7 @@ if "ai_result" in st.session_state:
         st.session_state.uploaded_doc = uploaded_doc
 
 
-# --- 4️⃣ Enregistrement ---
+# --- 4️⃣ Informations du porteur + sauvegarde ---
 if st.session_state.get("validation_ok"):
     st.markdown("### 👤 Informations du porteur")
     leader = st.text_input("Nom du porteur de projet")
