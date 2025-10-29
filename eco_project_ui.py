@@ -7,34 +7,56 @@ import os
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
 
-# 🎨 Thème vert foncé
+# 🌿 STYLE GLOBAL : fond sombre + bloc formulaire vert
 st.markdown(
     """
     <style>
+    /* 🌍 Fond global sombre */
     body {
-        background-color: #003300; /* Vert foncé */
+        background-color: #0f0f0f;
         color: white;
     }
+
+    /* 🧾 Bloc du formulaire vert */
+    .stForm, .stForm > div {
+        background-color: #018262 !important;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0px 0px 15px rgba(0,0,0,0.4);
+    }
+
+    /* 🧩 Champs (inputs, textarea, select) */
     .stTextInput > div > div > input,
-    .stTextArea > div > div > textarea {
-        background-color: #004d00; /* Vert légèrement plus clair */
-        color: white;
-        border-radius: 8px;
+    .stTextArea > div > div > textarea,
+    .stSelectbox > div > div,
+    .stMultiSelect > div > div {
+        background-color: #1c1c1c !important;
+        color: white !important;
+        border-radius: 6px;
+        border: 1px solid #333 !important;
     }
+
+    /* 🟢 Boutons */
     .stButton button {
-        background-color: #00b300;
-        color: white;
+        background-color: #00b300 !important;
+        color: white !important;
         border-radius: 8px;
+        border: none;
     }
     .stButton button:hover {
-        background-color: #009900;
-        color: white;
+        background-color: #009900 !important;
+    }
+
+    /* 🏷️ Titres */
+    h1, h2, h3, h4 {
+        color: #ffffff !important;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
 
+# --- SECRETS ---
 OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
 NOCODB_API_TOKEN = st.secrets["NOCODB_API_TOKEN"]
 NOCODB_API_URL = st.secrets["NOCODB_API_URL"]
@@ -44,10 +66,11 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-# ⚙️ Données NoCoDB
+# --- NoCoDB CONFIG ---
 NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
 UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
+
 
 # --- Upload fichier vers NoCoDB ---
 def upload_to_nocodb(file):
@@ -229,6 +252,7 @@ if st.session_state.get("validation_ok"):
                         st.error(f"Erreur API {r.status_code} : {r.text}")
                 except Exception as e:
                     st.error(f"Erreur de sauvegarde : {e}")
+
 
 
 
