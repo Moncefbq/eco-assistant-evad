@@ -7,7 +7,7 @@ import os
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
 
-# 🌿 STYLE GLOBAL : fond clair + bloc vert + textes noirs + champs blancs
+# 🌿 STYLE GLOBAL : même encadré vert pour toutes les étapes
 st.markdown(
     """
     <style>
@@ -17,13 +17,15 @@ st.markdown(
         color: #000000 !important;
     }
 
-    /* 🧾 Bloc du formulaire vert */
-    .stForm, .stForm > div {
+    /* 🧾 Bloc vert réutilisé dans toutes les étapes */
+    .green-box {
         background-color: #018262 !important;
         color: #000000 !important;
         padding: 30px;
         border-radius: 15px;
         box-shadow: 0px 0px 15px rgba(0,0,0,0.25);
+        margin-top: 25px;
+        margin-bottom: 25px;
     }
 
     /* 🧩 Champs : fond blanc + texte noir */
@@ -37,12 +39,12 @@ st.markdown(
         border: 1px solid #555 !important;
     }
 
-    /* 🏷️ Tous les textes et titres en noir */
+    /* 🏷️ Titres et textes en noir */
     h1, h2, h3, h4, h5, h6, label, p, span, div {
         color: #000000 !important;
     }
 
-    /* 🔲 Texte sélectionné : noir de fond avec texte blanc */
+    /* 🔲 Sélection : fond noir, texte blanc */
     ::selection {
         background: #000000;
         color: #ffffff;
@@ -52,7 +54,7 @@ st.markdown(
         color: #ffffff;
     }
 
-    /* 🟢 Boutons */
+    /* 🟢 Boutons verts */
     .stButton button {
         background-color: #00b300 !important;
         color: white !important;
@@ -64,14 +66,9 @@ st.markdown(
         background-color: #009900 !important;
     }
 
-    /* ✅ Champs multiselect text noir */
+    /* ✅ Tags multiselect text noir */
     div[data-baseweb="tag"] {
         background-color: #ffffff !important;
-        color: #000000 !important;
-    }
-
-    /* ✅ Correction de contraste pour titres sur fond vert */
-    .stForm label, .stForm h3, .stForm h4, .stForm p {
         color: #000000 !important;
     }
     </style>
@@ -119,25 +116,30 @@ st.markdown("""
 Bienvenue dans **EVAD - Ecosystème Vivant Autonome et Décentralisé**, une plateforme de pilotage d’impact conçue pour faciliter la création de lieux partagés durables *(tiers-lieux, éco-lieux, coworking, fermes, etc.)* grâce à des outils open-source, une économie régénérative et une intelligence collaborative.
 """)
 
-# --- 1️⃣ Formulaire utilisateur ---
-with st.form("user_form"):
-    title = st.text_input("🏷️ Nom du projet")
-    description = st.text_area("📝 Description du projet")
-    localisation = st.text_input("📍 Localisation")
+# --- 1️⃣ Étape 1 : Formulaire utilisateur ---
+with st.container():
+    st.markdown('<div class="green-box">', unsafe_allow_html=True)
 
-    # 🌿 Type de projet
-    project_types = st.multiselect(
-        "🌿 Type de projet",
-        ["Third-place", "Eco-lieu", "Association", "Coworking", "Autres", "Permaculture"],
-        default=[]
-    )
+    with st.form("user_form"):
+        title = st.text_input("🏷️ Nom du projet")
+        description = st.text_area("📝 Description du projet")
+        localisation = st.text_input("📍 Localisation")
 
-    # 📄 Document lié
-    uploaded_doc = st.file_uploader("📄 Document lié au projet (optionnel)", type=["pdf", "png", "jpg", "jpeg", "docx"])
+        # 🌿 Type de projet
+        project_types = st.multiselect(
+            "🌿 Type de projet",
+            ["Third-place", "Eco-lieu", "Association", "Coworking", "Autres", "Permaculture"],
+            default=[]
+        )
 
-    submitted = st.form_submit_button("🚀 Lancer l’analyse")
+        # 📄 Document lié
+        uploaded_doc = st.file_uploader("📄 Document lié au projet (optionnel)", type=["pdf", "png", "jpg", "jpeg", "docx"])
 
-# --- 2️⃣ Appel au modèle ---
+        submitted = st.form_submit_button("🚀 Lancer l’analyse")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# --- 2️⃣ Étape 2 : Analyse IA ---
 if submitted:
     if not all([title, description, localisation]):
         st.warning("Merci de remplir tous les champs avant la recherche.")
@@ -177,8 +179,9 @@ if submitted:
                 st.error(f"Erreur pendant la génération : {e}")
 
 
-# --- 3️⃣ Résultat modifiable ---
+# --- 3️⃣ Étape 3 : Synthèse du projet ---
 if "ai_result" in st.session_state:
+    st.markdown('<div class="green-box">', unsafe_allow_html=True)
     st.markdown("### ✏️ Synthèse du projet (modifiable avant validation)")
 
     def extract_section(text, section):
@@ -215,10 +218,11 @@ if "ai_result" in st.session_state:
         st.session_state.plan_action = plan_action
         st.session_state.type = project_types
         st.session_state.uploaded_doc = uploaded_doc
+    st.markdown('</div>', unsafe_allow_html=True)
 
-
-# --- 4️⃣ Informations du porteur + Statut + sauvegarde ---
+# --- 4️⃣ Étape 4 : Informations du porteur ---
 if st.session_state.get("validation_ok"):
+    st.markdown('<div class="green-box">', unsafe_allow_html=True)
     st.markdown("### 👤 Informations du porteur")
 
     leader = st.text_input("Nom du porteur de projet")
@@ -275,6 +279,8 @@ if st.session_state.get("validation_ok"):
                         st.error(f"Erreur API {r.status_code} : {r.text}")
                 except Exception as e:
                     st.error(f"Erreur de sauvegarde : {e}")
+    st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
