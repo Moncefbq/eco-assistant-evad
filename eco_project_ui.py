@@ -7,43 +7,49 @@ import os
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
 
-# 🌿 STYLE GLOBAL : fond sombre + bloc vert + champs blancs
+# 🌿 STYLE GLOBAL : fond clair + bloc vert + textes noirs + champs blancs
 st.markdown(
     """
     <style>
-    /* 🌍 Fond global sombre */
+    /* 🌍 Fond global clair */
     body {
-        background-color: #0f0f0f;
-        color: white;
+        background-color: #f5f5f5;
+        color: #000000 !important;
     }
 
     /* 🧾 Bloc du formulaire vert */
     .stForm, .stForm > div {
         background-color: #018262 !important;
+        color: #000000 !important;
         padding: 30px;
         border-radius: 15px;
-        box-shadow: 0px 0px 15px rgba(0,0,0,0.4);
+        box-shadow: 0px 0px 15px rgba(0,0,0,0.25);
     }
 
-    /* 🧩 Champs en fond blanc avec texte noir */
+    /* 🧩 Champs : fond blanc + texte noir */
     .stTextInput > div > div > input,
     .stTextArea > div > div > textarea,
     .stSelectbox > div > div,
     .stMultiSelect > div > div {
-        background-color: white !important;
-        color: black !important;
+        background-color: #ffffff !important;
+        color: #000000 !important;
         border-radius: 6px;
         border: 1px solid #555 !important;
     }
 
-    /* 🔲 Texte sélectionné : noir avec texte blanc */
+    /* 🏷️ Tous les textes et titres en noir */
+    h1, h2, h3, h4, h5, h6, label, p, span, div {
+        color: #000000 !important;
+    }
+
+    /* 🔲 Texte sélectionné : noir de fond avec texte blanc */
     ::selection {
-        background: black;
-        color: white;
+        background: #000000;
+        color: #ffffff;
     }
     ::-moz-selection {
-        background: black;
-        color: white;
+        background: #000000;
+        color: #ffffff;
     }
 
     /* 🟢 Boutons */
@@ -52,14 +58,21 @@ st.markdown(
         color: white !important;
         border-radius: 8px;
         border: none;
+        font-weight: bold;
     }
     .stButton button:hover {
         background-color: #009900 !important;
     }
 
-    /* 🏷️ Titres */
-    h1, h2, h3, h4 {
-        color: #ffffff !important;
+    /* ✅ Champs multiselect text noir */
+    div[data-baseweb="tag"] {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    /* ✅ Correction de contraste pour titres sur fond vert */
+    .stForm label, .stForm h3, .stForm h4, .stForm p {
+        color: #000000 !important;
     }
     </style>
     """,
@@ -262,6 +275,7 @@ if st.session_state.get("validation_ok"):
                         st.error(f"Erreur API {r.status_code} : {r.text}")
                 except Exception as e:
                     st.error(f"Erreur de sauvegarde : {e}")
+
 
 
 
