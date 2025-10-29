@@ -32,16 +32,6 @@ st.markdown(
         color: #000000 !important;
     }
 
-    /* 🔲 Sélection : fond noir, texte blanc */
-    ::selection {
-        background: #000000;
-        color: #ffffff;
-    }
-    ::-moz-selection {
-        background: #000000;
-        color: #ffffff;
-    }
-
     /* 🟢 Boutons verts */
     .stButton button {
         background-color: #00b300 !important;
@@ -102,40 +92,33 @@ st.markdown("""
 Bienvenue dans **EVAD - Ecosystème Vivant Autonome et Décentralisé**, une plateforme de pilotage d’impact conçue pour faciliter la création de lieux partagés durables *(tiers-lieux, éco-lieux, coworking, fermes, etc.)* grâce à des outils open-source, une économie régénérative et une intelligence collaborative.
 """)
 
+# --- Style commun pour encadré vert
+def green_container():
+    return st.container(border=True)
+
 # --- 1️⃣ Étape 1 : Formulaire utilisateur ---
-st.markdown(
-    """
-    <div style="
-        background-color: #018262;
-        color: #000;
-        padding: 30px;
-        border-radius: 15px;
-        box-shadow: 0px 0px 15px rgba(0,0,0,0.25);
-        margin-top: 25px;
-        margin-bottom: 25px;
-    ">
-    """,
-    unsafe_allow_html=True
-)
+with green_container():
+    st.markdown("<h3>🧾 Informations sur le projet</h3>", unsafe_allow_html=True)
 
-with st.form("user_form"):
-    title = st.text_input("🏷️ Nom du projet")
-    description = st.text_area("📝 Description du projet")
-    localisation = st.text_input("📍 Localisation")
+    with st.form("user_form"):
+        title = st.text_input("🏷️ Nom du projet")
+        description = st.text_area("📝 Description du projet")
+        localisation = st.text_input("📍 Localisation")
 
-    # 🌿 Type de projet
-    project_types = st.multiselect(
-        "🌿 Type de projet",
-        ["Third-place", "Eco-lieu", "Association", "Coworking", "Autres", "Permaculture"],
-        default=[]
-    )
+        # 🌿 Type de projet
+        project_types = st.multiselect(
+            "🌿 Type de projet",
+            ["Third-place", "Eco-lieu", "Association", "Coworking", "Autres", "Permaculture"],
+            default=[]
+        )
 
-    # 📄 Document lié
-    uploaded_doc = st.file_uploader("📄 Document lié au projet (optionnel)", type=["pdf", "png", "jpg", "jpeg", "docx"])
+        # 📄 Document lié
+        uploaded_doc = st.file_uploader(
+            "📄 Document lié au projet (optionnel)", 
+            type=["pdf", "png", "jpg", "jpeg", "docx"]
+        )
 
-    submitted = st.form_submit_button("🚀 Lancer l’analyse")
-
-st.markdown("</div>", unsafe_allow_html=True)
+        submitted = st.form_submit_button("🚀 Lancer l’analyse")
 
 # --- 2️⃣ Étape 2 : Analyse IA ---
 if submitted:
@@ -178,99 +161,69 @@ if submitted:
 
 # --- 3️⃣ Étape 3 : Synthèse du projet ---
 if "ai_result" in st.session_state:
-    st.markdown(
-        """
-        <div style="
-            background-color: #018262;
-            color: #000;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0px 0px 15px rgba(0,0,0,0.25);
-            margin-top: 25px;
-            margin-bottom: 25px;
-        ">
-        """,
-        unsafe_allow_html=True
-    )
+    with green_container():
+        st.markdown("### ✏️ Synthèse du projet (modifiable avant validation)")
 
-    st.markdown("### ✏️ Synthèse du projet (modifiable avant validation)")
+        def extract_section(text, section):
+            pattern = rf"{section}\s*:\s*(.*?)(?=\n[A-ZÉÈÊÂÎÔÙÇ]|$)"
+            match = re.search(pattern, text, re.DOTALL)
+            return match.group(1).strip() if match else ""
 
-    def extract_section(text, section):
-        pattern = rf"{section}\s*:\s*(.*?)(?=\n[A-ZÉÈÊÂÎÔÙÇ]|$)"
-        match = re.search(pattern, text, re.DOTALL)
-        return match.group(1).strip() if match else ""
+        solution = extract_section(st.session_state.ai_result, "Solution")
+        impact_eco = extract_section(st.session_state.ai_result, "Impact écologique")
+        impact_social = extract_section(st.session_state.ai_result, "Impact social")
+        impact_econ = extract_section(st.session_state.ai_result, "Impact économique")
+        plan_action = extract_section(st.session_state.ai_result, "Plan d’action")
 
-    solution = extract_section(st.session_state.ai_result, "Solution")
-    impact_eco = extract_section(st.session_state.ai_result, "Impact écologique")
-    impact_social = extract_section(st.session_state.ai_result, "Impact social")
-    impact_econ = extract_section(st.session_state.ai_result, "Impact économique")
-    plan_action = extract_section(st.session_state.ai_result, "Plan d’action")
+        if not plan_action or len(plan_action.strip()) < 10:
+            plan_action = (
+                "1️⃣ Identifier les acteurs locaux et définir les priorités du projet.\n"
+                "2️⃣ Lancer une phase pilote avec des indicateurs d’impact mesurables.\n"
+                "3️⃣ Analyser les résultats, ajuster les actions et planifier l’expansion."
+            )
 
-    if not plan_action or len(plan_action.strip()) < 10:
-        plan_action = (
-            "1️⃣ Identifier les acteurs locaux et définir les priorités du projet.\n"
-            "2️⃣ Lancer une phase pilote avec des indicateurs d’impact mesurables.\n"
-            "3️⃣ Analyser les résultats, ajuster les actions et planifier l’expansion."
-        )
+        solution = st.text_area("💡 Solution", value=solution, height=100)
+        impact_eco = st.text_area("🌿 Impact écologique", value=impact_eco, height=100)
+        impact_social = st.text_area("🤝 Impact social", value=impact_social, height=100)
+        impact_econ = st.text_area("💰 Impact économique", value=impact_econ, height=100)
+        plan_action = st.text_area("🧭 Plan d’action", value=plan_action, height=130)
 
-    solution = st.text_area("💡 Solution", value=solution, height=100)
-    impact_eco = st.text_area("🌿 Impact écologique", value=impact_eco, height=100)
-    impact_social = st.text_area("🤝 Impact social", value=impact_social, height=100)
-    impact_econ = st.text_area("💰 Impact économique", value=impact_econ, height=100)
-    plan_action = st.text_area("🧭 Plan d’action", value=plan_action, height=130)
-
-    if st.button("✅ Valider et ajouter les informations du porteur"):
-        st.session_state.validation_ok = True
-        st.session_state.solution = solution
-        st.session_state.impact_eco = impact_eco
-        st.session_state.impact_social = impact_social
-        st.session_state.impact_econ = impact_econ
-        st.session_state.plan_action = plan_action
-        st.session_state.type = project_types
-        st.session_state.uploaded_doc = uploaded_doc
-
-    st.markdown("</div>", unsafe_allow_html=True)
+        if st.button("✅ Valider et ajouter les informations du porteur"):
+            st.session_state.validation_ok = True
+            st.session_state.solution = solution
+            st.session_state.impact_eco = impact_eco
+            st.session_state.impact_social = impact_social
+            st.session_state.impact_econ = impact_econ
+            st.session_state.plan_action = plan_action
+            st.session_state.type = project_types
+            st.session_state.uploaded_doc = uploaded_doc
 
 # --- 4️⃣ Étape 4 : Informations du porteur ---
 if st.session_state.get("validation_ok"):
-    st.markdown(
-        """
-        <div style="
-            background-color: #018262;
-            color: #000;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0px 0px 15px rgba(0,0,0,0.25);
-            margin-top: 25px;
-            margin-bottom: 25px;
-        ">
-        """,
-        unsafe_allow_html=True
-    )
+    with green_container():
+        st.markdown("### 👤 Informations du porteur")
 
-    st.markdown("### 👤 Informations du porteur")
+        leader = st.text_input("Nom du porteur de projet")
+        email = st.text_input("Email de contact")
 
-    leader = st.text_input("Nom du porteur de projet")
-    email = st.text_input("Email de contact")
+        status = st.selectbox(
+            "📊 Statut du projet",
+            ["Thinking", "Modélisation", "Construction", "Développement", "Financement", "Student"],
+            index=0
+        )
 
-    status = st.selectbox(
-        "📊 Statut du projet",
-        ["Thinking", "Modélisation", "Construction", "Développement", "Financement", "Student"],
-        index=0
-    )
+        if st.button("💾 Enregistrer dans NoCoDB"):
+            if not leader or not email:
+                st.warning("Merci de remplir le nom et l’email.")
+            else:
+                with st.spinner("💾 Sauvegarde du projet..."):
+                    doc_data = []
+                    if st.session_state.uploaded_doc:
+                        url = upload_to_nocodb(st.session_state.uploaded_doc)
+                        if url:
+                            doc_data = [{"url": url}]
 
-    if st.button("💾 Enregistrer dans NoCoDB"):
-        if not leader or not email:
-            st.warning("Merci de remplir le nom et l’email.")
-        else:
-            with st.spinner("💾 Sauvegarde du projet..."):
-                doc_data = []
-                if st.session_state.uploaded_doc:
-                    url = upload_to_nocodb(st.session_state.uploaded_doc)
-                    if url:
-                        doc_data = [{"url": url}]
-
-                description_finale = f"""
+                    description_finale = f"""
 **Solution :** {st.session_state.solution}
 
 **Impact écologique :** {st.session_state.impact_eco}
@@ -282,29 +235,28 @@ if st.session_state.get("validation_ok"):
 **Plan d’action :** {st.session_state.plan_action}
 """
 
-                payload = {
-                    "Title": title,
-                    "Description": description_finale,
-                    "Localisation": localisation,
-                    "Type": st.session_state.type,
-                    "Project Leader": leader,
-                    "Email": email,
-                    "Status": status,
-                    "Documents": doc_data
-                }
+                    payload = {
+                        "Title": title,
+                        "Description": description_finale,
+                        "Localisation": localisation,
+                        "Type": st.session_state.type,
+                        "Project Leader": leader,
+                        "Email": email,
+                        "Status": status,
+                        "Documents": doc_data
+                    }
 
-                headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
-                try:
-                    r = requests.post(NOCODB_API_URL, headers=headers, json=payload, timeout=20)
-                    if r.status_code in (200, 201):
-                        st.success("🌿 Projet enregistré avec succès dans `Projects` !")
-                        st.balloons()
-                    else:
-                        st.error(f"Erreur API {r.status_code} : {r.text}")
-                except Exception as e:
-                    st.error(f"Erreur de sauvegarde : {e}")
+                    headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
+                    try:
+                        r = requests.post(NOCODB_API_URL, headers=headers, json=payload, timeout=20)
+                        if r.status_code in (200, 201):
+                            st.success("🌿 Projet enregistré avec succès dans `Projects` !")
+                            st.balloons()
+                        else:
+                            st.error(f"Erreur API {r.status_code} : {r.text}")
+                    except Exception as e:
+                        st.error(f"Erreur de sauvegarde : {e}")
 
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 
