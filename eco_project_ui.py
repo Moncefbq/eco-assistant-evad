@@ -11,13 +11,11 @@ st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", la
 st.markdown(
     """
     <style>
-    /* 🌍 Fond global clair */
     body {
         background-color: #f5f5f5;
         color: #000000 !important;
     }
 
-    /* 🧾 Bloc du formulaire vert */
     .stForm, .stForm > div {
         background-color: #018262 !important;
         color: #000000 !important;
@@ -27,7 +25,6 @@ st.markdown(
         margin-bottom: 25px;
     }
 
-    /* 🧩 Champs : fond blanc + texte noir */
     .stTextInput > div > div > input,
     .stTextArea > div > div > textarea,
     .stSelectbox > div > div,
@@ -38,12 +35,10 @@ st.markdown(
         border: 1px solid #555 !important;
     }
 
-    /* 🏷️ Tous les textes et titres en noir */
     h1, h2, h3, h4, h5, h6, label, p, span, div {
         color: #000000 !important;
     }
 
-    /* 🔲 Texte sélectionné : noir avec texte blanc */
     ::selection {
         background: #000000;
         color: #ffffff;
@@ -53,7 +48,6 @@ st.markdown(
         color: #ffffff;
     }
 
-    /* 🟢 Boutons verts */
     .stButton button {
         background-color: #00b300 !important;
         color: white !important;
@@ -65,13 +59,11 @@ st.markdown(
         background-color: #009900 !important;
     }
 
-    /* ✅ Multiselect tags noirs */
     div[data-baseweb="tag"] {
         background-color: #ffffff !important;
         color: #000000 !important;
     }
 
-    /* ✅ Correction contraste texte dans bloc vert */
     .stForm label, .stForm h3, .stForm h4, .stForm p {
         color: #000000 !important;
     }
@@ -85,10 +77,7 @@ OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
 NOCODB_API_TOKEN = st.secrets["NOCODB_API_TOKEN"]
 NOCODB_API_URL = st.secrets["NOCODB_API_URL"]
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
-HEADERS = {
-    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-    "Content-Type": "application/json"
-}
+HEADERS = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
 
 # --- NoCoDB CONFIG ---
 NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
@@ -109,6 +98,7 @@ def upload_to_nocodb(file):
         st.error(f"Erreur upload fichier : {e}")
     return None
 
+
 # --- 🏡 Interface principale ---
 st.title("🏡 Formulaire Pilote d'impact")
 
@@ -118,12 +108,30 @@ st.markdown("""
 Bienvenue dans **EVAD - Ecosystème Vivant Autonome et Décentralisé**, une plateforme de pilotage d’impact conçue pour faciliter la création de lieux partagés durables *(tiers-lieux, éco-lieux, coworking, fermes, etc.)* grâce à des outils open-source, une économie régénérative et une intelligence collaborative.
 """)
 
+# Initialisation du nombre d’espaces dans la session
+if "nb_espaces" not in st.session_state:
+    st.session_state.nb_espaces = 1
+
 # --- 1️⃣ Étape 1 : Formulaire utilisateur ---
 with st.form("user_form"):
     st.subheader("🧾 Informations sur le projet")
 
     title = st.text_input("🏷️ Nom du projet")
     description = st.text_area("📝 Description du projet")
+
+    # 🏠 Espaces dynamiques
+    st.markdown("### 🏡 Espaces du projet")
+    espaces = []
+    for i in range(st.session_state.nb_espaces):
+        espaces.append(st.text_area(f"🏠 Espace {i+1}", key=f"espace_{i+1}", height=80))
+
+    # Bouton pour ajouter un nouvel espace (max 5)
+    if st.session_state.nb_espaces < 5:
+        add_space = st.form_submit_button("➕ Ajouter un espace")
+        if add_space:
+            st.session_state.nb_espaces += 1
+            st.experimental_rerun()
+
     localisation = st.text_input("📍 Localisation")
 
     project_types = st.multiselect(
@@ -170,6 +178,7 @@ if submitted:
                 response.raise_for_status()
                 ai_text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
                 st.session_state.ai_result = ai_text
+                st.session_state.espaces = espaces
                 st.success("✅ Analyse terminée avec succès !")
             except Exception as e:
                 st.error(f"Erreur pendant la génération : {e}")
@@ -212,8 +221,6 @@ if "ai_result" in st.session_state:
             st.session_state.impact_social = impact_social
             st.session_state.impact_econ = impact_econ
             st.session_state.plan_action = plan_action
-            st.session_state.type = project_types
-            st.session_state.uploaded_doc = uploaded_doc
 
 # --- 4️⃣ Étape 4 : Informations du porteur ---
 if st.session_state.get("validation_ok"):
@@ -222,59 +229,41 @@ if st.session_state.get("validation_ok"):
 
         leader = st.text_input("Nom du porteur de projet")
         email = st.text_input("Email de contact")
-
-        status = st.selectbox(
-            "📊 Statut du projet",
-            ["Thinking", "Modélisation", "Construction", "Développement", "Financement", "Student"],
-            index=0
-        )
-
+        status = st.selectbox("📊 Statut du projet", ["Thinking", "Modélisation", "Construction", "Développement", "Financement", "Student"], index=0)
         saved = st.form_submit_button("💾 Enregistrer dans NoCoDB")
 
         if saved:
-            if not leader or not email:
-                st.warning("Merci de remplir le nom et l’email.")
-            else:
-                with st.spinner("💾 Sauvegarde du projet..."):
-                    doc_data = []
-                    if st.session_state.uploaded_doc:
-                        url = upload_to_nocodb(st.session_state.uploaded_doc)
-                        if url:
-                            doc_data = [{"url": url}]
+            with st.spinner("💾 Sauvegarde du projet..."):
+                doc_data = []
+                if st.session_state.uploaded_doc:
+                    url = upload_to_nocodb(st.session_state.uploaded_doc)
+                    if url:
+                        doc_data = [{"url": url}]
 
-                    description_finale = f"""
-**Solution :** {st.session_state.solution}
+                payload = {
+                    "Title": title,
+                    "Description": description,
+                    "Localisation": localisation,
+                    "Type": project_types,
+                    "Project Leader": leader,
+                    "Email": email,
+                    "Status": status,
+                    "Documents": doc_data,
+                    "espace 1": st.session_state.espaces[0] if len(st.session_state.espaces) > 0 else "",
+                    "espace 2": st.session_state.espaces[1] if len(st.session_state.espaces) > 1 else "",
+                    "espace 3": st.session_state.espaces[2] if len(st.session_state.espaces) > 2 else "",
+                    "espace 4": st.session_state.espaces[3] if len(st.session_state.espaces) > 3 else "",
+                    "espace 5": st.session_state.espaces[4] if len(st.session_state.espaces) > 4 else "",
+                }
 
-**Impact écologique :** {st.session_state.impact_eco}
+                headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
+                r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
+                if r.status_code in (200, 201):
+                    st.success("🌿 Projet enregistré avec succès dans `Projects` !")
+                    st.balloons()
+                else:
+                    st.error(f"Erreur API {r.status_code} : {r.text}")
 
-**Impact social :** {st.session_state.impact_social}
-
-**Impact économique :** {st.session_state.impact_econ}
-
-**Plan d’action :** {st.session_state.plan_action}
-"""
-
-                    payload = {
-                        "Title": title,
-                        "Description": description_finale,
-                        "Localisation": localisation,
-                        "Type": st.session_state.type,
-                        "Project Leader": leader,
-                        "Email": email,
-                        "Status": status,
-                        "Documents": doc_data
-                    }
-
-                    headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
-                    try:
-                        r = requests.post(NOCODB_API_URL, headers=headers, json=payload, timeout=20)
-                        if r.status_code in (200, 201):
-                            st.success("🌿 Projet enregistré avec succès dans `Projects` !")
-                            st.balloons()
-                        else:
-                            st.error(f"Erreur API {r.status_code} : {r.text}")
-                    except Exception as e:
-                        st.error(f"Erreur de sauvegarde : {e}")
 
 
 
