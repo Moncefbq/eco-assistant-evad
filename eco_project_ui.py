@@ -7,25 +7,13 @@ import os
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
 
-# 🌿 STYLE GLOBAL : même encadré vert pour toutes les étapes
+# 🌿 STYLE GLOBAL
 st.markdown(
     """
     <style>
-    /* 🌍 Fond global clair */
     body {
         background-color: #f5f5f5;
         color: #000000 !important;
-    }
-
-    /* 🧾 Bloc vert réutilisé dans toutes les étapes */
-    .green-box {
-        background-color: #018262 !important;
-        color: #000000 !important;
-        padding: 30px;
-        border-radius: 15px;
-        box-shadow: 0px 0px 15px rgba(0,0,0,0.25);
-        margin-top: 25px;
-        margin-bottom: 25px;
     }
 
     /* 🧩 Champs : fond blanc + texte noir */
@@ -91,7 +79,6 @@ NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
 UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
 
-
 # --- Upload fichier vers NoCoDB ---
 def upload_to_nocodb(file):
     headers = {"xc-token": NOCODB_API_TOKEN}
@@ -106,7 +93,6 @@ def upload_to_nocodb(file):
         st.error(f"Erreur upload fichier : {e}")
     return None
 
-
 # --- 🏡 Interface principale ---
 st.title("🏡 Formulaire Pilote d'impact")
 
@@ -117,27 +103,39 @@ Bienvenue dans **EVAD - Ecosystème Vivant Autonome et Décentralisé**, une pla
 """)
 
 # --- 1️⃣ Étape 1 : Formulaire utilisateur ---
-with st.container():
-    st.markdown('<div class="green-box">', unsafe_allow_html=True)
+st.markdown(
+    """
+    <div style="
+        background-color: #018262;
+        color: #000;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0px 0px 15px rgba(0,0,0,0.25);
+        margin-top: 25px;
+        margin-bottom: 25px;
+    ">
+    """,
+    unsafe_allow_html=True
+)
 
-    with st.form("user_form"):
-        title = st.text_input("🏷️ Nom du projet")
-        description = st.text_area("📝 Description du projet")
-        localisation = st.text_input("📍 Localisation")
+with st.form("user_form"):
+    title = st.text_input("🏷️ Nom du projet")
+    description = st.text_area("📝 Description du projet")
+    localisation = st.text_input("📍 Localisation")
 
-        # 🌿 Type de projet
-        project_types = st.multiselect(
-            "🌿 Type de projet",
-            ["Third-place", "Eco-lieu", "Association", "Coworking", "Autres", "Permaculture"],
-            default=[]
-        )
+    # 🌿 Type de projet
+    project_types = st.multiselect(
+        "🌿 Type de projet",
+        ["Third-place", "Eco-lieu", "Association", "Coworking", "Autres", "Permaculture"],
+        default=[]
+    )
 
-        # 📄 Document lié
-        uploaded_doc = st.file_uploader("📄 Document lié au projet (optionnel)", type=["pdf", "png", "jpg", "jpeg", "docx"])
+    # 📄 Document lié
+    uploaded_doc = st.file_uploader("📄 Document lié au projet (optionnel)", type=["pdf", "png", "jpg", "jpeg", "docx"])
 
-        submitted = st.form_submit_button("🚀 Lancer l’analyse")
+    submitted = st.form_submit_button("🚀 Lancer l’analyse")
 
-    st.markdown('</div>', unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
 # --- 2️⃣ Étape 2 : Analyse IA ---
 if submitted:
@@ -178,10 +176,23 @@ if submitted:
             except Exception as e:
                 st.error(f"Erreur pendant la génération : {e}")
 
-
 # --- 3️⃣ Étape 3 : Synthèse du projet ---
 if "ai_result" in st.session_state:
-    st.markdown('<div class="green-box">', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div style="
+            background-color: #018262;
+            color: #000;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0px 0px 15px rgba(0,0,0,0.25);
+            margin-top: 25px;
+            margin-bottom: 25px;
+        ">
+        """,
+        unsafe_allow_html=True
+    )
+
     st.markdown("### ✏️ Synthèse du projet (modifiable avant validation)")
 
     def extract_section(text, section):
@@ -195,7 +206,6 @@ if "ai_result" in st.session_state:
     impact_econ = extract_section(st.session_state.ai_result, "Impact économique")
     plan_action = extract_section(st.session_state.ai_result, "Plan d’action")
 
-    # 🧭 Si le plan d’action est vide → générer un par défaut
     if not plan_action or len(plan_action.strip()) < 10:
         plan_action = (
             "1️⃣ Identifier les acteurs locaux et définir les priorités du projet.\n"
@@ -218,17 +228,31 @@ if "ai_result" in st.session_state:
         st.session_state.plan_action = plan_action
         st.session_state.type = project_types
         st.session_state.uploaded_doc = uploaded_doc
-    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # --- 4️⃣ Étape 4 : Informations du porteur ---
 if st.session_state.get("validation_ok"):
-    st.markdown('<div class="green-box">', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div style="
+            background-color: #018262;
+            color: #000;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0px 0px 15px rgba(0,0,0,0.25);
+            margin-top: 25px;
+            margin-bottom: 25px;
+        ">
+        """,
+        unsafe_allow_html=True
+    )
+
     st.markdown("### 👤 Informations du porteur")
 
     leader = st.text_input("Nom du porteur de projet")
     email = st.text_input("Email de contact")
 
-    # 📊 Statut du projet
     status = st.selectbox(
         "📊 Statut du projet",
         ["Thinking", "Modélisation", "Construction", "Développement", "Financement", "Student"],
@@ -279,7 +303,9 @@ if st.session_state.get("validation_ok"):
                         st.error(f"Erreur API {r.status_code} : {r.text}")
                 except Exception as e:
                     st.error(f"Erreur de sauvegarde : {e}")
-    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
