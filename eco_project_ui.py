@@ -7,7 +7,7 @@ import os
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
 
-# 🌿 STYLE GLOBAL : fond clair + bloc vert + textes noirs + champs blancs
+# 🌿 STYLE GLOBAL : fond clair + blocs verts + textes noirs + champs blancs
 st.markdown(
     """
     <style>
@@ -24,6 +24,7 @@ st.markdown(
         padding: 30px;
         border-radius: 15px;
         box-shadow: 0px 0px 15px rgba(0,0,0,0.25);
+        margin-bottom: 25px;
     }
 
     /* 🧩 Champs : fond blanc + texte noir */
@@ -42,7 +43,7 @@ st.markdown(
         color: #000000 !important;
     }
 
-    /* 🔲 Texte sélectionné : noir de fond avec texte blanc */
+    /* 🔲 Texte sélectionné : noir avec texte blanc */
     ::selection {
         background: #000000;
         color: #ffffff;
@@ -52,7 +53,7 @@ st.markdown(
         color: #ffffff;
     }
 
-    /* 🟢 Boutons */
+    /* 🟢 Boutons verts */
     .stButton button {
         background-color: #00b300 !important;
         color: white !important;
@@ -64,13 +65,13 @@ st.markdown(
         background-color: #009900 !important;
     }
 
-    /* ✅ Champs multiselect text noir */
+    /* ✅ Multiselect tags noirs */
     div[data-baseweb="tag"] {
         background-color: #ffffff !important;
         color: #000000 !important;
     }
 
-    /* ✅ Correction de contraste pour titres sur fond vert */
+    /* ✅ Correction contraste texte dans bloc vert */
     .stForm label, .stForm h3, .stForm h4, .stForm p {
         color: #000000 !important;
     }
@@ -94,7 +95,6 @@ NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
 UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
 
-
 # --- Upload fichier vers NoCoDB ---
 def upload_to_nocodb(file):
     headers = {"xc-token": NOCODB_API_TOKEN}
@@ -109,7 +109,6 @@ def upload_to_nocodb(file):
         st.error(f"Erreur upload fichier : {e}")
     return None
 
-
 # --- 🏡 Interface principale ---
 st.title("🏡 Formulaire Pilote d'impact")
 
@@ -119,25 +118,24 @@ st.markdown("""
 Bienvenue dans **EVAD - Ecosystème Vivant Autonome et Décentralisé**, une plateforme de pilotage d’impact conçue pour faciliter la création de lieux partagés durables *(tiers-lieux, éco-lieux, coworking, fermes, etc.)* grâce à des outils open-source, une économie régénérative et une intelligence collaborative.
 """)
 
-# --- 1️⃣ Formulaire utilisateur ---
+# --- 1️⃣ Étape 1 : Formulaire utilisateur ---
 with st.form("user_form"):
+    st.subheader("🧾 Informations sur le projet")
+
     title = st.text_input("🏷️ Nom du projet")
     description = st.text_area("📝 Description du projet")
     localisation = st.text_input("📍 Localisation")
 
-    # 🌿 Type de projet
     project_types = st.multiselect(
         "🌿 Type de projet",
         ["Third-place", "Eco-lieu", "Association", "Coworking", "Autres", "Permaculture"],
         default=[]
     )
 
-    # 📄 Document lié
     uploaded_doc = st.file_uploader("📄 Document lié au projet (optionnel)", type=["pdf", "png", "jpg", "jpeg", "docx"])
-
     submitted = st.form_submit_button("🚀 Lancer l’analyse")
 
-# --- 2️⃣ Appel au modèle ---
+# --- 2️⃣ Étape 2 : Analyse IA ---
 if submitted:
     if not all([title, description, localisation]):
         st.warning("Merci de remplir tous les champs avant la recherche.")
@@ -176,73 +174,75 @@ if submitted:
             except Exception as e:
                 st.error(f"Erreur pendant la génération : {e}")
 
-
-# --- 3️⃣ Résultat modifiable ---
+# --- 3️⃣ Étape 3 : Synthèse du projet ---
 if "ai_result" in st.session_state:
-    st.markdown("### ✏️ Synthèse du projet (modifiable avant validation)")
+    with st.form("synthese_form"):
+        st.subheader("✏️ Synthèse du projet (modifiable avant validation)")
 
-    def extract_section(text, section):
-        pattern = rf"{section}\s*:\s*(.*?)(?=\n[A-ZÉÈÊÂÎÔÙÇ]|$)"
-        match = re.search(pattern, text, re.DOTALL)
-        return match.group(1).strip() if match else ""
+        def extract_section(text, section):
+            pattern = rf"{section}\s*:\s*(.*?)(?=\n[A-ZÉÈÊÂÎÔÙÇ]|$)"
+            match = re.search(pattern, text, re.DOTALL)
+            return match.group(1).strip() if match else ""
 
-    solution = extract_section(st.session_state.ai_result, "Solution")
-    impact_eco = extract_section(st.session_state.ai_result, "Impact écologique")
-    impact_social = extract_section(st.session_state.ai_result, "Impact social")
-    impact_econ = extract_section(st.session_state.ai_result, "Impact économique")
-    plan_action = extract_section(st.session_state.ai_result, "Plan d’action")
+        solution = extract_section(st.session_state.ai_result, "Solution")
+        impact_eco = extract_section(st.session_state.ai_result, "Impact écologique")
+        impact_social = extract_section(st.session_state.ai_result, "Impact social")
+        impact_econ = extract_section(st.session_state.ai_result, "Impact économique")
+        plan_action = extract_section(st.session_state.ai_result, "Plan d’action")
 
-    # 🧭 Si le plan d’action est vide → générer un par défaut
-    if not plan_action or len(plan_action.strip()) < 10:
-        plan_action = (
-            "1️⃣ Identifier les acteurs locaux et définir les priorités du projet.\n"
-            "2️⃣ Lancer une phase pilote avec des indicateurs d’impact mesurables.\n"
-            "3️⃣ Analyser les résultats, ajuster les actions et planifier l’expansion."
+        if not plan_action or len(plan_action.strip()) < 10:
+            plan_action = (
+                "1️⃣ Identifier les acteurs locaux et définir les priorités du projet.\n"
+                "2️⃣ Lancer une phase pilote avec des indicateurs d’impact mesurables.\n"
+                "3️⃣ Analyser les résultats, ajuster les actions et planifier l’expansion."
+            )
+
+        solution = st.text_area("💡 Solution", value=solution, height=100)
+        impact_eco = st.text_area("🌿 Impact écologique", value=impact_eco, height=100)
+        impact_social = st.text_area("🤝 Impact social", value=impact_social, height=100)
+        impact_econ = st.text_area("💰 Impact économique", value=impact_econ, height=100)
+        plan_action = st.text_area("🧭 Plan d’action", value=plan_action, height=130)
+
+        validated = st.form_submit_button("✅ Valider et ajouter les informations du porteur")
+
+        if validated:
+            st.session_state.validation_ok = True
+            st.session_state.solution = solution
+            st.session_state.impact_eco = impact_eco
+            st.session_state.impact_social = impact_social
+            st.session_state.impact_econ = impact_econ
+            st.session_state.plan_action = plan_action
+            st.session_state.type = project_types
+            st.session_state.uploaded_doc = uploaded_doc
+
+# --- 4️⃣ Étape 4 : Informations du porteur ---
+if st.session_state.get("validation_ok"):
+    with st.form("porteur_form"):
+        st.subheader("👤 Informations du porteur")
+
+        leader = st.text_input("Nom du porteur de projet")
+        email = st.text_input("Email de contact")
+
+        status = st.selectbox(
+            "📊 Statut du projet",
+            ["Thinking", "Modélisation", "Construction", "Développement", "Financement", "Student"],
+            index=0
         )
 
-    solution = st.text_area("💡 Solution", value=solution, height=100)
-    impact_eco = st.text_area("🌿 Impact écologique", value=impact_eco, height=100)
-    impact_social = st.text_area("🤝 Impact social", value=impact_social, height=100)
-    impact_econ = st.text_area("💰 Impact économique", value=impact_econ, height=100)
-    plan_action = st.text_area("🧭 Plan d’action", value=plan_action, height=130)
+        saved = st.form_submit_button("💾 Enregistrer dans NoCoDB")
 
-    if st.button("✅ Valider et ajouter les informations du porteur"):
-        st.session_state.validation_ok = True
-        st.session_state.solution = solution
-        st.session_state.impact_eco = impact_eco
-        st.session_state.impact_social = impact_social
-        st.session_state.impact_econ = impact_econ
-        st.session_state.plan_action = plan_action
-        st.session_state.type = project_types
-        st.session_state.uploaded_doc = uploaded_doc
+        if saved:
+            if not leader or not email:
+                st.warning("Merci de remplir le nom et l’email.")
+            else:
+                with st.spinner("💾 Sauvegarde du projet..."):
+                    doc_data = []
+                    if st.session_state.uploaded_doc:
+                        url = upload_to_nocodb(st.session_state.uploaded_doc)
+                        if url:
+                            doc_data = [{"url": url}]
 
-
-# --- 4️⃣ Informations du porteur + Statut + sauvegarde ---
-if st.session_state.get("validation_ok"):
-    st.markdown("### 👤 Informations du porteur")
-
-    leader = st.text_input("Nom du porteur de projet")
-    email = st.text_input("Email de contact")
-
-    # 📊 Statut du projet
-    status = st.selectbox(
-        "📊 Statut du projet",
-        ["Thinking", "Modélisation", "Construction", "Développement", "Financement", "Student"],
-        index=0
-    )
-
-    if st.button("💾 Enregistrer dans NoCoDB"):
-        if not leader or not email:
-            st.warning("Merci de remplir le nom et l’email.")
-        else:
-            with st.spinner("💾 Sauvegarde du projet..."):
-                doc_data = []
-                if st.session_state.uploaded_doc:
-                    url = upload_to_nocodb(st.session_state.uploaded_doc)
-                    if url:
-                        doc_data = [{"url": url}]
-
-                description_finale = f"""
+                    description_finale = f"""
 **Solution :** {st.session_state.solution}
 
 **Impact écologique :** {st.session_state.impact_eco}
@@ -254,27 +254,28 @@ if st.session_state.get("validation_ok"):
 **Plan d’action :** {st.session_state.plan_action}
 """
 
-                payload = {
-                    "Title": title,
-                    "Description": description_finale,
-                    "Localisation": localisation,
-                    "Type": st.session_state.type,
-                    "Project Leader": leader,
-                    "Email": email,
-                    "Status": status,
-                    "Documents": doc_data
-                }
+                    payload = {
+                        "Title": title,
+                        "Description": description_finale,
+                        "Localisation": localisation,
+                        "Type": st.session_state.type,
+                        "Project Leader": leader,
+                        "Email": email,
+                        "Status": status,
+                        "Documents": doc_data
+                    }
 
-                headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
-                try:
-                    r = requests.post(NOCODB_API_URL, headers=headers, json=payload, timeout=20)
-                    if r.status_code in (200, 201):
-                        st.success("🌿 Projet enregistré avec succès dans `Projects` !")
-                        st.balloons()
-                    else:
-                        st.error(f"Erreur API {r.status_code} : {r.text}")
-                except Exception as e:
-                    st.error(f"Erreur de sauvegarde : {e}")
+                    headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
+                    try:
+                        r = requests.post(NOCODB_API_URL, headers=headers, json=payload, timeout=20)
+                        if r.status_code in (200, 201):
+                            st.success("🌿 Projet enregistré avec succès dans `Projects` !")
+                            st.balloons()
+                        else:
+                            st.error(f"Erreur API {r.status_code} : {r.text}")
+                    except Exception as e:
+                        st.error(f"Erreur de sauvegarde : {e}")
+
 
 
 
