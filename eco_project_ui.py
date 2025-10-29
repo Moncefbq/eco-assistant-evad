@@ -7,7 +7,7 @@ import os
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
 
-# 🌿 STYLE GLOBAL : fond sombre + bloc formulaire vert
+# 🌿 STYLE GLOBAL : fond sombre + bloc vert + champs blancs
 st.markdown(
     """
     <style>
@@ -25,15 +25,25 @@ st.markdown(
         box-shadow: 0px 0px 15px rgba(0,0,0,0.4);
     }
 
-    /* 🧩 Champs (inputs, textarea, select) */
+    /* 🧩 Champs en fond blanc avec texte noir */
     .stTextInput > div > div > input,
     .stTextArea > div > div > textarea,
     .stSelectbox > div > div,
     .stMultiSelect > div > div {
-        background-color: #1c1c1c !important;
-        color: white !important;
+        background-color: white !important;
+        color: black !important;
         border-radius: 6px;
-        border: 1px solid #333 !important;
+        border: 1px solid #555 !important;
+    }
+
+    /* 🔲 Texte sélectionné : noir avec texte blanc */
+    ::selection {
+        background: black;
+        color: white;
+    }
+    ::-moz-selection {
+        background: black;
+        color: white;
     }
 
     /* 🟢 Boutons */
@@ -252,6 +262,7 @@ if st.session_state.get("validation_ok"):
                         st.error(f"Erreur API {r.status_code} : {r.text}")
                 except Exception as e:
                     st.error(f"Erreur de sauvegarde : {e}")
+
 
 
 
