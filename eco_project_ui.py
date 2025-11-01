@@ -236,10 +236,11 @@ if st.session_state.get("validation_ok"):
         if saved:
             with st.spinner("💾 Sauvegarde du projet..."):
                 doc_data = []
-                if st.session_state.uploaded_doc:
-                    url = upload_to_nocodb(st.session_state.uploaded_doc)
-                    if url:
+                if "uploaded_doc" in st.session_state and st.session_state.uploaded_doc:
+                   url = upload_to_nocodb(st.session_state.uploaded_doc)
+                   if url:
                         doc_data = [{"url": url}]
+
 
                 payload = {
                     "Title": title,
