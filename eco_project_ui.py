@@ -130,7 +130,8 @@ with st.form("user_form"):
         add_space = st.form_submit_button("➕ Ajouter un espace")
         if add_space:
             st.session_state.nb_espaces += 1
-            st.experimental_rerun()
+            st.rerun()
+
 
     localisation = st.text_input("📍 Localisation")
 
