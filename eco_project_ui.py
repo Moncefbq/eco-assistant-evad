@@ -261,8 +261,9 @@ if st.session_state.get("validation_ok"):
                 headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
                 r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
                 if r.status_code in (200, 201):
-                    st.success("🌿 Projet enregistré avec succès dans `Projects` !")
-                    st.balloons()
+                    st.success("🍃 Projet enregistré avec succès dans `Projects` ! 🌍")
+                    st.toast("✅ Données synchronisées avec NoCoDB", icon="🌱")
+
                 else:
                     st.error(f"Erreur API {r.status_code} : {r.text}")
 
