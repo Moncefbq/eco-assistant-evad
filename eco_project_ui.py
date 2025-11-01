@@ -230,7 +230,7 @@ if st.session_state.get("validation_ok"):
 
         leader = st.text_input("Nom du porteur de projet")
         email = st.text_input("Email de contact")
-        status = st.selectbox("📊 Statut du projet", ["Thinking", "Modélisation", "Construction", "Développement", "Financement", "Student"], index=0)
+        status = st.selectbox("📊 Statut du projet",["Thinking", "Modélisation ", "Construction", "Développement", "Financement", "Student"],index=0)
         saved = st.form_submit_button("💾 Enregistrer dans NoCoDB")
 
         if saved:
