@@ -6,13 +6,76 @@ import re
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
 
-# --- Logo EVAD (petit, à gauche du titre) ---
+# --- En-tête EVAD avec logo à gauche ---
 st.markdown("""
-    <div style="display: flex; align-items: center; margin-bottom: 10px;">
-        <img src="evad_logo.png" width="110" style="margin-right: 15px;">
-        <h1 style="font-size: 1.9em; color: #014d3b; margin: 0;">Formulaire Pilote d'impact</h1>
+    <div style="display: flex; align-items: center; margin-bottom: 20px;">
+        <img src="evad_logo.png" width="120" style="margin-right: 15px;">
+        <h1 style="font-size: 1.9em; color: #014d3b; margin: 0;">
+            Formulaire Pilote d'impact
+        </h1>
     </div>
 """, unsafe_allow_html=True)
+
+st.markdown("""
+### 🌍 Rejoignez EVAD pour co-développer votre projet de lieux régénératif !
+Bienvenue dans **EVAD - Écosystème Vivant Autonome et Décentralisé**, une plateforme de pilotage
+d’impact conçue pour la création de lieux partagés durables *(tiers-lieux, éco-lieux, coworking, fermes, etc.)*
+grâce à une intelligence collaborative, open-source et régénérative.
+""")
+
+# 🌿 STYLE GLOBAL
+st.markdown("""
+<style>
+body {
+    background-color: #f5f5f5;
+    color: #000000 !important;
+}
+
+/* ✅ Rectangle principal : vert clair */
+section.main > div {
+    background-color: #cfeee7 !important;
+    border-radius: 20px;
+    padding: 20px !important;
+}
+
+/* ✅ Formulaires internes : vert foncé */
+.stForm, .stForm > div {
+    background-color: #018262 !important;
+    color: #000000 !important;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0px 0px 15px rgba(0,0,0,0.25);
+    margin-bottom: 25px;
+}
+
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div,
+.stMultiSelect > div > div {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border-radius: 6px;
+    border: 1px solid #555 !important;
+}
+
+h1, h2, h3, h4, h5, h6, label, p, span, div {
+    color: #000000 !important;
+}
+
+.stButton button {
+    background-color: #00b300 !important;
+    color: white !important;
+    border-radius: 8px;
+    border: none;
+    font-weight: bold;
+}
+
+.stButton button:hover {
+    background-color: #009900 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 
 # 🌿 STYLE GLOBAL
 st.markdown("""
