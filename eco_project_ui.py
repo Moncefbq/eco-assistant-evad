@@ -6,16 +6,18 @@ import re
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
 
-# --- En-tête EVAD avec logo à gauche ---
+# --- EN-TÊTE EVAD (logo à gauche du titre, sans doublon) ---
 st.markdown("""
-    <div style="display: flex; align-items: center; margin-bottom: 20px;">
-        <img src="evad_logo.png" width="120" style="margin-right: 15px;">
+    <div style="display: flex; align-items: center; margin-bottom: 25px;">
+        <img src="evad_logo.png" width="95" style="margin-right: 12px;">
         <h1 style="font-size: 1.9em; color: #014d3b; margin: 0;">
             Formulaire Pilote d'impact
         </h1>
     </div>
+    <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 10px 0 25px 0;">
 """, unsafe_allow_html=True)
 
+# --- Sous-titre descriptif ---
 st.markdown("""
 ### 🌍 Rejoignez EVAD pour co-développer votre projet de lieux régénératif !
 Bienvenue dans **EVAD - Écosystème Vivant Autonome et Décentralisé**, une plateforme de pilotage
@@ -76,64 +78,6 @@ h1, h2, h3, h4, h5, h6, label, p, span, div {
 </style>
 """, unsafe_allow_html=True)
 
-
-# 🌿 STYLE GLOBAL
-st.markdown("""
-<style>
-body {
-    background-color: #f5f5f5;
-    color: #000000 !important;
-}
-
-/* ✅ Rectangle principal : vert clair */
-section.main > div {
-    background-color: #cfeee7 !important;
-    border-radius: 20px;
-    padding: 20px !important;
-}
-
-/* ✅ Formulaires internes : vert foncé */
-.stForm, .stForm > div {
-    background-color: #018262 !important;
-    color: #000000 !important;
-    padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0px 0px 15px rgba(0,0,0,0.25);
-    margin-bottom: 25px;
-}
-
-.stTextInput > div > div > input,
-.stTextArea > div > div > textarea,
-.stSelectbox > div > div,
-.stMultiSelect > div > div {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-    border-radius: 6px;
-    border: 1px solid #555 !important;
-}
-
-h1, h2, h3, h4, h5, h6, label, p, span, div {
-    color: #000000 !important;
-}
-
-.stButton button {
-    background-color: #00b300 !important;
-    color: white !important;
-    border-radius: 8px;
-    border: none;
-    font-weight: bold;
-}
-
-.stButton button:hover {
-    background-color: #009900 !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# --- LOGO EVAD ---
-st.image("evad_logo.png", use_container_width=True)
-st.markdown("<br>", unsafe_allow_html=True)
-
 # --- SECRETS ---
 OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
 NOCODB_API_TOKEN = st.secrets["NOCODB_API_TOKEN"]
@@ -180,16 +124,6 @@ def MultiAgentFusion(title, description, localisation):
 # ==============================
 # 🏡 INTERFACE STREAMLIT
 # ==============================
-
-st.title("🏡 Formulaire Pilote d'impact")
-st.markdown("""
-### 🌍 Rejoignez EVAD pour co-développer votre projet de lieux régénératif !
-
-Bienvenue dans **EVAD - Écosystème Vivant Autonome et Décentralisé**, une plateforme de pilotage d’impact
-conçue pour la création de lieux partagés durables *(tiers-lieux, éco-lieux, coworking, fermes, etc.)*
-grâce à une intelligence collaborative, open-source et régénérative.
-""")
-
 if "nb_espaces" not in st.session_state:
     st.session_state.nb_espaces = 1
 
@@ -292,6 +226,7 @@ if st.session_state.get("validation_ok"):
                 st.toast("✅ Données synchronisées avec NoCoDB", icon="🌱")
             else:
                 st.error(f"Erreur API {r.status_code} : {r.text}")
+
 
 
 
