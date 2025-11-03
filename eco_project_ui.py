@@ -53,7 +53,9 @@ NOCODB_API_URL = st.secrets["NOCODB_API_URL"]
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 HEADERS = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
 
-# --- UPLOAD CONFIG ---
+# --- NoCoDB CONFIG ---
+NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
+NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
 UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
 
 # ==============================
