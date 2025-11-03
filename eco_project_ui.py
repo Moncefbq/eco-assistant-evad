@@ -6,16 +6,25 @@ import re
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
 
-# --- EN-TÊTE EVAD (logo à gauche du titre, sans doublon) ---
-st.markdown("""
+# --- EN-TÊTE EVAD (logo à gauche du titre) ---
+import base64
+
+def get_base64_image(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
+
+logo_base64 = get_base64_image("evad_logo.png")
+
+st.markdown(f"""
     <div style="display: flex; align-items: center; margin-bottom: 25px;">
-        <img src="evad_logo.png" width="95" style="margin-right: 12px;">
+        <img src="data:image/png;base64,{logo_base64}" width="95" style="margin-right: 12px;">
         <h1 style="font-size: 1.9em; color: #014d3b; margin: 0;">
             Formulaire Pilote d'impact
         </h1>
     </div>
     <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 10px 0 25px 0;">
 """, unsafe_allow_html=True)
+
 
 # --- Sous-titre descriptif ---
 st.markdown("""
