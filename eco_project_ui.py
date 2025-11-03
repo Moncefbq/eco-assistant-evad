@@ -2,10 +2,6 @@
 import streamlit as st
 import requests
 import re
-
-# --- CONFIGURATION ---
-st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
-
 # --- EN-TÊTE EVAD (logo à gauche du titre) ---
 import base64
 
@@ -35,6 +31,8 @@ else:
         <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 10px 0 25px 0;">
     """, unsafe_allow_html=True)
 
+# --- CONFIGURATION ---
+st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
 
 # --- Sous-titre descriptif ---
 st.markdown("""
