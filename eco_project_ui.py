@@ -59,7 +59,7 @@ NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
 UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
 
 # ==============================
-# 🤖 SYSTEME MULTI-AGENTS
+# ⚡ FUSION INTELLIGENTE MULTI-AGENTS
 # ==============================
 
 def ask_agent(role_description, user_input):
@@ -76,36 +76,19 @@ def ask_agent(role_description, user_input):
     response.raise_for_status()
     return response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
 
-def AnalystAgent(title, description, localisation):
+def MultiAgentFusion(title, description, localisation):
     role = (
-        "Tu es l'AnalystAgent. Ton rôle est d'étudier le projet et d’en faire un résumé clair, "
-        "avec les objectifs principaux, les enjeux et les acteurs potentiels."
+        "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. "
+        "Ensemble, vous analysez le projet et produisez les sections suivantes, formatées exactement comme ceci :\n\n"
+        "Solution: ...\n"
+        "Impact écologique: ...\n"
+        "Impact social: ...\n"
+        "Impact économique: ...\n"
+        "Plan d’action: ... (3 à 5 étapes concrètes)\n\n"
+        "Sois concis, professionnel et clair dans chaque section."
     )
     user_input = f"Projet: {title}\nDescription: {description}\nLocalisation: {localisation}"
     return ask_agent(role, user_input)
-
-def EcoAgent(analysis):
-    role = (
-        "Tu es l'EcoAgent. À partir de l'analyse fournie, génère trois sections:\n"
-        "- Impact écologique\n- Impact social\n- Impact économique"
-    )
-    return ask_agent(role, analysis)
-
-def PlannerAgent(eco_report):
-    role = (
-        "Tu es le PlannerAgent. En te basant sur les impacts décrits, rédige un plan d’action "
-        "structuré en 3 à 5 étapes concrètes avec priorités."
-    )
-    return ask_agent(role, eco_report)
-
-def CoordinatorAgent(analysis, eco_report, plan):
-    role = (
-        "Tu es le CoordinatorAgent. Fusionne les résultats précédents pour générer un résumé global clair.\n"
-        "Structure la réponse avec les titres suivants :\n"
-        "Solution, Impact écologique, Impact social, Impact économique, Plan d’action."
-    )
-    full_text = f"{analysis}\n\n{eco_report}\n\n{plan}"
-    return ask_agent(role, full_text)
 
 # ==============================
 # 🏡 INTERFACE STREAMLIT
@@ -117,7 +100,7 @@ st.markdown("""
 
 Bienvenue dans **EVAD - Écosystème Vivant Autonome et Décentralisé**, une plateforme de pilotage d’impact
 conçue pour la création de lieux partagés durables *(tiers-lieux, éco-lieux, coworking, fermes, etc.)*
-grâce à une intelligence multi-acteurs, open-source et régénérative.
+grâce à une intelligence collaborative, open-source et régénérative.
 """)
 
 if "nb_espaces" not in st.session_state:
@@ -145,7 +128,7 @@ with st.form("user_form"):
     submitted = st.form_submit_button("🚀 Lancer l’analyse collaborative")
 
 # ==============================
-# 🧩 FLUX COLLABORATIF
+# 🧠 ANALYSE COLLABORATIVE
 # ==============================
 if submitted:
     if not all([title, description, localisation]):
@@ -153,17 +136,14 @@ if submitted:
     else:
         with st.spinner("🌱 Analyse collaborative du projet en cours..."):
             try:
-                analysis = AnalystAgent(title, description, localisation)
-                eco_report = EcoAgent(analysis)
-                plan = PlannerAgent(eco_report)
-                final_result = CoordinatorAgent(analysis, eco_report, plan)
+                final_result = MultiAgentFusion(title, description, localisation)
                 st.session_state.final_result = final_result
                 st.success("✅ Analyse collaborative terminée avec succès !")
             except Exception as e:
                 st.error(f"Erreur pendant l’analyse : {e}")
 
 # ==============================
-# ✏️ SYNTHÈSE ET ENREGISTREMENT
+# ✏️ SYNTHÈSE COLLABORATIVE
 # ==============================
 if "final_result" in st.session_state:
     with st.form("synthese_form"):
@@ -225,4 +205,5 @@ if st.session_state.get("validation_ok"):
                 st.toast("✅ Données synchronisées avec NoCoDB", icon="🌱")
             else:
                 st.error(f"Erreur API {r.status_code} : {r.text}")
+
 
