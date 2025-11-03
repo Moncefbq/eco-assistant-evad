@@ -13,6 +13,15 @@ body {
     background-color: #f5f5f5;
     color: #000000 !important;
 }
+
+/* ✅ Rectangle principal : vert clair */
+section.main > div {
+    background-color: #cfeee7 !important;
+    border-radius: 20px;
+    padding: 20px !important;
+}
+
+/* ✅ Formulaires internes : vert foncé */
 .stForm, .stForm > div {
     background-color: #018262 !important;
     color: #000000 !important;
@@ -21,6 +30,7 @@ body {
     box-shadow: 0px 0px 15px rgba(0,0,0,0.25);
     margin-bottom: 25px;
 }
+
 .stTextInput > div > div > input,
 .stTextArea > div > div > textarea,
 .stSelectbox > div > div,
@@ -30,9 +40,11 @@ body {
     border-radius: 6px;
     border: 1px solid #555 !important;
 }
+
 h1, h2, h3, h4, h5, h6, label, p, span, div {
     color: #000000 !important;
 }
+
 .stButton button {
     background-color: #00b300 !important;
     color: white !important;
@@ -40,11 +52,16 @@ h1, h2, h3, h4, h5, h6, label, p, span, div {
     border: none;
     font-weight: bold;
 }
+
 .stButton button:hover {
     background-color: #009900 !important;
 }
 </style>
 """, unsafe_allow_html=True)
+
+# --- LOGO EVAD ---
+st.image("EVAD + slogan.png", use_container_width=True)
+st.markdown("<br>", unsafe_allow_html=True)
 
 # --- SECRETS ---
 OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
@@ -61,7 +78,6 @@ UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
 # ==============================
 # ⚡ FUSION INTELLIGENTE MULTI-AGENTS
 # ==============================
-
 def ask_agent(role_description, user_input):
     payload = {
         "model": "mistralai/mistral-nemo",
@@ -205,5 +221,6 @@ if st.session_state.get("validation_ok"):
                 st.toast("✅ Données synchronisées avec NoCoDB", icon="🌱")
             else:
                 st.error(f"Erreur API {r.status_code} : {r.text}")
+
 
 
