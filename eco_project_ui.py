@@ -5,7 +5,7 @@ import re
 # --- EN-TÊTE EVAD (logo à gauche du titre) ---
 import base64
 
-@st.cache_data  # ✅ mise en cache pour éviter le rechargement à chaque exécution
+@st.cache_data
 def get_base64_image(image_path):
     try:
         with open(image_path, "rb") as img_file:
@@ -15,10 +15,17 @@ def get_base64_image(image_path):
 
 logo_base64 = get_base64_image("evad_logo.png")
 
+# ✅ Affichage aligné gauche (logo + titre sur la même ligne)
 if logo_base64:
     st.markdown(f"""
-        <div style="display: flex; align-items: center; margin-bottom: 25px;">
-            <img src="data:image/png;base64,{logo_base64}" width="95" style="margin-right: 12px;">
+        <div style="
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 25px;
+            margin-top: 10px;
+        ">
+            <img src="data:image/png;base64,{logo_base64}" width="80" style="margin-right: 15px;">
             <h1 style="font-size: 1.9em; color: #014d3b; margin: 0;">
                 Formulaire Pilote d'impact
             </h1>
@@ -30,6 +37,7 @@ else:
         <h1 style="color:#014d3b;">Formulaire Pilote d'impact</h1>
         <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 10px 0 25px 0;">
     """, unsafe_allow_html=True)
+
 
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
