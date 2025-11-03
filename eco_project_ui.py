@@ -36,7 +36,6 @@ else:
     """, unsafe_allow_html=True)
 
 
-
 # --- Sous-titre descriptif ---
 st.markdown("""
 ### 🌍 Rejoignez EVAD pour co-développer votre projet de lieux régénératif !
