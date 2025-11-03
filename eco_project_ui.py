@@ -60,7 +60,7 @@ h1, h2, h3, h4, h5, h6, label, p, span, div {
 """, unsafe_allow_html=True)
 
 # --- LOGO EVAD ---
-st.image("EVAD + slogan.png", use_container_width=True)
+st.image("evad_logo.png", use_container_width=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
 # --- SECRETS ---
