@@ -6,6 +6,14 @@ import re
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
 
+# --- Logo EVAD (petit, à gauche du titre) ---
+st.markdown("""
+    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+        <img src="evad_logo.png" width="110" style="margin-right: 15px;">
+        <h1 style="font-size: 1.9em; color: #014d3b; margin: 0;">Formulaire Pilote d'impact</h1>
+    </div>
+""", unsafe_allow_html=True)
+
 # 🌿 STYLE GLOBAL
 st.markdown("""
 <style>
