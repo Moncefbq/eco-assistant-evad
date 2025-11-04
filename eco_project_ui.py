@@ -311,6 +311,6 @@ if st.session_state.get("validation_ok"):
             r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
             if r.status_code in (200, 201):
                 st.success("🌿 Projet enregistré avec succès dans la base EVAD !")
-                st.toast("✅ Données synchronisées avec NoCoDB", icon="🌱")
+                st.toast("✅ Projet enregistré avec succès", icon="🌱")
             else:
                 st.error(f"Erreur API {r.status_code} : {r.text}")
