@@ -297,12 +297,15 @@ if saved:
                 upload_data = upload_response.json()
                 if "list" in upload_data and len(upload_data["list"]) > 0:
                     f = upload_data["list"][0]
-                    file_attachment = [{
-                        "title": uploaded_doc.name,
+                    if file_attachment:
+                        f = file_attachment[0]
+                        payload["Logo + docs"] = [{
+                        "title": f["title"],
                         "path": f["path"],
                         "url": f.get("url", f"https://app.nocodb.com{f['path']}"),
-                        "mimetype": f.get("mimetype", uploaded_doc.type)
-                    }]
+                        "mimetype": f["mimetype"]
+                   }]
+
                     st.toast("📎 Fichier uploadé avec succès", icon="📤")
                 else:
                     st.warning("⚠️ Aucun fichier valide retourné par NoCoDB.")
