@@ -17,18 +17,21 @@ def get_base64_image(image_path):
 logo_base64 = get_base64_image("evad_logo.png")
 
 # ✅ Logo centré, un peu plus grand, avec espace réduit
-# ✅ Logo centré, sans fond ni ombre, parfaitement net et rapproché du titre
+# ✅ Logo EVAD – parfaitement centré, jamais coupé, sans cadre ni fond
 if logo_base64:
     st.markdown(f"""
         <div style="
-            text-align: center;
-            margin-top: 5px;
-            margin-bottom: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;           /* ✅ espace suffisant pour éviter la coupe */
+            margin-bottom: 10px;
         ">
             <img src="data:image/png;base64,{logo_base64}"
-                 width="230"
-                 style="margin-bottom:-8px; image-rendering: -webkit-optimize-contrast; -ms-interpolation-mode: nearest-neighbor;">
-            <h1 style="font-size: 2.1em; color: #014d3b; margin-top: 5px; margin-bottom: 5px;">
+                 width="240"
+                 style="margin: 0 auto; display: block; image-rendering: -webkit-optimize-contrast; -ms-interpolation-mode: nearest-neighbor;">
+            <h1 style="font-size: 2.1em; color: #014d3b; margin-top: 10px; margin-bottom: 5px; text-align: center;">
                 Formulaire Pilote d'impact
             </h1>
         </div>
@@ -39,6 +42,7 @@ else:
         <h1 style="text-align:center; color:#014d3b;">Formulaire Pilote d'impact</h1>
         <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 10px 0 20px 0;">
     """, unsafe_allow_html=True)
+
 
 st.markdown("""
 <style>
