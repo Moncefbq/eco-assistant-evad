@@ -326,4 +326,22 @@ if saved:
         "Plan d’action": st.session_state.plan_action,
         "espace 1": espaces[0] if len(espaces) > 0 else "",
         "espace 2": espaces[1] if len(espaces) > 1 else "",
-        "
+        "espace 3": espaces[2] if len(espaces) > 2 else "",
+        "espace 4": espaces[3] if len(espaces) > 3 else "",
+        "espace 5": espaces[4] if len(espaces) > 4 else "",
+    }
+
+    # --- Si fichier joint, l’ajouter au bon format LISTE ---
+    if file_attachment:
+        payload["Logo + docs"] = file_attachment
+
+    # --- Envoi vers NoCoDB ---
+    try:
+        r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
+        if r.status_code in (200, 201):
+            st.success("🌿 Projet enregistré avec succès dans la base EVAD !")
+            st.toast("Projet enregistré avec succès", icon="🌱")
+        else:
+            st.error(f"Erreur API {r.status_code} : {r.text}")
+    except Exception as e:
+        st.error(f"❌ Erreur lors de l’envoi à NoCoDB : {e}")
