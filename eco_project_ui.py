@@ -205,22 +205,38 @@ if "final_result" in st.session_state:
         st.subheader("📋 Synthèse du projet")
 
         def extract_section(text, section):
-            pattern = rf"{section}\s*:\s*(.*?)(?=\n[A-ZÉÈÊÂÎÔÙÇ]|$)"
-            match = re.search(pattern, text, re.DOTALL)
+            # 🔍 Corrigé : gestion des caractères spéciaux, accents et variations
+            import re
+            pattern = rf"{section}\s*[:：\-–]?\s*(.*?)(?=\n[A-ZÉÈÊÂÎÔÙÇa-zÀ-ÿ ]*[:：\-–]|$)"
+            match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
             return match.group(1).strip() if match else ""
 
         text = st.session_state.final_result
 
-        st.session_state.solution = st.text_area("💡 Solution", extract_section(text, "Solution"), height=120)
-        st.session_state.impact_eco = st.text_area("🌿 Impact écologique", extract_section(text, "Impact écologique"), height=120)
-        st.session_state.impact_social = st.text_area("🤝 Impact social", extract_section(text, "Impact social"), height=120)
-        st.session_state.impact_econ = st.text_area("💰 Impact économique", extract_section(text, "Impact économique"), height=120)
-        st.session_state.plan_action = st.text_area("🧭 Plan d’action", extract_section(text, "Plan d’action"), height=140)
+        st.session_state.solution = st.text_area(
+            "💡 Solution", extract_section(text, "Solution"), height=120
+        )
+        st.session_state.impact_eco = st.text_area(
+            "🌿 Impact écologique", extract_section(text, "Impact écologique"), height=120
+        )
+        st.session_state.impact_social = st.text_area(
+            "🤝 Impact social", extract_section(text, "Impact social"), height=120
+        )
+        st.session_state.impact_econ = st.text_area(
+            "💰 Impact économique", extract_section(text, "Impact économique"), height=120
+        )
+        st.session_state.plan_action = st.text_area(
+            "🧭 Plan d’action", extract_section(text, "Plan d’action"), height=140
+        )
+
+        # ✅ Diagnostic : afficher les sections détectées si besoin
+        # st.write("DEBUG:", st.session_state.final_result)
 
         validated = st.form_submit_button("✅ Valider et ajouter les informations du porteur")
         if validated:
             st.session_state.validation_ok = True
             st.success("✅ Sections validées avec succès !")
+
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL
