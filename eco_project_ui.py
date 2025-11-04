@@ -159,11 +159,17 @@ with st.form("user_form"):
 
     title = st.text_input("🏷️ Nom du projet")
     description = st.text_area("📝 Description du projet", height=100)
-    objectif = st.text_area("🎯 Objectif du projet", height=100)  # ✅ Nouveau champ ajouté
+    objectif = st.text_area("🎯 Objectif du projet", height=100)
     localisation = st.text_input("📍 Localisation")
 
     # Espaces dynamiques
-    st.markdown("### 🏡 Espaces du projet")
+    st.markdown("""
+        <h3 style='margin-bottom: 0;'>📂 Détails du projet par espace</h3>
+        <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
+            Informations sur chaque espace qui compose le projet
+        </p>
+    """, unsafe_allow_html=True)
+
     espaces = []
     for i in range(st.session_state.nb_espaces):
         espaces.append(st.text_area(f"🏠 Espace {i+1}", key=f"espace_{i+1}", height=80))
@@ -174,29 +180,29 @@ with st.form("user_form"):
             st.rerun()
 
     uploaded_doc = st.file_uploader("📄 Document lié (optionnel)", type=["pdf", "png", "jpg", "jpeg", "docx"])
-    submitted = st.form_submit_button("🚀 Lancer l’analyse collaborative")
+    submitted = st.form_submit_button("🚀 Lancer l’analyse du projet")  # ✅ Nouveau texte ici
 
 # ==============================
-# 🧠 ANALYSE COLLABORATIVE
+# 🧠 ANALYSE DU PROJET
 # ==============================
 if submitted:
     if not all([title, description, objectif, localisation]):
         st.warning("Merci de remplir tous les champs avant l’analyse.")
     else:
-        with st.spinner("🌱 Analyse collaborative du projet en cours..."):
+        with st.spinner("🌱 Analyse du projet en cours..."):
             try:
                 final_result = MultiAgentFusion(title, description, objectif, localisation)
                 st.session_state.final_result = final_result
-                st.success("✅ Analyse collaborative terminée avec succès !")
+                st.success("✅ Analyse du projet terminée avec succès !")
             except Exception as e:
                 st.error(f"Erreur pendant l’analyse : {e}")
 
 # ==============================
-# ✏️ SYNTHÈSE COLLABORATIVE
+# ✏️ SYNTHÈSE DU PROJET
 # ==============================
 if "final_result" in st.session_state:
     with st.form("synthese_form"):
-        st.subheader("📋 Synthèse collaborative du projet")
+        st.subheader("📋 Synthèse du projet")
 
         def extract_section(text, section):
             pattern = rf"{section}\s*:\s*(.*?)(?=\n[A-ZÉÈÊÂÎÔÙÇ]|$)"
@@ -233,7 +239,7 @@ if st.session_state.get("validation_ok"):
             payload = {
                 "Title": title,
                 "Description": description,
-                "Objectif du projet": objectif,  # ✅ Ajout dans la base
+                "Objectif du projet": objectif,
                 "Localisation": localisation,
                 "Project Leader": leader,
                 "Email": email,
@@ -255,6 +261,7 @@ if st.session_state.get("validation_ok"):
                 st.toast("✅ Données synchronisées avec NoCoDB", icon="🌱")
             else:
                 st.error(f"Erreur API {r.status_code} : {r.text}")
+
 
 
 
