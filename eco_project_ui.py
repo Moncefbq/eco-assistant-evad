@@ -204,39 +204,67 @@ if "final_result" in st.session_state:
     with st.form("synthese_form"):
         st.subheader("📋 Synthèse du projet")
 
+        import re, requests
+
         def extract_section(text, section):
-            # 🔍 Corrigé : gestion des caractères spéciaux, accents et variations
-            import re
+            """
+            Extraction robuste, compatible avec accents et variations (ex: 'Plan d’action', 'plan d action', etc.)
+            """
             pattern = rf"{section}\s*[:：\-–]?\s*(.*?)(?=\n[A-ZÉÈÊÂÎÔÙÇa-zÀ-ÿ ]*[:：\-–]|$)"
             match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
-            return match.group(1).strip() if match else ""
+            if match:
+                return match.group(1).strip()
+            return ""
 
         text = st.session_state.final_result
 
-        st.session_state.solution = st.text_area(
-            "💡 Solution", extract_section(text, "Solution"), height=120
-        )
-        st.session_state.impact_eco = st.text_area(
-            "🌿 Impact écologique", extract_section(text, "Impact écologique"), height=120
-        )
-        st.session_state.impact_social = st.text_area(
-            "🤝 Impact social", extract_section(text, "Impact social"), height=120
-        )
-        st.session_state.impact_econ = st.text_area(
-            "💰 Impact économique", extract_section(text, "Impact économique"), height=120
-        )
-        st.session_state.plan_action = st.text_area(
-            "🧭 Plan d’action", extract_section(text, "Plan d’action"), height=140
-        )
+        # Extraire toutes les sections
+        objectif = extract_section(text, "Solution")
+        impact_eco = extract_section(text, "Impact écologique")
+        impact_social = extract_section(text, "Impact social")
+        impact_econ = extract_section(text, "Impact économique")
+        plan_action = extract_section(text, "Plan d’action")
 
-        # ✅ Diagnostic : afficher les sections détectées si besoin
-        # st.write("DEBUG:", st.session_state.final_result)
+        # ✅ Si le plan d’action est vide → on le régénère automatiquement
+        if not plan_action:
+            try:
+                role = "Tu es un expert en gestion de projets durables. Génère un plan d’action clair (3 à 5 étapes concrètes et courtes) pour ce projet :"
+                user_input = f"{objectif}\n{impact_eco}\n{impact_social}\n{impact_econ}"
+                payload = {
+                    "model": "mistralai/mistral-nemo",
+                    "messages": [
+                        {"role": "system", "content": role},
+                        {"role": "user", "content": user_input}
+                    ],
+                    "temperature": 0.6,
+                    "max_tokens": 300
+                }
+                response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
+                response.raise_for_status()
+                plan_action = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+            except Exception as e:
+                plan_action = f"(Erreur de génération automatique : {e})"
+
+        # ✅ Réduction automatique des textes trop longs (1-2 phrases max)
+        def shorten(text, max_sentences=2):
+            sentences = re.split(r'(?<=[.!?]) +', text)
+            return " ".join(sentences[:max_sentences]).strip()
+
+        impact_eco = shorten(impact_eco)
+        impact_social = shorten(impact_social)
+        impact_econ = shorten(impact_econ)
+
+        # ✅ Champs Streamlit (modifiés selon tes demandes)
+        st.session_state.objectif = st.text_area("🎯 Objectif du projet", objectif, height=100)
+        st.session_state.impact_eco = st.text_area("🌿 Impact écologique (résumé)", impact_eco, height=80)
+        st.session_state.impact_social = st.text_area("🤝 Impact social (résumé)", impact_social, height=80)
+        st.session_state.impact_econ = st.text_area("💰 Impact économique (résumé)", impact_econ, height=80)
+        st.session_state.plan_action = st.text_area("🧭 Plan d’action", plan_action, height=140)
 
         validated = st.form_submit_button("✅ Valider et ajouter les informations du porteur")
         if validated:
             st.session_state.validation_ok = True
             st.success("✅ Sections validées avec succès !")
-
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL
