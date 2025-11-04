@@ -19,6 +19,7 @@ logo_base64 = get_base64_image("evad_logo.png")
 # ✅ Logo centré, un peu plus grand, avec espace réduit
 # ✅ Logo centré, un peu plus grand, plus proche du titre
 # ✅ Logo centré, plus proche du titre, avec fond blanc solide derrière pour corriger la transparence
+# ✅ Logo centré, plus grand, fond blanc opaque et rendu net
 if logo_base64:
     st.markdown(f"""
         <div style="
@@ -28,25 +29,27 @@ if logo_base64:
         ">
             <div style="
                 display: inline-block;
-                background-color: #ffffff;      /* ✅ fond blanc sous le logo */
-                padding: 8px 20px 6px 20px;     /* espace interne équilibré */
-                border-radius: 10px;            /* angles doux */
-                box-shadow: 0 0 8px rgba(0,0,0,0.05); /* légère ombre douce */
+                background: radial-gradient(circle at center, #ffffff 85%, #f5f5f5);
+                padding: 6px 18px 4px 18px;
+                border-radius: 12px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.08);
             ">
-                <img src="data:image/png;base64,{logo_base64}" width="220" style="margin-bottom:-5px; filter: brightness(1.1) contrast(1.3) saturate(1.4);">
+                <img src="data:image/png;base64,{logo_base64}"
+                     width="230"
+                     style="margin-bottom:-8px; image-rendering: -webkit-optimize-contrast; -ms-interpolation-mode: nearest-neighbor;">
             </div>
-            <h1 style="font-size: 2.1em; color: #014d3b; margin-top: 8px; margin-bottom: 5px;">
+            <h1 style="font-size: 2.1em; color: #014d3b; margin-top: 5px; margin-bottom: 5px;">
                 Formulaire Pilote d'impact
             </h1>
         </div>
         <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 5px 0 20px 0;">
     """, unsafe_allow_html=True)
-
 else:
     st.markdown("""
         <h1 style="text-align:center; color:#014d3b;">Formulaire Pilote d'impact</h1>
         <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 10px 0 20px 0;">
     """, unsafe_allow_html=True)
+
 
 
 st.markdown("""
