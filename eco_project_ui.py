@@ -2,7 +2,7 @@
 import streamlit as st
 import requests
 import re
-# --- EN-TÊTE EVAD (logo à gauche du titre) ---
+# --- EN-TÊTE EVAD (logo au-dessus du titre, ultra rapide) ---
 import base64
 
 @st.cache_data
@@ -15,17 +15,18 @@ def get_base64_image(image_path):
 
 logo_base64 = get_base64_image("evad_logo.png")
 
-# ✅ Affichage aligné gauche (logo + titre sur la même ligne)
+# ✅ Logo au-dessus du titre, même structure rapide
 if logo_base64:
     st.markdown(f"""
         <div style="
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            align-items: flex-start;
             justify-content: flex-start;
-            margin-bottom: 25px;
             margin-top: 10px;
+            margin-bottom: 25px;
         ">
-            <img src="data:image/png;base64,{logo_base64}" width="80" style="margin-right: 15px;">
+            <img src="data:image/png;base64,{logo_base64}" width="95" style="margin-bottom: 10px;">
             <h1 style="font-size: 1.9em; color: #014d3b; margin: 0;">
                 Formulaire Pilote d'impact
             </h1>
@@ -37,6 +38,7 @@ else:
         <h1 style="color:#014d3b;">Formulaire Pilote d'impact</h1>
         <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 10px 0 25px 0;">
     """, unsafe_allow_html=True)
+
 
 
 # --- CONFIGURATION ---
