@@ -3,6 +3,7 @@ import streamlit as st
 import requests
 import re
 import base64
+import json
 
 # --- EN-TÊTE EVAD (logo centré, net et sans cadre) ---
 @st.cache_data
@@ -328,9 +329,12 @@ if saved:
         "espace 4": espaces[3] if len(espaces) > 3 else "",
         "espace 5": espaces[4] if len(espaces) > 4 else "",
     }
+    import json
 
+# --- Si fichier joint, ajoute-le au bon format ---
     if file_attachment:
-        payload["Logo + docs"] = file_attachment
+    payload["Logo + docs"] = json.dumps(file_attachment)
+
 
     r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
     if r.status_code in (200, 201):
