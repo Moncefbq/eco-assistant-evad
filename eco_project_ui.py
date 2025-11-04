@@ -38,9 +38,14 @@ else:
     """, unsafe_allow_html=True)
 
 
-
-
-
+st.markdown("""
+<style>
+/* ✅ Améliorer la visibilité du logo */
+img[src*="evad_logo.png"] {
+    filter: brightness(0.95) contrast(1.25) saturate(1.3) drop-shadow(0px 1px 2px rgba(0,0,0,0.2));
+}
+</style>
+""", unsafe_allow_html=True)
 
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
