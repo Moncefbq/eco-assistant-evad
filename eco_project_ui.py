@@ -18,15 +18,24 @@ logo_base64 = get_base64_image("evad_logo.png")
 
 # ✅ Logo centré, un peu plus grand, avec espace réduit
 # ✅ Logo centré, un peu plus grand, plus proche du titre
+# ✅ Logo centré, plus proche du titre, avec fond blanc solide derrière pour corriger la transparence
 if logo_base64:
     st.markdown(f"""
         <div style="
             text-align: center;
-            margin-top: 5px;          /* Espace haut minimal */
-            margin-bottom: 8px;       /* ↓ Rapproche le logo du titre */
+            margin-top: 5px;
+            margin-bottom: 8px;
         ">
-            <img src="data:image/png;base64,{logo_base64}" width="210" style="margin-bottom: -10px;">  <!-- ↓ rapproche encore plus -->
-            <h1 style="font-size: 2.1em; color: #014d3b; margin-top: 0px; margin-bottom: 5px;">
+            <div style="
+                display: inline-block;
+                background-color: #ffffff;      /* ✅ fond blanc sous le logo */
+                padding: 8px 20px 6px 20px;     /* espace interne équilibré */
+                border-radius: 10px;            /* angles doux */
+                box-shadow: 0 0 8px rgba(0,0,0,0.05); /* légère ombre douce */
+            ">
+                <img src="data:image/png;base64,{logo_base64}" width="220" style="margin-bottom:-5px; filter: brightness(1.1) contrast(1.3) saturate(1.4);">
+            </div>
+            <h1 style="font-size: 2.1em; color: #014d3b; margin-top: 8px; margin-bottom: 5px;">
                 Formulaire Pilote d'impact
             </h1>
         </div>
