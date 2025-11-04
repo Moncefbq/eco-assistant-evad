@@ -198,7 +198,7 @@ if submitted:
                 st.error(f"Erreur pendant l’analyse : {e}")
 
 # ==============================
-# ✏️ SYNTHÈSE DU PROJET
+# ✏️ SYNTHÈSE DU PROJET (phrases complètes et naturelles)
 # ==============================
 if "final_result" in st.session_state:
     with st.form("synthese_form"):
@@ -244,24 +244,23 @@ if "final_result" in st.session_state:
             except Exception as e:
                 plan_action = f"(Erreur génération du plan : {e})"
 
-        # --- Raccourcir à une phrase courte (15 mots max) ---
-        def short_sentence(text, max_words=15):
+        # --- Garde une seule phrase complète par impact ---
+        def first_sentence(text):
             text = re.sub(r'\s+', ' ', text.strip())
-            words = text.split()
-            if len(words) > max_words:
-                text = " ".join(words[:max_words]) + "..."
-            sentences = re.split(r'(?<=[.!?]) +', text)
-            return sentences[0].strip()
+            match = re.match(r'^(.*?[.!?])(\s|$)', text)
+            if match:
+                return match.group(1).strip()
+            return text.split('.')[0].strip() + '.'
 
-        impact_eco = short_sentence(impact_eco)
-        impact_social = short_sentence(impact_social)
-        impact_econ = short_sentence(impact_econ)
+        impact_eco = first_sentence(impact_eco)
+        impact_social = first_sentence(impact_social)
+        impact_econ = first_sentence(impact_econ)
 
         # --- Champs finaux ---
         st.session_state.objectif = st.text_area("🎯 Objectif du projet", objectif, height=100)
-        st.session_state.impact_eco = st.text_area("🌿 Impact écologique", impact_eco, height=60)
-        st.session_state.impact_social = st.text_area("🤝 Impact social", impact_social, height=60)
-        st.session_state.impact_econ = st.text_area("💰 Impact économique", impact_econ, height=60)
+        st.session_state.impact_eco = st.text_area("🌿 Impact écologique", impact_eco, height=70)
+        st.session_state.impact_social = st.text_area("🤝 Impact social", impact_social, height=70)
+        st.session_state.impact_econ = st.text_area("💰 Impact économique", impact_econ, height=70)
         st.session_state.plan_action = st.text_area("🧭 Plan d’action", plan_action, height=140)
 
         validated = st.form_submit_button("✅ Valider et ajouter les informations du porteur")
