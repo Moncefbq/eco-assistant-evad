@@ -296,13 +296,14 @@ if saved:
             file_data = upload_response.json()
             if "list" in file_data and len(file_data["list"]) > 0:
                 f = file_data["list"][0]
-                file_attachment = [{
-                    "path": f["url"],
-                    "title": uploaded_doc.name,
-                    "mimetype": uploaded_doc.type
-                    if hasattr(uploaded_doc, "type")
-                    else "application/octet-stream",
+                ffile_attachment = [{
+                     "path": f["path"],
+                     "title": uploaded_doc.name,
+                     "mimetype": uploaded_doc.type
+                     if hasattr(uploaded_doc, "type")
+                     else "application/octet-stream",
                 }]
+
         else:
             st.warning("⚠️ Le fichier n’a pas pu être téléversé vers NoCoDB.")
 
