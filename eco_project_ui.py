@@ -287,7 +287,7 @@ if st.session_state.get("validation_ok"):
 
         saved = st.form_submit_button("💾 Enregistrer dans la base EVAD")
 
-        if saved:
+if saved:
     headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
 
     # --- Upload du fichier s’il existe ---
