@@ -61,21 +61,21 @@ body {
     color: #000000 !important;
 }
 
-/* ✅ Rectangle externe : vert foncé */
-section.main > div {
-    background-color: #018262 !important;     /* Vert foncé externe */
+/* ✅ Rectangle externe UNIQUEMENT : vert foncé */
+section.main > div:first-child {
+    background-color: #018262 !important;     /* Vert foncé */
     border-radius: 20px;
     padding: 20px !important;
-    box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
+    box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
 }
 
-/* ✅ Formulaires internes : vert clair */
+/* ✅ Formulaires internes (rectangle 1) : vert clair */
 .stForm, .stForm > div {
-    background-color: #cfeee7 !important;     /* Vert clair intérieur */
-    color: #014d3b !important;                /* Texte vert foncé */
+    background-color: #cfeee7 !important;     /* Vert clair */
+    color: #014d3b !important;
     padding: 30px;
     border-radius: 15px;
-    box-shadow: 0px 0px 15px rgba(0,0,0,0.10);
+    box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
     margin-bottom: 25px;
     border: 1px solid #a6d5c6;
 }
@@ -98,7 +98,7 @@ h1, h2, h3, h4, h5, h6, label, p, span, div {
 
 /* ✅ Boutons */
 .stButton button {
-    background-color: #018262 !important;  /* Vert foncé EVAD */
+    background-color: #018262 !important;
     color: white !important;
     border-radius: 8px;
     border: none;
@@ -110,6 +110,7 @@ h1, h2, h3, h4, h5, h6, label, p, span, div {
 }
 </style>
 """, unsafe_allow_html=True)
+
 
 
 # --- SECRETS ---
