@@ -208,28 +208,30 @@ if "final_result" in st.session_state:
 
         def extract_section(text, section):
             """
-            Extraction robuste, compatible avec accents et variations (ex: 'Plan d’action', 'plan d action', etc.)
+            Extraction robuste avec fin stricte de section,
+            compatible avec accents et variations (Plan d’action / plan d action / etc.)
             """
-            pattern = rf"{section}\s*[:：\-–]?\s*(.*?)(?=\n[A-ZÉÈÊÂÎÔÙÇa-zÀ-ÿ ]*[:：\-–]|$)"
+            pattern = rf"{section}\s*[:：\-–]?\s*(.*?)(?=\n(?:Solution|Objectif|Impact|Plan|$))"
             match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
-            if match:
-                return match.group(1).strip()
-            return ""
+            return match.group(1).strip() if match else ""
 
         text = st.session_state.final_result
 
-        # Extraire toutes les sections
+        # Extraire les sections
         objectif = extract_section(text, "Solution")
         impact_eco = extract_section(text, "Impact écologique")
         impact_social = extract_section(text, "Impact social")
         impact_econ = extract_section(text, "Impact économique")
         plan_action = extract_section(text, "Plan d’action")
 
-        # ✅ Si le plan d’action est vide → on le régénère automatiquement
-        if not plan_action:
+        # ✅ Si le plan d’action est vide → régénération automatique courte et propre
+        if not plan_action or len(plan_action) < 10:
             try:
-                role = "Tu es un expert en gestion de projets durables. Génère un plan d’action clair (3 à 5 étapes concrètes et courtes) pour ce projet :"
-                user_input = f"{objectif}\n{impact_eco}\n{impact_social}\n{impact_econ}"
+                role = (
+                    "Tu es un expert en projets durables. Rédige un plan d’action clair "
+                    "de 3 à 5 étapes, numérotées, chacune courte (max 12 mots)."
+                )
+                user_input = f"Projet: {objectif}\nImpacts: {impact_eco}, {impact_social}, {impact_econ}"
                 payload = {
                     "model": "mistralai/mistral-nemo",
                     "messages": [
@@ -237,28 +239,30 @@ if "final_result" in st.session_state:
                         {"role": "user", "content": user_input}
                     ],
                     "temperature": 0.6,
-                    "max_tokens": 300
+                    "max_tokens": 200
                 }
                 response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
                 response.raise_for_status()
                 plan_action = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
             except Exception as e:
-                plan_action = f"(Erreur de génération automatique : {e})"
+                plan_action = f"(Erreur génération du plan : {e})"
 
-        # ✅ Réduction automatique des textes trop longs (1-2 phrases max)
-        def shorten(text, max_sentences=2):
+        # ✅ Réduction stricte à une seule phrase pour les impacts
+        def one_sentence(text):
             sentences = re.split(r'(?<=[.!?]) +', text)
-            return " ".join(sentences[:max_sentences]).strip()
+            if sentences:
+                return sentences[0].strip()
+            return text.strip()
 
-        impact_eco = shorten(impact_eco)
-        impact_social = shorten(impact_social)
-        impact_econ = shorten(impact_econ)
+        impact_eco = one_sentence(impact_eco)
+        impact_social = one_sentence(impact_social)
+        impact_econ = one_sentence(impact_econ)
 
-        # ✅ Champs Streamlit (modifiés selon tes demandes)
+        # ✅ Champs Streamlit finaux
         st.session_state.objectif = st.text_area("🎯 Objectif du projet", objectif, height=100)
-        st.session_state.impact_eco = st.text_area("🌿 Impact écologique (résumé)", impact_eco, height=80)
-        st.session_state.impact_social = st.text_area("🤝 Impact social (résumé)", impact_social, height=80)
-        st.session_state.impact_econ = st.text_area("💰 Impact économique (résumé)", impact_econ, height=80)
+        st.session_state.impact_eco = st.text_area("🌿 Impact écologique (résumé)", impact_eco, height=70)
+        st.session_state.impact_social = st.text_area("🤝 Impact social (résumé)", impact_social, height=70)
+        st.session_state.impact_econ = st.text_area("💰 Impact économique (résumé)", impact_econ, height=70)
         st.session_state.plan_action = st.text_area("🧭 Plan d’action", plan_action, height=140)
 
         validated = st.form_submit_button("✅ Valider et ajouter les informations du porteur")
