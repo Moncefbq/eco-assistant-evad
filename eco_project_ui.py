@@ -290,25 +290,18 @@ if saved:
     file_attachment = []
     if uploaded_doc is not None:
         files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
-        upload_response = requests.post(
-            UPLOAD_URL, headers={"xc-token": NOCODB_API_TOKEN}, files=files
-        )
+        upload_response = requests.post(UPLOAD_URL, headers={"xc-token": NOCODB_API_TOKEN}, files=files)
         if upload_response.status_code in (200, 201):
             file_data = upload_response.json()
             if "list" in file_data and len(file_data["list"]) > 0:
                 f = file_data["list"][0]
-                ffile_attachment = [{
-                     "path": f["path"],
-                     "title": uploaded_doc.name,
-                     "mimetype": uploaded_doc.type
-                     if hasattr(uploaded_doc, "type")
-                     else "application/octet-stream",
+                file_attachment = [{
+                    "path": f["path"],
+                    "title": uploaded_doc.name,
+                    "mimetype": uploaded_doc.type if hasattr(uploaded_doc, "type") else "application/octet-stream",
                 }]
 
-        else:
-            st.warning("⚠️ Le fichier n’a pas pu être téléversé vers NoCoDB.")
-
-    # --- Préparation du payload complet ---
+    # --- Préparation du payload principal ---
     payload = {
         "Title": title,
         "Description": description,
@@ -316,9 +309,7 @@ if saved:
         "Project Leader": leader,
         "Email": email,
         "Status": status,
-        "Solution": st.session_state.solution
-        if "solution" in st.session_state
-        else st.session_state.objectif,
+        "Solution": st.session_state.solution if "solution" in st.session_state else st.session_state.objectif,
         "Impact écologique": st.session_state.impact_eco,
         "Impact social": st.session_state.impact_social,
         "Impact économique": st.session_state.impact_econ,
@@ -329,13 +320,13 @@ if saved:
         "espace 4": espaces[3] if len(espaces) > 3 else "",
         "espace 5": espaces[4] if len(espaces) > 4 else "",
     }
+
+    # --- Si fichier joint, l’ajouter au bon format JSON ---
     import json
-
-# --- Si fichier joint, ajoute-le au bon format ---
     if file_attachment:
-    payload["Logo + docs"] = json.dumps(file_attachment)
+        payload["Logo + docs"] = json.dumps(file_attachment)
 
-
+    # --- Envoi vers NoCoDB ---
     r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
     if r.status_code in (200, 201):
         st.success("🌿 Projet enregistré avec succès dans la base EVAD !")
