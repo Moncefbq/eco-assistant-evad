@@ -61,24 +61,26 @@ body {
     color: #000000 !important;
 }
 
-/* ✅ Rectangle principal : vert clair */
+/* ✅ Rectangle externe : vert foncé */
 section.main > div {
-    background-color: #cfeee7 !important;
+    background-color: #018262 !important;     /* Vert foncé externe */
     border-radius: 20px;
     padding: 20px !important;
+    box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
 }
 
 /* ✅ Formulaires internes : vert clair */
 .stForm, .stForm > div {
-    background-color: #cfeee7 !important;  /* Vert clair harmonisé EVAD */
-    color: #014d3b !important;              /* Texte vert foncé lisible */
+    background-color: #cfeee7 !important;     /* Vert clair intérieur */
+    color: #014d3b !important;                /* Texte vert foncé */
     padding: 30px;
     border-radius: 15px;
-    box-shadow: 0px 0px 15px rgba(0,0,0,0.15);
+    box-shadow: 0px 0px 15px rgba(0,0,0,0.10);
     margin-bottom: 25px;
     border: 1px solid #a6d5c6;
 }
 
+/* ✅ Champs texte & zone de saisie */
 .stTextInput > div > div > input,
 .stTextArea > div > div > textarea,
 .stSelectbox > div > div,
@@ -89,12 +91,14 @@ section.main > div {
     border: 1px solid #555 !important;
 }
 
+/* ✅ Titres & textes */
 h1, h2, h3, h4, h5, h6, label, p, span, div {
     color: #000000 !important;
 }
 
+/* ✅ Boutons */
 .stButton button {
-    background-color: #00b300 !important;
+    background-color: #018262 !important;  /* Vert foncé EVAD */
     color: white !important;
     border-radius: 8px;
     border: none;
@@ -102,10 +106,11 @@ h1, h2, h3, h4, h5, h6, label, p, span, div {
 }
 
 .stButton button:hover {
-    background-color: #009900 !important;
+    background-color: #01614c !important;
 }
 </style>
 """, unsafe_allow_html=True)
+
 
 # --- SECRETS ---
 OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
