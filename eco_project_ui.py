@@ -319,7 +319,7 @@ if saved:
         "Project Leader": leader,
         "Email": email,
         "Status": status,
-        "Solution": st.session_state.solution if "solution" in st.session_state else st.session_state.objectif,
+        "Objectif du projet": st.session_state.objectif,
         "Impact écologique": st.session_state.impact_eco,
         "Impact social": st.session_state.impact_social,
         "Impact économique": st.session_state.impact_econ,
