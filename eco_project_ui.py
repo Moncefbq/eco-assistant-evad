@@ -207,29 +207,26 @@ if "final_result" in st.session_state:
         import re, requests
 
         def extract_section(text, section):
-            """
-            Extraction robuste avec fin stricte de section,
-            compatible avec accents et variations (Plan d’action / plan d action / etc.)
-            """
+            """Extraction robuste et propre"""
             pattern = rf"{section}\s*[:：\-–]?\s*(.*?)(?=\n(?:Solution|Objectif|Impact|Plan|$))"
             match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
             return match.group(1).strip() if match else ""
 
         text = st.session_state.final_result
 
-        # Extraire les sections
+        # --- Extraction des sections ---
         objectif = extract_section(text, "Solution")
         impact_eco = extract_section(text, "Impact écologique")
         impact_social = extract_section(text, "Impact social")
         impact_econ = extract_section(text, "Impact économique")
         plan_action = extract_section(text, "Plan d’action")
 
-        # ✅ Si le plan d’action est vide → régénération automatique courte et propre
+        # --- Si le plan d’action est vide → régénération automatique ---
         if not plan_action or len(plan_action) < 10:
             try:
                 role = (
-                    "Tu es un expert en projets durables. Rédige un plan d’action clair "
-                    "de 3 à 5 étapes, numérotées, chacune courte (max 12 mots)."
+                    "Tu es un expert en développement durable. "
+                    "Génère un plan d’action clair avec 3 à 5 étapes courtes et concrètes."
                 )
                 user_input = f"Projet: {objectif}\nImpacts: {impact_eco}, {impact_social}, {impact_econ}"
                 payload = {
@@ -247,28 +244,31 @@ if "final_result" in st.session_state:
             except Exception as e:
                 plan_action = f"(Erreur génération du plan : {e})"
 
-        # ✅ Réduction stricte à une seule phrase pour les impacts
-        def one_sentence(text):
+        # --- Raccourcir à une phrase courte (15 mots max) ---
+        def short_sentence(text, max_words=15):
+            text = re.sub(r'\s+', ' ', text.strip())
+            words = text.split()
+            if len(words) > max_words:
+                text = " ".join(words[:max_words]) + "..."
             sentences = re.split(r'(?<=[.!?]) +', text)
-            if sentences:
-                return sentences[0].strip()
-            return text.strip()
+            return sentences[0].strip()
 
-        impact_eco = one_sentence(impact_eco)
-        impact_social = one_sentence(impact_social)
-        impact_econ = one_sentence(impact_econ)
+        impact_eco = short_sentence(impact_eco)
+        impact_social = short_sentence(impact_social)
+        impact_econ = short_sentence(impact_econ)
 
-        # ✅ Champs Streamlit finaux
+        # --- Champs finaux ---
         st.session_state.objectif = st.text_area("🎯 Objectif du projet", objectif, height=100)
-        st.session_state.impact_eco = st.text_area("🌿 Impact écologique (résumé)", impact_eco, height=70)
-        st.session_state.impact_social = st.text_area("🤝 Impact social (résumé)", impact_social, height=70)
-        st.session_state.impact_econ = st.text_area("💰 Impact économique (résumé)", impact_econ, height=70)
+        st.session_state.impact_eco = st.text_area("🌿 Impact écologique", impact_eco, height=60)
+        st.session_state.impact_social = st.text_area("🤝 Impact social", impact_social, height=60)
+        st.session_state.impact_econ = st.text_area("💰 Impact économique", impact_econ, height=60)
         st.session_state.plan_action = st.text_area("🧭 Plan d’action", plan_action, height=140)
 
         validated = st.form_submit_button("✅ Valider et ajouter les informations du porteur")
         if validated:
             st.session_state.validation_ok = True
             st.success("✅ Sections validées avec succès !")
+
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL
