@@ -282,14 +282,16 @@ if st.session_state.get("validation_ok"):
         saved = st.form_submit_button("💾 Enregistrer dans la base EVAD")
 
 if saved:
-        UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
-        headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
+    UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
+    headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
 
     # --- Upload du fichier s’il existe ---
     file_attachment = []
     if uploaded_doc is not None:
         files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
-        upload_response = requests.post(UPLOAD_URL, headers={"xc-token": NOCODB_API_TOKEN}, files=files)
+        upload_response = requests.post(
+            UPLOAD_URL, headers={"xc-token": NOCODB_API_TOKEN}, files=files
+        )
         if upload_response.status_code in (200, 201):
             file_data = upload_response.json()
             if "list" in file_data and len(file_data["list"]) > 0:
@@ -297,7 +299,9 @@ if saved:
                 file_attachment = [{
                     "path": f["url"],
                     "title": uploaded_doc.name,
-                    "mimetype": uploaded_doc.type if hasattr(uploaded_doc, "type") else "application/octet-stream"
+                    "mimetype": uploaded_doc.type
+                    if hasattr(uploaded_doc, "type")
+                    else "application/octet-stream",
                 }]
         else:
             st.warning("⚠️ Le fichier n’a pas pu être téléversé vers NoCoDB.")
@@ -310,7 +314,9 @@ if saved:
         "Project Leader": leader,
         "Email": email,
         "Status": status,
-        "Solution": st.session_state.solution if "solution" in st.session_state else st.session_state.objectif,
+        "Solution": st.session_state.solution
+        if "solution" in st.session_state
+        else st.session_state.objectif,
         "Impact écologique": st.session_state.impact_eco,
         "Impact social": st.session_state.impact_social,
         "Impact économique": st.session_state.impact_econ,
@@ -322,11 +328,9 @@ if saved:
         "espace 5": espaces[4] if len(espaces) > 4 else "",
     }
 
-    # --- Si fichier joint, ajoute-le au bon format ---
     if file_attachment:
         payload["Logo + docs"] = file_attachment
 
-    # --- Envoi final vers NoCoDB ---
     r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
     if r.status_code in (200, 201):
         st.success("🌿 Projet enregistré avec succès dans la base EVAD !")
