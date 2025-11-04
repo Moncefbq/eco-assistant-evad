@@ -61,26 +61,30 @@ body {
     color: #000000 !important;
 }
 
-/* ✅ Rectangle externe : vert foncé */
+/* ✅ Rectangle externe global (autour de tout le contenu) */
 div.block-container {
+    background-color: #f5f5f5 !important;  /* Blanc/gris clair neutre */
+    padding: 25px !important;
+}
+
+/* ✅ Rectangle intermédiaire (celui autour de "Informations sur le projet") */
+div.stForm {
     background-color: #018262 !important;   /* Vert foncé */
     border-radius: 20px;
     padding: 25px !important;
-    box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.25);
+    box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
 }
 
-/* ✅ Formulaires internes : vert clair */
-.stForm, .stForm > div {
+/* ✅ Intérieur du formulaire (les champs + zones) */
+div.stForm > div {
     background-color: #cfeee7 !important;   /* Vert clair */
     color: #014d3b !important;
-    padding: 30px;
     border-radius: 15px;
-    box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
-    margin-bottom: 25px;
-    border: 1px solid #a6d5c6;
+    padding: 20px;
+    margin: 0;
 }
 
-/* ✅ Champs texte & zones */
+/* ✅ Champs texte & zone de saisie */
 .stTextInput > div > div > input,
 .stTextArea > div > div > textarea,
 .stSelectbox > div > div,
