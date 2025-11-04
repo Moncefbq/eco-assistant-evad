@@ -270,28 +270,33 @@ if "final_result" in st.session_state:
 
 
 # ==============================
-# 🧑‍💼 ENREGISTREMENT FINAL
+# 🧑‍💼 PRÉSENTATION DU PORTEUR
 # ==============================
 if st.session_state.get("validation_ok"):
     with st.form("porteur_form"):
-        st.subheader("👤 Informations du porteur")
-        leader = st.text_input("Nom du porteur de projet")
-        email = st.text_input("Email de contact")
-        status = st.selectbox("📊 Statut du projet",
-                              ["Thinking", "Modélisation", "Construction", "Développement", "Financement", "Student"], index=0)
-        saved = st.form_submit_button("💾 Enregistrer dans NoCoDB")
+        st.subheader("🧍 Présentation du porteur")
+
+        leader = st.text_input("👤 Nom du porteur de projet")
+        email = st.text_input("✉️ Email de contact")
+
+        status = st.selectbox(
+            "📊 Étape du projet",
+            ["Thinking", "Modélisation", "Construction", "Développement", "Financement", "Student"],
+            index=0
+        )
+
+        saved = st.form_submit_button("💾 Enregistrer dans la base EVAD")
 
         if saved:
             headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
             payload = {
                 "Title": title,
                 "Description": description,
-                "Objectif du projet": objectif,
                 "Localisation": localisation,
                 "Project Leader": leader,
                 "Email": email,
                 "Status": status,
-                "Solution": st.session_state.solution,
+                "Solution": st.session_state.solution if "solution" in st.session_state else st.session_state.objectif,
                 "Impact écologique": st.session_state.impact_eco,
                 "Impact social": st.session_state.impact_social,
                 "Impact économique": st.session_state.impact_econ,
@@ -302,14 +307,10 @@ if st.session_state.get("validation_ok"):
                 "espace 4": espaces[3] if len(espaces) > 3 else "",
                 "espace 5": espaces[4] if len(espaces) > 4 else "",
             }
+
             r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
             if r.status_code in (200, 201):
-                st.success("🌿 Projet enregistré avec succès dans `Projects` !")
+                st.success("🌿 Projet enregistré avec succès dans la base EVAD !")
                 st.toast("✅ Données synchronisées avec NoCoDB", icon="🌱")
             else:
                 st.error(f"Erreur API {r.status_code} : {r.text}")
-
-
-
-
-
