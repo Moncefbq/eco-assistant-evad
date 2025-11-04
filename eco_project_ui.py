@@ -68,14 +68,15 @@ section.main > div {
     padding: 20px !important;
 }
 
-/* ✅ Formulaires internes : vert foncé */
+/* ✅ Formulaires internes : vert clair */
 .stForm, .stForm > div {
-    background-color: #018262 !important;
-    color: #000000 !important;
+    background-color: #cfeee7 !important;  /* Vert clair harmonisé EVAD */
+    color: #014d3b !important;              /* Texte vert foncé lisible */
     padding: 30px;
     border-radius: 15px;
-    box-shadow: 0px 0px 15px rgba(0,0,0,0.25);
+    box-shadow: 0px 0px 15px rgba(0,0,0,0.15);
     margin-bottom: 25px;
+    border: 1px solid #a6d5c6;
 }
 
 .stTextInput > div > div > input,
