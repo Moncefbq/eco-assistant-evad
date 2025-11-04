@@ -57,34 +57,34 @@ grâce à une intelligence collaborative, open-source et régénérative.
 st.markdown("""
 <style>
 body {
-    background-color: #f5f5f5;
+    background-color: #ffffff; /* ✅ Arrière-plan global blanc clair */
     color: #000000 !important;
 }
 
-/* ✅ Rectangle externe global (autour de tout le contenu) */
+/* ✅ Conteneur principal (pour garder la largeur propre) */
 div.block-container {
-    background-color: #f5f5f5 !important;  /* Blanc/gris clair neutre */
+    background-color: #ffffff !important;  /* ✅ Fond global clair */
     padding: 25px !important;
 }
 
-/* ✅ Rectangle intermédiaire (celui autour de "Informations sur le projet") */
+/* ✅ Rectangle du formulaire (autour de "Informations sur le projet") */
 div.stForm {
-    background-color: #018262 !important;   /* Vert foncé */
+    background-color: #018262 !important;   /* ✅ Vert foncé */
     border-radius: 20px;
     padding: 25px !important;
     box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
 }
 
-/* ✅ Intérieur du formulaire (les champs + zones) */
+/* ✅ Contenu intérieur du formulaire */
 div.stForm > div {
-    background-color: #cfeee7 !important;   /* Vert clair */
+    background-color: #cfeee7 !important;   /* ✅ Vert clair */
     color: #014d3b !important;
     border-radius: 15px;
     padding: 20px;
     margin: 0;
 }
 
-/* ✅ Champs texte & zone de saisie */
+/* ✅ Champs de saisie */
 .stTextInput > div > div > input,
 .stTextArea > div > div > textarea,
 .stSelectbox > div > div,
@@ -114,6 +114,7 @@ h1, h2, h3, h4, h5, h6, label, p, span, div {
 }
 </style>
 """, unsafe_allow_html=True)
+
 
 
 
