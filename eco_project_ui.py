@@ -288,29 +288,47 @@ if st.session_state.get("validation_ok"):
         saved = st.form_submit_button("💾 Enregistrer dans la base EVAD")
 
         if saved:
-            headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
-            payload = {
-                "Title": title,
-                "Description": description,
-                "Localisation": localisation,
-                "Project Leader": leader,
-                "Email": email,
-                "Status": status,
-                "Solution": st.session_state.solution if "solution" in st.session_state else st.session_state.objectif,
-                "Impact écologique": st.session_state.impact_eco,
-                "Impact social": st.session_state.impact_social,
-                "Impact économique": st.session_state.impact_econ,
-                "Plan d’action": st.session_state.plan_action,
-                "espace 1": espaces[0] if len(espaces) > 0 else "",
-                "espace 2": espaces[1] if len(espaces) > 1 else "",
-                "espace 3": espaces[2] if len(espaces) > 2 else "",
-                "espace 4": espaces[3] if len(espaces) > 3 else "",
-                "espace 5": espaces[4] if len(espaces) > 4 else "",
-            }
+    headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
 
-            r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
-            if r.status_code in (200, 201):
-                st.success("🌿 Projet enregistré avec succès dans la base EVAD !")
-                st.toast("✅ Projet enregistré avec succès", icon="🌱")
-            else:
-                st.error(f"Erreur API {r.status_code} : {r.text}")
+    # --- Upload du fichier s’il existe ---
+    file_url = ""
+    if uploaded_doc is not None:
+        files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
+        upload_response = requests.post(UPLOAD_URL, headers={"xc-token": NOCODB_API_TOKEN}, files=files)
+        if upload_response.status_code in (200, 201):
+            file_data = upload_response.json()
+            file_url = file_data["list"][0]["url"] if "list" in file_data else ""
+        else:
+            st.warning("⚠️ Le fichier n’a pas pu être téléversé vers NoCoDB.")
+
+    # --- Préparation du payload complet ---
+    payload = {
+        "Title": title,
+        "Description": description,
+        "Localisation": localisation,
+        "Project Leader": leader,
+        "Email": email,
+        "Status": status,
+        "Solution": st.session_state.solution if "solution" in st.session_state else st.session_state.objectif,
+        "Impact écologique": st.session_state.impact_eco,
+        "Impact social": st.session_state.impact_social,
+        "Impact économique": st.session_state.impact_econ,
+        "Plan d’action": st.session_state.plan_action,
+        "espace 1": espaces[0] if len(espaces) > 0 else "",
+        "espace 2": espaces[1] if len(espaces) > 1 else "",
+        "espace 3": espaces[2] if len(espaces) > 2 else "",
+        "espace 4": espaces[3] if len(espaces) > 3 else "",
+        "espace 5": espaces[4] if len(espaces) > 4 else "",
+    }
+
+    # --- Ajout du lien vers le fichier uploadé ---
+    if file_url:
+        payload["Logo + docs"] = file_url
+
+    # --- Envoi final vers NoCoDB ---
+    r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
+    if r.status_code in (200, 201):
+        st.success("🌿 Projet enregistré avec succès dans la base EVAD !")
+        st.toast("Projet enregistré avec succès", icon="🌱")
+    else:
+        st.error(f"Erreur API {r.status_code} : {r.text}")
