@@ -297,15 +297,12 @@ if saved:
                 upload_data = upload_response.json()
                 if "list" in upload_data and len(upload_data["list"]) > 0:
                     f = upload_data["list"][0]
-                    if file_attachment:
-                        f = file_attachment[0]
-                        payload["Logo + docs"] = [{
-                        "title": f["title"],
+                    file_attachment = [{
+                        "title": uploaded_doc.name,
                         "path": f["path"],
                         "url": f.get("url", f"https://app.nocodb.com{f['path']}"),
-                        "mimetype": f["mimetype"]
-                   }]
-
+                        "mimetype": f.get("mimetype", uploaded_doc.type)
+                    }]
                     st.toast("📎 Fichier uploadé avec succès", icon="📤")
                 else:
                     st.warning("⚠️ Aucun fichier valide retourné par NoCoDB.")
@@ -334,9 +331,9 @@ if saved:
         "espace 5": espaces[4] if len(espaces) > 4 else "",
     }
 
-    # --- Si fichier joint, l’ajouter au bon format LISTE ---
+    # --- Ajout du fichier dans la base si présent ---
     if file_attachment:
-        payload["Logo + docs"] = file_attachment
+        payload["Logo + docs"] = file_attachment  # ✅ Format attendu par NoCoDB (liste d’objets)
 
     # --- Envoi vers NoCoDB ---
     try:
