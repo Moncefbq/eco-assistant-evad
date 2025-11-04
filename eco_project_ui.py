@@ -289,17 +289,27 @@ if saved:
     # --- Upload du fichier s’il existe ---
     file_attachment = []
     if uploaded_doc is not None:
-        files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
-        upload_response = requests.post(UPLOAD_URL, headers={"xc-token": NOCODB_API_TOKEN}, files=files)
-        if upload_response.status_code in (200, 201):
-            file_data = upload_response.json()
-            if "list" in file_data and len(file_data["list"]) > 0:
-                f = file_data["list"][0]
-                file_attachment = [{
-                    "path": f["path"],
-                    "title": uploaded_doc.name,
-                    "mimetype": uploaded_doc.type if hasattr(uploaded_doc, "type") else "application/octet-stream",
-                }]
+        try:
+            files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
+            upload_response = requests.post(UPLOAD_URL, headers={"xc-token": NOCODB_API_TOKEN}, files=files)
+
+            if upload_response.status_code in (200, 201):
+                upload_data = upload_response.json()
+                if "list" in upload_data and len(upload_data["list"]) > 0:
+                    f = upload_data["list"][0]
+                    file_attachment = [{
+                        "title": uploaded_doc.name,
+                        "path": f["path"],
+                        "url": f.get("url", f"https://app.nocodb.com{f['path']}"),
+                        "mimetype": f.get("mimetype", uploaded_doc.type)
+                    }]
+                    st.toast("📎 Fichier uploadé avec succès", icon="📤")
+                else:
+                    st.warning("⚠️ Aucun fichier valide retourné par NoCoDB.")
+            else:
+                st.error(f"⚠️ Erreur upload ({upload_response.status_code}) : {upload_response.text}")
+        except Exception as e:
+            st.error(f"Erreur lors de l’upload du fichier : {e}")
 
     # --- Préparation du payload principal ---
     payload = {
@@ -321,15 +331,17 @@ if saved:
         "espace 5": espaces[4] if len(espaces) > 4 else "",
     }
 
-    # --- Si fichier joint, l’ajouter au bon format JSON ---
-    import json
+    # --- Si fichier joint, l’ajouter au bon format LISTE (non JSON string) ---
     if file_attachment:
-        payload["Logo + docs"] = json.dumps(file_attachment)
+        payload["Logo + docs"] = file_attachment  # ✅ format correct attendu par NoCoDB
 
     # --- Envoi vers NoCoDB ---
-    r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
-    if r.status_code in (200, 201):
-        st.success("🌿 Projet enregistré avec succès dans la base EVAD !")
-        st.toast("Projet enregistré avec succès", icon="🌱")
-    else:
-        st.error(f"Erreur API {r.status_code} : {r.text}")
+    try:
+        r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
+        if r.status_code in (200, 201):
+            st.success("🌿 Projet enregistré avec succès dans la base EVAD !")
+            st.toast("Projet enregistré avec succès", icon="🌱")
+        else:
+            st.error(f"Erreur API {r.status_code} : {r.text}")
+    except Exception as e:
+        st.error(f"❌ Erreur lors de l’envoi à NoCoDB : {e}")
