@@ -284,14 +284,14 @@ if st.session_state.get("validation_ok"):
 
 if saved:
     UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
-    headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
+    headers = {"xc-token": NOCODB_API_TOKEN}  # ✅ pas de Content-Type ici
 
     # --- Upload du fichier s’il existe ---
     file_attachment = []
     if uploaded_doc is not None:
         try:
             files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
-            upload_response = requests.post(UPLOAD_URL, headers={"xc-token": NOCODB_API_TOKEN}, files=files)
+            upload_response = requests.post(UPLOAD_URL, headers=headers, files=files)
 
             if upload_response.status_code in (200, 201):
                 upload_data = upload_response.json()
@@ -326,22 +326,4 @@ if saved:
         "Plan d’action": st.session_state.plan_action,
         "espace 1": espaces[0] if len(espaces) > 0 else "",
         "espace 2": espaces[1] if len(espaces) > 1 else "",
-        "espace 3": espaces[2] if len(espaces) > 2 else "",
-        "espace 4": espaces[3] if len(espaces) > 3 else "",
-        "espace 5": espaces[4] if len(espaces) > 4 else "",
-    }
-
-    # --- Si fichier joint, l’ajouter au bon format LISTE (non JSON string) ---
-    if file_attachment:
-        payload["Logo + docs"] = file_attachment  # ✅ format correct attendu par NoCoDB
-
-    # --- Envoi vers NoCoDB ---
-    try:
-        r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
-        if r.status_code in (200, 201):
-            st.success("🌿 Projet enregistré avec succès dans la base EVAD !")
-            st.toast("Projet enregistré avec succès", icon="🌱")
-        else:
-            st.error(f"Erreur API {r.status_code} : {r.text}")
-    except Exception as e:
-        st.error(f"❌ Erreur lors de l’envoi à NoCoDB : {e}")
+        "
