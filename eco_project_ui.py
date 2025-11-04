@@ -2,7 +2,8 @@
 import streamlit as st
 import requests
 import re
-# --- EN-TÊTE EVAD (logo centré et plus grand, version rapide) ---
+
+# --- EN-TÊTE EVAD (logo centré, plus grand, espace réduit) ---
 import base64
 
 @st.cache_data
@@ -15,26 +16,27 @@ def get_base64_image(image_path):
 
 logo_base64 = get_base64_image("evad_logo.png")
 
-# ✅ Logo centré, un peu plus grand, sans ralentissement
+# ✅ Logo centré, un peu plus grand, avec espace réduit
 if logo_base64:
     st.markdown(f"""
         <div style="
             text-align: center;
-            margin-top: 15px;
-            margin-bottom: 30px;
+            margin-top: 5px;        /* ↓ réduit la marge du haut */
+            margin-bottom: 15px;    /* ↓ réduit l’espace avant la ligne verte */
         ">
-            <img src="data:image/png;base64,{logo_base64}" width="200" style="margin-bottom: 15px;">
+            <img src="data:image/png;base64,{logo_base64}" width="200" style="margin-bottom: 5px;">  <!-- ↓ réduit la distance entre logo et titre -->
             <h1 style="font-size: 2.1em; color: #014d3b; margin: 0;">
                 Formulaire Pilote d'impact
             </h1>
         </div>
-        <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 20px 0 30px 0;">
+        <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 10px 0 20px 0;">
     """, unsafe_allow_html=True)
 else:
     st.markdown("""
         <h1 style="text-align:center; color:#014d3b;">Formulaire Pilote d'impact</h1>
-        <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 20px 0 30px 0;">
+        <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 10px 0 20px 0;">
     """, unsafe_allow_html=True)
+
 
 
 
