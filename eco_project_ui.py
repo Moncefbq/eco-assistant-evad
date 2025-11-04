@@ -2,10 +2,9 @@
 import streamlit as st
 import requests
 import re
-
-# --- EN-TÊTE EVAD (logo centré, plus grand, espace réduit) ---
 import base64
 
+# --- EN-TÊTE EVAD (logo centré, net et sans cadre) ---
 @st.cache_data
 def get_base64_image(image_path):
     try:
@@ -16,8 +15,6 @@ def get_base64_image(image_path):
 
 logo_base64 = get_base64_image("evad_logo.png")
 
-# ✅ Logo centré, un peu plus grand, avec espace réduit
-# ✅ Logo EVAD – parfaitement centré, jamais coupé, sans cadre ni fond
 if logo_base64:
     st.markdown(f"""
         <div style="
@@ -25,7 +22,7 @@ if logo_base64:
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            margin-top: 20px;           /* ✅ espace suffisant pour éviter la coupe */
+            margin-top: 20px;
             margin-bottom: 10px;
         ">
             <img src="data:image/png;base64,{logo_base64}"
@@ -43,12 +40,51 @@ else:
         <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 10px 0 20px 0;">
     """, unsafe_allow_html=True)
 
-
+# --- STYLE GLOBAL ---
 st.markdown("""
 <style>
-/* ✅ Améliorer la visibilité du logo */
-img[src*="evad_logo.png"] {
-    filter: brightness(0.95) contrast(1.25) saturate(1.3) drop-shadow(0px 1px 2px rgba(0,0,0,0.2));
+body {
+    background-color: #ffffff;
+    color: #000000 !important;
+}
+div.block-container {
+    background-color: #ffffff !important;
+    padding: 25px !important;
+}
+div.stForm {
+    background-color: #018262 !important;
+    border-radius: 20px;
+    padding: 25px !important;
+    box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
+}
+div.stForm > div {
+    background-color: #cfeee7 !important;
+    color: #014d3b !important;
+    border-radius: 15px;
+    padding: 20px;
+    margin: 0;
+}
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div,
+.stMultiSelect > div > div {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border-radius: 6px;
+    border: 1px solid #555 !important;
+}
+h1, h2, h3, h4, h5, h6, label, p, span, div {
+    color: #000000 !important;
+}
+.stButton button {
+    background-color: #018262 !important;
+    color: white !important;
+    border-radius: 8px;
+    border: none;
+    font-weight: bold;
+}
+.stButton button:hover {
+    background-color: #01614c !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -64,83 +100,17 @@ d’impact conçue pour la création de lieux partagés durables *(tiers-lieux, 
 grâce à une intelligence collaborative, open-source et régénérative.
 """)
 
-# 🌿 STYLE GLOBAL
-st.markdown("""
-<style>
-body {
-    background-color: #ffffff; /* ✅ Arrière-plan global blanc clair */
-    color: #000000 !important;
-}
-
-/* ✅ Conteneur principal (pour garder la largeur propre) */
-div.block-container {
-    background-color: #ffffff !important;  /* ✅ Fond global clair */
-    padding: 25px !important;
-}
-
-/* ✅ Rectangle du formulaire (autour de "Informations sur le projet") */
-div.stForm {
-    background-color: #018262 !important;   /* ✅ Vert foncé */
-    border-radius: 20px;
-    padding: 25px !important;
-    box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
-}
-
-/* ✅ Contenu intérieur du formulaire */
-div.stForm > div {
-    background-color: #cfeee7 !important;   /* ✅ Vert clair */
-    color: #014d3b !important;
-    border-radius: 15px;
-    padding: 20px;
-    margin: 0;
-}
-
-/* ✅ Champs de saisie */
-.stTextInput > div > div > input,
-.stTextArea > div > div > textarea,
-.stSelectbox > div > div,
-.stMultiSelect > div > div {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-    border-radius: 6px;
-    border: 1px solid #555 !important;
-}
-
-/* ✅ Titres & textes */
-h1, h2, h3, h4, h5, h6, label, p, span, div {
-    color: #000000 !important;
-}
-
-/* ✅ Boutons */
-.stButton button {
-    background-color: #018262 !important;
-    color: white !important;
-    border-radius: 8px;
-    border: none;
-    font-weight: bold;
-}
-
-.stButton button:hover {
-    background-color: #01614c !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-
-
-
 # --- SECRETS ---
 OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
 NOCODB_API_TOKEN = st.secrets["NOCODB_API_TOKEN"]
 NOCODB_API_URL = st.secrets["NOCODB_API_URL"]
+
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 HEADERS = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
 
 # --- NoCoDB CONFIG ---
 NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
-UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
 
 # ==============================
 # ⚡ FUSION INTELLIGENTE MULTI-AGENTS
@@ -159,7 +129,7 @@ def ask_agent(role_description, user_input):
     response.raise_for_status()
     return response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
 
-def MultiAgentFusion(title, description, localisation):
+def MultiAgentFusion(title, description, objectif, localisation):
     role = (
         "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. "
         "Ensemble, vous analysez le projet et produisez les sections suivantes, formatées exactement comme ceci :\n\n"
@@ -170,7 +140,7 @@ def MultiAgentFusion(title, description, localisation):
         "Plan d’action: ... (3 à 5 étapes concrètes)\n\n"
         "Sois concis, professionnel et clair dans chaque section."
     )
-    user_input = f"Projet: {title}\nDescription: {description}\nLocalisation: {localisation}"
+    user_input = f"Projet: {title}\nDescription: {description}\nObjectif: {objectif}\nLocalisation: {localisation}"
     return ask_agent(role, user_input)
 
 # ==============================
@@ -180,10 +150,16 @@ if "nb_espaces" not in st.session_state:
     st.session_state.nb_espaces = 1
 
 with st.form("user_form"):
-    st.subheader("🧾 Informations sur le projet")
+    st.markdown("""
+        <h2 style='margin-bottom: 0;'>📘 Présentation du projet</h2>
+        <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
+            Informations sur le projet de lieu durable
+        </p>
+    """, unsafe_allow_html=True)
 
     title = st.text_input("🏷️ Nom du projet")
-    description = st.text_area("📝 Description du projet")
+    description = st.text_area("📝 Description du projet", height=100)
+    objectif = st.text_area("🎯 Objectif du projet", height=100)  # ✅ Nouveau champ ajouté
     localisation = st.text_input("📍 Localisation")
 
     # Espaces dynamiques
@@ -204,12 +180,12 @@ with st.form("user_form"):
 # 🧠 ANALYSE COLLABORATIVE
 # ==============================
 if submitted:
-    if not all([title, description, localisation]):
+    if not all([title, description, objectif, localisation]):
         st.warning("Merci de remplir tous les champs avant l’analyse.")
     else:
         with st.spinner("🌱 Analyse collaborative du projet en cours..."):
             try:
-                final_result = MultiAgentFusion(title, description, localisation)
+                final_result = MultiAgentFusion(title, description, objectif, localisation)
                 st.session_state.final_result = final_result
                 st.success("✅ Analyse collaborative terminée avec succès !")
             except Exception as e:
@@ -257,6 +233,7 @@ if st.session_state.get("validation_ok"):
             payload = {
                 "Title": title,
                 "Description": description,
+                "Objectif du projet": objectif,  # ✅ Ajout dans la base
                 "Localisation": localisation,
                 "Project Leader": leader,
                 "Email": email,
