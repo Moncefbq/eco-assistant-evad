@@ -61,17 +61,17 @@ body {
     color: #000000 !important;
 }
 
-/* ✅ Rectangle externe UNIQUEMENT : vert foncé */
-section.main > div:first-child {
-    background-color: #018262 !important;     /* Vert foncé */
+/* ✅ Rectangle externe : vert foncé */
+div.block-container {
+    background-color: #018262 !important;   /* Vert foncé */
     border-radius: 20px;
-    padding: 20px !important;
-    box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
+    padding: 25px !important;
+    box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.25);
 }
 
-/* ✅ Formulaires internes (rectangle 1) : vert clair */
+/* ✅ Formulaires internes : vert clair */
 .stForm, .stForm > div {
-    background-color: #cfeee7 !important;     /* Vert clair */
+    background-color: #cfeee7 !important;   /* Vert clair */
     color: #014d3b !important;
     padding: 30px;
     border-radius: 15px;
@@ -80,7 +80,7 @@ section.main > div:first-child {
     border: 1px solid #a6d5c6;
 }
 
-/* ✅ Champs texte & zone de saisie */
+/* ✅ Champs texte & zones */
 .stTextInput > div > div > input,
 .stTextArea > div > div > textarea,
 .stSelectbox > div > div,
@@ -110,6 +110,7 @@ h1, h2, h3, h4, h5, h6, label, p, span, div {
 }
 </style>
 """, unsafe_allow_html=True)
+
 
 
 
