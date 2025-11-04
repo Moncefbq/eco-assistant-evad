@@ -17,20 +17,22 @@ def get_base64_image(image_path):
 logo_base64 = get_base64_image("evad_logo.png")
 
 # ✅ Logo centré, un peu plus grand, avec espace réduit
+# ✅ Logo centré, un peu plus grand, plus proche du titre
 if logo_base64:
     st.markdown(f"""
         <div style="
             text-align: center;
-            margin-top: 5px;        /* ↓ réduit la marge du haut */
-            margin-bottom: 15px;    /* ↓ réduit l’espace avant la ligne verte */
+            margin-top: 5px;          /* Espace haut minimal */
+            margin-bottom: 8px;       /* ↓ Rapproche le logo du titre */
         ">
-            <img src="data:image/png;base64,{logo_base64}" width="200" style="margin-bottom: 5px;">  <!-- ↓ réduit la distance entre logo et titre -->
-            <h1 style="font-size: 2.1em; color: #014d3b; margin: 0;">
+            <img src="data:image/png;base64,{logo_base64}" width="210" style="margin-bottom: -10px;">  <!-- ↓ rapproche encore plus -->
+            <h1 style="font-size: 2.1em; color: #014d3b; margin-top: 0px; margin-bottom: 5px;">
                 Formulaire Pilote d'impact
             </h1>
         </div>
-        <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 10px 0 20px 0;">
+        <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 5px 0 20px 0;">
     """, unsafe_allow_html=True)
+
 else:
     st.markdown("""
         <h1 style="text-align:center; color:#014d3b;">Formulaire Pilote d'impact</h1>
