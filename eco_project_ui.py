@@ -199,7 +199,7 @@ if submitted:
                 st.error(f"Erreur pendant l’analyse : {e}")
 
 # ==============================
-#  SYNTHÈSE DU PROJET (phrases complètes et naturelles)
+#  SYNTHÈSE DU PROJET 
 # ==============================
 if "final_result" in st.session_state:
     with st.form("synthese_form"):
@@ -287,67 +287,78 @@ if st.session_state.get("validation_ok"):
         # --- Bouton de soumission ---
         saved = st.form_submit_button("💾 Enregistrer dans la base EVAD")
 
-        # --- Code d’enregistrement à exécuter APRÈS clic ---
-        if saved:
-            UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
-            headers = {"xc-token": NOCODB_API_TOKEN}
+# --- Code d’enregistrement à exécuter APRÈS clic ---
+if saved:
+    UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
+    headers = {
+        "xc-token": NOCODB_API_TOKEN,
+        "Accept": "application/json"   # ✅ requis pour retour JSON correct
+    }
 
-            # --- Upload du fichier s’il existe ---
-            file_attachment = []
-            if uploaded_doc is not None:
-                try:
-                    files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
-                    upload_response = requests.post(UPLOAD_URL, headers=headers, files=files)
+    # --- Upload du fichier s’il existe ---
+    file_attachment = []
+    if uploaded_doc is not None:
+        try:
+            files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
+            upload_response = requests.post(UPLOAD_URL, headers=headers, files=files)
 
-                    if upload_response.status_code in (200, 201):
-                        upload_data = upload_response.json()
-                        if "list" in upload_data and len(upload_data["list"]) > 0:
-                            f = upload_data["list"][0]
-                            file_attachment = [{
-                                "title": uploaded_doc.name,
-                                "path": f["path"],
-                                "url": f.get("url", f"https://app.nocodb.com{f['path']}"),
-                                "mimetype": f.get("mimetype", uploaded_doc.type)
-                            }]
-                            st.toast("📎 Fichier uploadé avec succès", icon="📤")
-                        else:
-                            st.warning("⚠️ Aucun fichier valide retourné par NoCoDB.")
+            if upload_response.status_code in (200, 201):
+                upload_data = upload_response.json()
+                st.write(upload_data)  # 🧩 pour vérifier le retour exact
+
+                # --- Vérifie si NoCoDB renvoie bien "list" ---
+                if isinstance(upload_data, dict):
+                    if "list" in upload_data and len(upload_data["list"]) > 0:
+                        f = upload_data["list"][0]
                     else:
-                        st.error(f"⚠️ Erreur upload ({upload_response.status_code}) : {upload_response.text}")
-                except Exception as e:
-                    st.error(f"Erreur lors de l’upload du fichier : {e}")
+                        # Certains serveurs renvoient directement le fichier en racine
+                        f = upload_data
 
-            # --- Préparation du payload principal ---
-            payload = {
-                "Title": title,
-                "Description": description,
-                "Localisation": localisation,
-                "Project Leader": leader,
-                "Email": email,
-                "Status": status,
-                "Objectif du projet": st.session_state.objectif,
-                "Impact écologique": st.session_state.impact_eco,
-                "Impact social": st.session_state.impact_social,
-                "Impact économique": st.session_state.impact_econ,
-                "Plan d’action": st.session_state.plan_action,
-                "espace 1": espaces[0] if len(espaces) > 0 else "",
-                "espace 2": espaces[1] if len(espaces) > 1 else "",
-                "espace 3": espaces[2] if len(espaces) > 2 else "",
-                "espace 4": espaces[3] if len(espaces) > 3 else "",
-                "espace 5": espaces[4] if len(espaces) > 4 else "",
-            }
-
-            # --- Ajout du fichier dans le bon format ---
-            if file_attachment:
-                payload["Logo + docs"] = file_attachment  # ✅ format correct (liste d’objets)
-
-            # --- Envoi vers NoCoDB ---
-            try:
-                r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
-                if r.status_code in (200, 201):
-                    st.success("🌿 Projet enregistré avec succès dans la base EVAD !")
-                    st.toast("Projet enregistré avec succès", icon="🌱")
+                    file_attachment = [{
+                        "title": f.get("title", uploaded_doc.name),
+                        "path": f.get("path", ""),
+                        "url": f.get("url", f"https://app.nocodb.com{f.get('path', '')}"),
+                        "mimetype": f.get("mimetype", uploaded_doc.type)
+                    }]
+                    st.toast("📎 Fichier uploadé avec succès", icon="📤")
                 else:
-                    st.error(f"Erreur API {r.status_code} : {r.text}")
-            except Exception as e:
-                st.error(f"❌ Erreur lors de l’envoi à NoCoDB : {e}")
+                    st.warning("⚠️ Format de réponse inattendu pour l’upload.")
+            else:
+                st.error(f"⚠️ Erreur upload ({upload_response.status_code}) : {upload_response.text}")
+        except Exception as e:
+            st.error(f"Erreur lors de l’upload du fichier : {e}")
+
+    # --- Préparation du payload principal ---
+    payload = {
+        "Title": title,
+        "Description": description,
+        "Localisation": localisation,
+        "Project Leader": leader,
+        "Email": email,
+        "Status": status,
+        "Objectif du projet": st.session_state.objectif,
+        "Impact écologique": st.session_state.impact_eco,
+        "Impact social": st.session_state.impact_social,
+        "Impact économique": st.session_state.impact_econ,
+        "Plan d’action": st.session_state.plan_action,
+        "espace 1": espaces[0] if len(espaces) > 0 else "",
+        "espace 2": espaces[1] if len(espaces) > 1 else "",
+        "espace 3": espaces[2] if len(espaces) > 2 else "",
+        "espace 4": espaces[3] if len(espaces) > 3 else "",
+        "espace 5": espaces[4] if len(espaces) > 4 else "",
+    }
+
+    # --- Ajout du fichier dans le bon format ---
+    if file_attachment:
+        payload["Logo + docs"] = file_attachment  # ✅ format liste d’objets
+
+    # --- Envoi vers NoCoDB ---
+    try:
+        r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
+        if r.status_code in (200, 201):
+            st.success("🌿 Projet enregistré avec succès dans la base EVAD !")
+            st.toast("Projet enregistré avec succès", icon="🌱")
+        else:
+            st.error(f"Erreur API {r.status_code} : {r.text}")
+    except Exception as e:
+        st.error(f"❌ Erreur lors de l’envoi à NoCoDB : {e}")
