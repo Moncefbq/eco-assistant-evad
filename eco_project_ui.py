@@ -296,7 +296,7 @@ if saved:
     }
 
     # --- Upload du fichier s’il existe ---
-    file_attachment = []
+       file_attachment = []
     if uploaded_doc is not None:
         try:
             files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
@@ -304,25 +304,30 @@ if saved:
 
             if upload_response.status_code in (200, 201):
                 upload_data = upload_response.json()
-                st.write(upload_data)  # 🧩 pour vérifier le retour exact
+                st.write(upload_data)  # 🧩 debug visuel
 
-                # --- Vérifie si NoCoDB renvoie bien "list" ---
-                if isinstance(upload_data, dict):
-                    if "list" in upload_data and len(upload_data["list"]) > 0:
-                        f = upload_data["list"][0]
-                    else:
-                        # Certains serveurs renvoient directement le fichier en racine
-                        f = upload_data
+                # --- Cas 1 : NoCoDB renvoie une LISTE directement ---
+                if isinstance(upload_data, list) and len(upload_data) > 0:
+                    f = upload_data[0]
 
+                # --- Cas 2 : NoCoDB renvoie un dict avec une clé "list" ---
+                elif isinstance(upload_data, dict) and "list" in upload_data:
+                    f = upload_data["list"][0]
+
+                else:
+                    f = None
+
+                # --- Si un fichier valide trouvé ---
+                if f:
                     file_attachment = [{
                         "title": f.get("title", uploaded_doc.name),
-                        "path": f.get("path", ""),
-                        "url": f.get("url", f"https://app.nocodb.com{f.get('path', '')}"),
-                        "mimetype": f.get("mimetype", uploaded_doc.type)
+                        "path": f.get("url", ""),  # ✅ "url" est directement utilisable
+                        "url": f.get("url", ""),
+                        "mimetype": f.get("mimetype", uploaded_doc.type or "image/png")
                     }]
                     st.toast("📎 Fichier uploadé avec succès", icon="📤")
                 else:
-                    st.warning("⚠️ Format de réponse inattendu pour l’upload.")
+                    st.warning("⚠️ Réponse inattendue : aucun fichier détecté dans la réponse.")
             else:
                 st.error(f"⚠️ Erreur upload ({upload_response.status_code}) : {upload_response.text}")
         except Exception as e:
