@@ -1,383 +1,281 @@
-# -*- coding: utf-8 -*-
+# project -*- coding: utf-8 -*-
 import streamlit as st
 import requests
 import re
-import base64
-import json
-
-# --- EN-TÊTE EVAD (logo centré, net et sans cadre) ---
-@st.cache_data
-def get_base64_image(image_path):
-    try:
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode()
-    except FileNotFoundError:
-        return None
-
-logo_base64 = get_base64_image("evad_logo.png")
-
-if logo_base64:
-    st.markdown(f"""
-        <div style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin-top: 20px;
-            margin-bottom: 10px;
-        ">
-            <img src="data:image/png;base64,{logo_base64}"
-                 width="240"
-                 style="margin: 0 auto; display: block; image-rendering: -webkit-optimize-contrast; -ms-interpolation-mode: nearest-neighbor;">
-            <h1 style="font-size: 2.1em; color: #014d3b; margin-top: 10px; margin-bottom: 5px; text-align: center;">
-                Formulaire Pilote d'impact
-            </h1>
-        </div>
-        <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 5px 0 20px 0;">
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-        <h1 style="text-align:center; color:#014d3b;">Formulaire Pilote d'impact</h1>
-        <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 10px 0 20px 0;">
-    """, unsafe_allow_html=True)
-
-# --- STYLE GLOBAL ---
-st.markdown("""
-<style>
-body {
-    background-color: #ffffff;
-    color: #000000 !important;
-}
-div.block-container {
-    background-color: #ffffff !important;
-    padding: 25px !important;
-}
-div.stForm {
-    background-color: #018262 !important;
-    border-radius: 20px;
-    padding: 25px !important;
-    box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
-}
-div.stForm > div {
-    background-color: #cfeee7 !important;
-    color: #014d3b !important;
-    border-radius: 15px;
-    padding: 20px;
-    margin: 0;
-}
-.stTextInput > div > div > input,
-.stTextArea > div > div > textarea,
-.stSelectbox > div > div,
-.stMultiSelect > div > div {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-    border-radius: 6px;
-    border: 1px solid #555 !important;
-}
-h1, h2, h3, h4, h5, h6, label, p, span, div {
-    color: #000000 !important;
-}
-.stButton button {
-    background-color: #018262 !important;
-    color: white !important;
-    border-radius: 8px;
-    border: none;
-    font-weight: bold;
-}
-.stButton button:hover {
-    background-color: #01614c !important;
-}
-</style>
-""", unsafe_allow_html=True)
+import os
 
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
 
-# --- Sous-titre descriptif ---
-st.markdown("""
-### 🌍 Rejoignez EVAD pour co-développer votre projet de lieux régénératif !
-Bienvenue dans **EVAD - Écosystème Vivant Autonome et Décentralisé**, une plateforme de pilotage
-d’impact conçue pour la création de lieux partagés durables *(tiers-lieux, éco-lieux, coworking, fermes, etc.)*
-grâce à une intelligence collaborative, open-source et régénérative.
-""")
+# 🌿 STYLE GLOBAL : fond clair + blocs verts + textes noirs + champs blancs
+st.markdown(
+    """
+    <style>
+    body {
+        background-color: #f5f5f5;
+        color: #000000 !important;
+    }
+
+    .stForm, .stForm > div {
+        background-color: #018262 !important;
+        color: #000000 !important;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0px 0px 15px rgba(0,0,0,0.25);
+        margin-bottom: 25px;
+    }
+
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea,
+    .stSelectbox > div > div,
+    .stMultiSelect > div > div {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border-radius: 6px;
+        border: 1px solid #555 !important;
+    }
+
+    h1, h2, h3, h4, h5, h6, label, p, span, div {
+        color: #000000 !important;
+    }
+
+    ::selection {
+        background: #000000;
+        color: #ffffff;
+    }
+    ::-moz-selection {
+        background: #000000;
+        color: #ffffff;
+    }
+
+    .stButton button {
+        background-color: #00b300 !important;
+        color: white !important;
+        border-radius: 8px;
+        border: none;
+        font-weight: bold;
+    }
+    .stButton button:hover {
+        background-color: #009900 !important;
+    }
+
+    div[data-baseweb="tag"] {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    .stForm label, .stForm h3, .stForm h4, .stForm p {
+        color: #000000 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # --- SECRETS ---
 OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
 NOCODB_API_TOKEN = st.secrets["NOCODB_API_TOKEN"]
 NOCODB_API_URL = st.secrets["NOCODB_API_URL"]
-
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 HEADERS = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
 
 # --- NoCoDB CONFIG ---
 NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
+UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
 
-# ==============================
-# ⚡ FUSION INTELLIGENTE MULTI-AGENTS
-# ==============================
-def ask_agent(role_description, user_input):
-    payload = {
-        "model": "mistralai/mistral-nemo",
-        "messages": [
-            {"role": "system", "content": role_description},
-            {"role": "user", "content": user_input}
-        ],
-        "temperature": 0.7,
-        "max_tokens": 800
-    }
-    response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-    response.raise_for_status()
-    return response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+# --- Upload fichier vers NoCoDB ---
+def upload_to_nocodb(file):
+    headers = {"xc-token": NOCODB_API_TOKEN}
+    files = {"files": (file.name, file, file.type or "application/octet-stream")}
+    try:
+        response = requests.post(UPLOAD_URL, headers=headers, files=files, timeout=15)
+        response.raise_for_status()
+        result = response.json()
+        if isinstance(result, list) and "url" in result[0]:
+            return result[0]["url"]
+    except Exception as e:
+        st.error(f"Erreur upload fichier : {e}")
+    return None
 
-def MultiAgentFusion(title, description, objectif, localisation):
-    role = (
-        "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. "
-        "Ensemble, vous analysez le projet et produisez les sections suivantes, formatées exactement comme ceci :\n\n"
-        "Solution: ...\n"
-        "Impact écologique: ...\n"
-        "Impact social: ...\n"
-        "Impact économique: ...\n"
-        "Plan d’action: ... (3 à 5 étapes concrètes)\n\n"
-        "Sois concis, professionnel et clair dans chaque section."
-    )
-    user_input = f"Projet: {title}\nDescription: {description}\nObjectif: {objectif}\nLocalisation: {localisation}"
-    return ask_agent(role, user_input)
 
-# ==============================
-# INTERFACE STREAMLIT
-# ==============================
+# --- 🏡 Interface principale ---
+st.title("🏡 Formulaire Pilote d'impact")
+
+st.markdown("""
+### 🌍 Rejoignez EVAD pour co-développer votre projet de lieux régénératif !
+
+Bienvenue dans **EVAD - Ecosystème Vivant Autonome et Décentralisé**, une plateforme de pilotage d’impact conçue pour faciliter la création de lieux partagés durables *(tiers-lieux, éco-lieux, coworking, fermes, etc.)* grâce à des outils open-source, une économie régénérative et une intelligence collaborative.
+""")
+
+# Initialisation du nombre d’espaces dans la session
 if "nb_espaces" not in st.session_state:
     st.session_state.nb_espaces = 1
 
+# --- 1️⃣ Étape 1 : Formulaire utilisateur ---
 with st.form("user_form"):
-    st.markdown("""
-        <h2 style='margin-bottom: 0;'>📘 Présentation du projet</h2>
-        <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
-            Informations sur le projet de lieu durable
-        </p>
-    """, unsafe_allow_html=True)
+    st.subheader("🧾 Informations sur le projet")
 
     title = st.text_input("🏷️ Nom du projet")
-    description = st.text_area("📝 Description du projet", height=100)
-    objectif = st.text_area("🎯 Objectif du projet", height=100)
-    localisation = st.text_input("📍 Localisation")
+    description = st.text_area("📝 Description du projet")
 
-    # Espaces dynamiques
-    st.markdown("""
-        <h3 style='margin-bottom: 0;'>📂 Détails du projet par espace</h3>
-        <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
-            Informations sur chaque espace qui compose le projet
-        </p>
-    """, unsafe_allow_html=True)
-
+    # 🏠 Espaces dynamiques
+    st.markdown("### 🏡 Espaces du projet")
     espaces = []
     for i in range(st.session_state.nb_espaces):
         espaces.append(st.text_area(f"🏠 Espace {i+1}", key=f"espace_{i+1}", height=80))
 
+    # Bouton pour ajouter un nouvel espace (max 5)
     if st.session_state.nb_espaces < 5:
-        if st.form_submit_button("➕ Ajouter un espace"):
+        add_space = st.form_submit_button("➕ Ajouter un espace")
+        if add_space:
             st.session_state.nb_espaces += 1
             st.rerun()
 
-    uploaded_doc = st.file_uploader("📄 Document lié (optionnel)", type=["pdf", "png", "jpg", "jpeg", "docx"])
-    submitted = st.form_submit_button("🚀 Lancer l’analyse du projet")  # ✅ Nouveau texte ici
 
-# ==============================
-#  ANALYSE DU PROJET
-# ==============================
+    localisation = st.text_input("📍 Localisation")
+
+    project_types = st.multiselect(
+        "🌿 Type de projet",
+        ["Third-place", "Eco-lieu", "Association", "Coworking", "Autres", "Permaculture"],
+        default=[]
+    )
+
+    uploaded_doc = st.file_uploader("📄 Document lié au projet (optionnel)", type=["pdf", "png", "jpg", "jpeg", "docx"])
+    submitted = st.form_submit_button("🚀 Lancer l’analyse")
+
+# --- 2️⃣ Étape 2 : Analyse IA ---
 if submitted:
-    if not all([title, description, objectif, localisation]):
-        st.warning("Merci de remplir tous les champs avant l’analyse.")
+    if not all([title, description, localisation]):
+        st.warning("Merci de remplir tous les champs avant la recherche.")
     else:
-        with st.spinner("🌱 Analyse du projet en cours..."):
-            try:
-                final_result = MultiAgentFusion(title, description, objectif, localisation)
-                st.session_state.final_result = final_result
-                st.success("✅ Analyse du projet terminée avec succès !")
-            except Exception as e:
-                st.error(f"Erreur pendant l’analyse : {e}")
-
-# ==============================
-#  SYNTHÈSE DU PROJET 
-# ==============================
-if "final_result" in st.session_state:
-    with st.form("synthese_form"):
-        st.subheader("📋 Synthèse du projet")
-
-        import re, requests
-
-        def extract_section(text, section):
-            """Extraction robuste et propre"""
-            pattern = rf"{section}\s*[:：\-–]?\s*(.*?)(?=\n(?:Solution|Objectif|Impact|Plan|$))"
-            match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
-            return match.group(1).strip() if match else ""
-
-        text = st.session_state.final_result
-
-        # --- Extraction des sections ---
-        objectif = extract_section(text, "Solution")
-        impact_eco = extract_section(text, "Impact écologique")
-        impact_social = extract_section(text, "Impact social")
-        impact_econ = extract_section(text, "Impact économique")
-        plan_action = extract_section(text, "Plan d’action")
-
-        # --- Si le plan d’action est vide → régénération automatique ---
-        if not plan_action or len(plan_action) < 10:
-            try:
-                role = (
-                    "Tu es un expert en développement durable. "
-                    "Génère un plan d’action clair avec 3 à 5 étapes courtes et concrètes."
-                )
-                user_input = f"Projet: {objectif}\nImpacts: {impact_eco}, {impact_social}, {impact_econ}"
-                payload = {
-                    "model": "mistralai/mistral-nemo",
-                    "messages": [
-                        {"role": "system", "content": role},
-                        {"role": "user", "content": user_input}
-                    ],
-                    "temperature": 0.6,
-                    "max_tokens": 200
-                }
-                response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-                response.raise_for_status()
-                plan_action = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-            except Exception as e:
-                plan_action = f"(Erreur génération du plan : {e})"
-
-        # --- Garde une seule phrase complète par impact ---
-        def first_sentence(text):
-            text = re.sub(r'\s+', ' ', text.strip())
-            match = re.match(r'^(.*?[.!?])(\s|$)', text)
-            if match:
-                return match.group(1).strip()
-            return text.split('.')[0].strip() + '.'
-
-        impact_eco = first_sentence(impact_eco)
-        impact_social = first_sentence(impact_social)
-        impact_econ = first_sentence(impact_econ)
-
-        # --- Champs finaux ---
-        st.session_state.objectif = st.text_area("🎯 Objectif du projet", objectif, height=100)
-        st.session_state.impact_eco = st.text_area("🌿 Impact écologique", impact_eco, height=70)
-        st.session_state.impact_social = st.text_area("🤝 Impact social", impact_social, height=70)
-        st.session_state.impact_econ = st.text_area("💰 Impact économique", impact_econ, height=70)
-        st.session_state.plan_action = st.text_area("🧭 Plan d’action", plan_action, height=140)
-
-        validated = st.form_submit_button("✅ Valider et ajouter les informations du porteur")
-        if validated:
-            st.session_state.validation_ok = True
-            st.success("✅ Sections validées avec succès !")
-
-
-# ==============================
-# 🧑‍💼 ENREGISTREMENT FINAL
-# ==============================
-if st.session_state.get("validation_ok"):
-    with st.form("porteur_form"):
-        st.subheader("👤 Présentation du porteur")
-        leader = st.text_input("Nom du porteur de projet")
-        email = st.text_input("Email de contact")
-        status = st.selectbox(
-            "📊 Étape du projet",
-            ["Thinking", "Modélisation", "Construction", "Développement", "Financement", "Student"],
-            index=0
-        )
-
-        saved = st.form_submit_button("💾 Enregistrer dans la base EVAD")
-
-        if saved:
-            UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
-            headers = {"xc-token": NOCODB_API_TOKEN, "Accept": "application/json"}
-
-            # --- Upload du fichier (optionnel) ---
-            file_attachment = []
-            if uploaded_doc is not None:
-                try:
-                    files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
-                    up = requests.post(UPLOAD_URL, headers=headers, files=files)
-
-                    if up.status_code in (200, 201):
-                        data = up.json()
-
-                        # La réponse peut être {"list":[...]} ou [...] selon les versions
-                        f = None
-                        if isinstance(data, dict) and "list" in data and data["list"]:
-                            f = data["list"][0]
-                        elif isinstance(data, list) and data:
-                            f = data[0]
-
-                        if f:
-                            url = f.get("url", "")
-                            signed = f.get("signedUrl", "")
-                            mimetype = f.get("mimetype", uploaded_doc.type or "image/png")
-                            title = f.get("title", uploaded_doc.name)
-
-                            # ✅ Reconstruction correcte du path pour NoCoDB
-                            #    Il doit commencer par /nc/uploads/...
-                            path = f.get("path", "")
-                            if not path:
-                                # On cherche '/nc/uploads/...' dans l'URL et on garde la partie à partir de /nc/…
-                                # ex: https://.../nc/uploads/2025/11/05/xxx.png -> /nc/uploads/2025/11/05/xxx.png
-                                marker = "/nc/uploads/"
-                                if marker in url:
-                                    path = url[url.index("/nc/"):]          # -> "/nc/uploads/....png"
-                                elif marker in signed:
-                                    path = signed[signed.index("/nc/"):]
-                                else:
-                                    # Fallback: on force le préfixe attendu
-                                    # (utile si l’URL ne contient pas déjà /nc/uploads/)
-                                    path = "/nc/uploads/" + title
-
-                            file_attachment = [{
-                                "title": title,
-                                "path": path,            # <<<< IMPORTANT pour l’aperçu
-                                "url": signed or url,    # un lien accessible (signedUrl si possible)
-                                "mimetype": mimetype
-                            }]
-
-                            st.toast("📎 Fichier uploadé avec succès", icon="📤")
-                            try:
-                                st.image(uploaded_doc.getvalue(), caption=title, use_container_width=True)
-                            except:
-                                pass
-                        else:
-                            st.warning("⚠️ Aucun fichier détecté dans la réponse d’upload.")
-                    else:
-                        st.error(f"⚠️ Erreur upload ({up.status_code}) : {up.text}")
-                except Exception as e:
-                    st.error(f"Erreur lors de l’upload : {e}")
-
-            # --- Payload principal ---
+        with st.spinner("🔎 Analyse du projet en cours..."):
             payload = {
-                "Title": title,
-                "Description": description,
-                "Localisation": localisation,
-                "Project Leader": leader,
-                "Email": email,
-                "Status": status,
-                "Objectif du projet": st.session_state.objectif,
-                "Impact écologique": st.session_state.impact_eco,
-                "Impact social": st.session_state.impact_social,
-                "Impact économique": st.session_state.impact_econ,
-                "Plan d’action": st.session_state.plan_action,
-                "espace 1": espaces[0] if len(espaces) > 0 else "",
-                "espace 2": espaces[1] if len(espaces) > 1 else "",
-                "espace 3": espaces[2] if len(espaces) > 2 else "",
-                "espace 4": espaces[3] if len(espaces) > 3 else "",
-                "espace 5": espaces[4] if len(espaces) > 4 else "",
+                "model": "mistralai/mistral-nemo",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": (
+                            "Tu es un expert en gestion de projets écologiques. "
+                            "Analyse les informations et renvoie une réponse formatée ainsi :\n\n"
+                            "Solution : ...\n"
+                            "Impact écologique : ...\n"
+                            "Impact social : ...\n"
+                            "Impact économique : ...\n"
+                            "Plan d’action : ... (donne toujours un plan d’action clair avec au moins 3 étapes concrètes)"
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Projet: {title}\nDescription: {description}\nLocalisation: {localisation}"
+                    }
+                ],
+                "temperature": 0.7,
+                "max_tokens": 900
             }
 
-            if file_attachment:
-                payload["Logo + docs"] = file_attachment  # ✅ liste d’objets (title, path, url, mimetype)
-
-            # --- Envoi vers NoCoDB ---
             try:
+                response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=30)
+                response.raise_for_status()
+                ai_text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                st.session_state.ai_result = ai_text
+                st.session_state.espaces = espaces
+                st.success("✅ Analyse terminée avec succès !")
+            except Exception as e:
+                st.error(f"Erreur pendant la génération : {e}")
+
+# --- 3️⃣ Étape 3 : Synthèse du projet ---
+if "ai_result" in st.session_state:
+    with st.form("synthese_form"):
+        st.subheader("✏️ Synthèse du projet (modifiable avant validation)")
+
+        def extract_section(text, section):
+            pattern = rf"{section}\s*:\s*(.*?)(?=\n[A-ZÉÈÊÂÎÔÙÇ]|$)"
+            match = re.search(pattern, text, re.DOTALL)
+            return match.group(1).strip() if match else ""
+
+        solution = extract_section(st.session_state.ai_result, "Solution")
+        impact_eco = extract_section(st.session_state.ai_result, "Impact écologique")
+        impact_social = extract_section(st.session_state.ai_result, "Impact social")
+        impact_econ = extract_section(st.session_state.ai_result, "Impact économique")
+        plan_action = extract_section(st.session_state.ai_result, "Plan d’action")
+
+        if not plan_action or len(plan_action.strip()) < 10:
+            plan_action = (
+                "1️⃣ Identifier les acteurs locaux et définir les priorités du projet.\n"
+                "2️⃣ Lancer une phase pilote avec des indicateurs d’impact mesurables.\n"
+                "3️⃣ Analyser les résultats, ajuster les actions et planifier l’expansion."
+            )
+
+        solution = st.text_area("💡 Solution", value=solution, height=100)
+        impact_eco = st.text_area("🌿 Impact écologique", value=impact_eco, height=100)
+        impact_social = st.text_area("🤝 Impact social", value=impact_social, height=100)
+        impact_econ = st.text_area("💰 Impact économique", value=impact_econ, height=100)
+        plan_action = st.text_area("🧭 Plan d’action", value=plan_action, height=130)
+
+        validated = st.form_submit_button("✅ Valider et ajouter les informations du porteur")
+
+        if validated:
+            st.session_state.validation_ok = True
+            st.session_state.solution = solution
+            st.session_state.impact_eco = impact_eco
+            st.session_state.impact_social = impact_social
+            st.session_state.impact_econ = impact_econ
+            st.session_state.plan_action = plan_action
+
+# --- 4️⃣ Étape 4 : Informations du porteur ---
+if st.session_state.get("validation_ok"):
+    with st.form("porteur_form"):
+        st.subheader("👤 Informations du porteur")
+
+        leader = st.text_input("Nom du porteur de projet")
+        email = st.text_input("Email de contact")
+        status = st.selectbox("📊 Statut du projet",["Thinking", "Modélisation ", "Construction", "Développement", "Financement", "Student"],index=0)
+        saved = st.form_submit_button("💾 Enregistrer dans NoCoDB")
+
+        if saved:
+            with st.spinner("💾 Sauvegarde du projet..."):
+                doc_data = []
+                if "uploaded_doc" in st.session_state and st.session_state.uploaded_doc:
+                   url = upload_to_nocodb(st.session_state.uploaded_doc)
+                   if url:
+                        doc_data = [{"url": url}]
+
+
+                payload = {
+                    "Title": title,
+                    "Description": description,
+                    "Localisation": localisation,
+                    "Type": project_types,
+                    "Project Leader": leader,
+                    "Email": email,
+                    "Status": status,
+                    "Documents": doc_data,
+                    "espace 1": st.session_state.espaces[0] if len(st.session_state.espaces) > 0 else "",
+                    "espace 2": st.session_state.espaces[1] if len(st.session_state.espaces) > 1 else "",
+                    "espace 3": st.session_state.espaces[2] if len(st.session_state.espaces) > 2 else "",
+                    "espace 4": st.session_state.espaces[3] if len(st.session_state.espaces) > 3 else "",
+                    "espace 5": st.session_state.espaces[4] if len(st.session_state.espaces) > 4 else "",
+                }
+
+                headers = {"xc-token": NOCODB_API_TOKEN, "Content-Type": "application/json"}
                 r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
                 if r.status_code in (200, 201):
-                    st.success("🌿 Projet enregistré avec succès dans la base EVAD !")
-                    st.toast("Projet enregistré avec succès", icon="🌱")
+                    st.success("🍃 Projet enregistré avec succès dans `Projects` ! 🌍")
+                    st.toast("✅ Données synchronisées avec NoCoDB", icon="🌱")
+
                 else:
                     st.error(f"Erreur API {r.status_code} : {r.text}")
-            except Exception as e:
-                st.error(f"❌ Erreur lors de l’envoi à NoCoDB : {e}")
+
+
+
+
+
+
+
+
+
+
+
+
+
