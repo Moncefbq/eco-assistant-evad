@@ -271,7 +271,7 @@ if "final_result" in st.session_state:
 
 
 # ==============================
-# 🧑‍💼 ENREGISTREMENT FINAL
+# 🧑‍💼 ENREGISTREMENT FINAL (version corrigée)
 # ==============================
 if st.session_state.get("validation_ok"):
     with st.form("porteur_form"):
@@ -290,65 +290,56 @@ if st.session_state.get("validation_ok"):
             UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
             headers = {"xc-token": NOCODB_API_TOKEN, "Accept": "application/json"}
 
-            # --- Upload du fichier (optionnel) ---
             file_attachment = []
             if uploaded_doc is not None:
                 try:
                     files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
                     up = requests.post(UPLOAD_URL, headers=headers, files=files)
+                    up.raise_for_status()
+                    data = up.json()
 
-                    if up.status_code in (200, 201):
-                        data = up.json()
-
-                        # La réponse peut être {"list":[...]} ou [...] selon les versions
-                        f = None
-                        if isinstance(data, dict) and "list" in data and data["list"]:
-                            f = data["list"][0]
-                        elif isinstance(data, list) and data:
-                            f = data[0]
-
-                        if f:
-                            url = f.get("url", "")
-                            signed = f.get("signedUrl", "")
-                            mimetype = f.get("mimetype", uploaded_doc.type or "image/png")
-                            title = f.get("title", uploaded_doc.name)
-
-                            # ✅ Reconstruction correcte du path pour NoCoDB
-                            #    Il doit commencer par /nc/uploads/...
-                            path = f.get("path", "")
-                            if not path:
-                                # On cherche '/nc/uploads/...' dans l'URL et on garde la partie à partir de /nc/…
-                                # ex: https://.../nc/uploads/2025/11/05/xxx.png -> /nc/uploads/2025/11/05/xxx.png
-                                marker = "/nc/uploads/"
-                                if marker in url:
-                                    path = url[url.index("/nc/"):]          # -> "/nc/uploads/....png"
-                                elif marker in signed:
-                                    path = signed[signed.index("/nc/"):]
-                                else:
-                                    # Fallback: on force le préfixe attendu
-                                    # (utile si l’URL ne contient pas déjà /nc/uploads/)
-                                    path = "/nc/uploads/" + title
-
-                            file_attachment = [{
-                                "title": title,
-                                "path": path,            # <<<< IMPORTANT pour l’aperçu
-                                "url": signed or url,    # un lien accessible (signedUrl si possible)
-                                "mimetype": mimetype
-                            }]
-
-                            st.toast("📎 Fichier uploadé avec succès", icon="📤")
-                            try:
-                                st.image(uploaded_doc.getvalue(), caption=title, use_container_width=True)
-                            except:
-                                pass
-                        else:
-                            st.warning("⚠️ Aucun fichier détecté dans la réponse d’upload.")
+                    # Vérifie le format de la réponse (list ou dict)
+                    if isinstance(data, dict) and "list" in data:
+                        f = data["list"][0]
+                    elif isinstance(data, list) and len(data) > 0:
+                        f = data[0]
                     else:
-                        st.error(f"⚠️ Erreur upload ({up.status_code}) : {up.text}")
+                        f = None
+
+                    if f:
+                        url = f.get("url", "")
+                        signed = f.get("signedUrl", "")
+                        title = f.get("title", uploaded_doc.name)
+                        mimetype = f.get("mimetype", uploaded_doc.type or "image/png")
+
+                        # Correction du chemin (obligatoirement /nc/uploads/…)
+                        path = f.get("path", "")
+                        if not path:
+                            if "/nc/uploads/" in url:
+                                path = url[url.index("/nc/"):]
+                            elif "/nc/uploads/" in signed:
+                                path = signed[signed.index("/nc/"):]
+                            else:
+                                path = f"/nc/uploads/{title}"
+
+                        file_attachment = [{
+                            "title": title,
+                            "path": path,
+                            "url": signed or url,
+                            "mimetype": mimetype
+                        }]
+
+                        st.toast("📎 Fichier uploadé avec succès", icon="📤")
+                        try:
+                            st.image(uploaded_doc.getvalue(), caption=title, use_container_width=True)
+                        except:
+                            pass
+                    else:
+                        st.warning("⚠️ Aucun fichier détecté dans la réponse d’upload.")
                 except Exception as e:
                     st.error(f"Erreur lors de l’upload : {e}")
 
-            # --- Payload principal ---
+            # --- Envoi principal vers NoCoDB ---
             payload = {
                 "Title": title,
                 "Description": description,
@@ -369,9 +360,8 @@ if st.session_state.get("validation_ok"):
             }
 
             if file_attachment:
-                payload["Logo + docs"] = file_attachment  # ✅ liste d’objets (title, path, url, mimetype)
+                payload["Logo + docs"] = file_attachment  # ✅ format correct pour NoCoDB
 
-            # --- Envoi vers NoCoDB ---
             try:
                 r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
                 if r.status_code in (200, 201):
@@ -381,15 +371,3 @@ if st.session_state.get("validation_ok"):
                     st.error(f"Erreur API {r.status_code} : {r.text}")
             except Exception as e:
                 st.error(f"❌ Erreur lors de l’envoi à NoCoDB : {e}")
-
-
-
-
-
-
-
-
-
-
-
-
