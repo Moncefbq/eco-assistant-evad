@@ -292,11 +292,11 @@ if st.session_state.get("validation_ok"):
             UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
             headers = {
                 "xc-token": NOCODB_API_TOKEN,
-                "Accept": "application/json"  # ✅ requis pour un retour JSON correct
+                "Accept": "application/json"
             }
 
             # --- Upload du fichier s’il existe ---
-            file_attachment = []  # initialisation propre
+            file_attachment = []
             if uploaded_doc is not None:
                 try:
                     files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
@@ -304,21 +304,21 @@ if st.session_state.get("validation_ok"):
 
                     if upload_response.status_code in (200, 201):
                         upload_data = upload_response.json()
-                        st.write(upload_data)  # 👀 Debug visuel temporaire
+                        st.write(upload_data)  # 👀 pour debug
 
-                        # Cas 1 : NoCoDB renvoie une LISTE
+                        # --- Gestion flexible du retour NoCoDB (list ou dict) ---
                         if isinstance(upload_data, list) and len(upload_data) > 0:
                             f = upload_data[0]
-                        # Cas 2 : NoCoDB renvoie un dictionnaire avec clé "list"
                         elif isinstance(upload_data, dict) and "list" in upload_data:
                             f = upload_data["list"][0]
                         else:
                             f = None
 
+                        # --- Conversion au format attendu par NoCoDB ---
                         if f:
                             file_attachment = [{
                                 "title": f.get("title", uploaded_doc.name),
-                                "path": f.get("url", ""),
+                                "path": f.get("path") or f.get("url", ""),  # ✅ clé 'path' obligatoire
                                 "url": f.get("url", ""),
                                 "mimetype": f.get("mimetype", uploaded_doc.type or "image/png")
                             }]
@@ -354,7 +354,7 @@ if st.session_state.get("validation_ok"):
             if file_attachment:
                 payload["Logo + docs"] = file_attachment
 
-            # --- Envoi du projet complet vers NoCoDB ---
+            # --- Envoi du projet vers NoCoDB ---
             try:
                 r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
                 if r.status_code in (200, 201):
