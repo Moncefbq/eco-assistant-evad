@@ -145,7 +145,7 @@ def MultiAgentFusion(title, description, objectif, localisation):
     return ask_agent(role, user_input)
 
 # ==============================
-# 🏡 INTERFACE STREAMLIT
+# INTERFACE STREAMLIT
 # ==============================
 if "nb_espaces" not in st.session_state:
     st.session_state.nb_espaces = 1
@@ -184,7 +184,7 @@ with st.form("user_form"):
     submitted = st.form_submit_button("🚀 Lancer l’analyse du projet")  # ✅ Nouveau texte ici
 
 # ==============================
-# 🧠 ANALYSE DU PROJET
+#  ANALYSE DU PROJET
 # ==============================
 if submitted:
     if not all([title, description, objectif, localisation]):
@@ -199,7 +199,7 @@ if submitted:
                 st.error(f"Erreur pendant l’analyse : {e}")
 
 # ==============================
-# ✏️ SYNTHÈSE DU PROJET (phrases complètes et naturelles)
+#  SYNTHÈSE DU PROJET (phrases complètes et naturelles)
 # ==============================
 if "final_result" in st.session_state:
     with st.form("synthese_form"):
@@ -271,7 +271,7 @@ if "final_result" in st.session_state:
 
 
 # ==============================
-# 🧑‍💼 ENREGISTREMENT FINAL
+#  ENREGISTREMENT FINAL
 # ==============================
 if st.session_state.get("validation_ok"):
     with st.form("porteur_form"):
