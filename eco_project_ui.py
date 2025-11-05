@@ -284,10 +284,8 @@ if st.session_state.get("validation_ok"):
             index=0
         )
 
-        # Bouton d’enregistrement
         saved = st.form_submit_button("💾 Enregistrer dans la base EVAD")
 
-        # --- Code d’enregistrement à exécuter APRÈS clic ---
         if saved:
             UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
             headers = {
@@ -304,9 +302,9 @@ if st.session_state.get("validation_ok"):
 
                     if upload_response.status_code in (200, 201):
                         upload_data = upload_response.json()
-                        st.write(upload_data)  # 👀 pour debug
+                        st.write(upload_data)  # 👀 debug visuel
 
-                        # --- Gestion flexible du retour NoCoDB (list ou dict) ---
+                        # Gestion flexible du retour NoCoDB
                         if isinstance(upload_data, list) and len(upload_data) > 0:
                             f = upload_data[0]
                         elif isinstance(upload_data, dict) and "list" in upload_data:
@@ -314,12 +312,20 @@ if st.session_state.get("validation_ok"):
                         else:
                             f = None
 
-                        # --- Conversion au format attendu par NoCoDB ---
                         if f:
+                            # 🧩 Correction clé : forcer un path relatif valide
+                            url = f.get("url", "")
+                            path = f.get("path")
+                            if not path and url.startswith("https://"):
+                                path = url.replace("https://app.nocodb.com", "")
+                                # Si upload AWS, crée un path simulé :
+                                if "amazonaws.com" in url:
+                                    path = "/uploads/" + uploaded_doc.name
+
                             file_attachment = [{
                                 "title": f.get("title", uploaded_doc.name),
-                                "path": f.get("path") or f.get("url", ""),  # ✅ clé 'path' obligatoire
-                                "url": f.get("url", ""),
+                                "path": path,  # ✅ essentiel pour affichage NoCoDB
+                                "url": url,
                                 "mimetype": f.get("mimetype", uploaded_doc.type or "image/png")
                             }]
                             st.toast("📎 Fichier uploadé avec succès", icon="📤")
@@ -354,7 +360,7 @@ if st.session_state.get("validation_ok"):
             if file_attachment:
                 payload["Logo + docs"] = file_attachment
 
-            # --- Envoi du projet vers NoCoDB ---
+            # --- Envoi du projet complet vers NoCoDB ---
             try:
                 r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
                 if r.status_code in (200, 201):
