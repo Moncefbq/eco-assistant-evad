@@ -293,7 +293,7 @@ if st.session_state.get("validation_ok"):
                 "Accept": "application/json"
             }
 
-            # --- Upload du fichier s’il existe ---
+            # --- Upload du fichier (optionnel) ---
             file_attachment = []
             if uploaded_doc is not None:
                 try:
@@ -302,35 +302,49 @@ if st.session_state.get("validation_ok"):
 
                     if upload_response.status_code in (200, 201):
                         upload_data = upload_response.json()
-                        st.write(upload_data)  # 👀 debug visuel
+                        st.write(upload_data)  # 🔍 debug visuel
 
-                        # Gestion flexible du retour NoCoDB
-                        if isinstance(upload_data, list) and len(upload_data) > 0:
-                            f = upload_data[0]
-                        elif isinstance(upload_data, dict) and "list" in upload_data:
+                        # --- Normalisation de la réponse NoCoDB ---
+                        if isinstance(upload_data, dict) and "list" in upload_data:
                             f = upload_data["list"][0]
+                        elif isinstance(upload_data, list) and len(upload_data) > 0:
+                            f = upload_data[0]
                         else:
                             f = None
 
                         if f:
-                            # 🧩 Correction clé : forcer un path relatif valide
                             url = f.get("url", "")
-                            path = f.get("path")
-                            if not path and url.startswith("https://"):
-                                path = url.replace("https://app.nocodb.com", "")
-                                # Si upload AWS, crée un path simulé :
-                                if "amazonaws.com" in url:
-                                    path = "/uploads/" + uploaded_doc.name
+                            path = f.get("path") or ""
+                            signed = f.get("signedUrl", "")
 
+                            # 🧩 Correction : création d’un path relatif valide
+                            if not path:
+                                if url.startswith("https://nocohub-"):
+                                    # Cas AWS S3 → on reconstruit un chemin /nc/uploads/
+                                    parts = url.split("/uploads/")
+                                    if len(parts) > 1:
+                                        path = "/uploads/" + parts[1]
+                                    else:
+                                        path = "/uploads/" + uploaded_doc.name
+                                else:
+                                    path = url.replace("https://app.nocodb.com", "")
+
+                            # ✅ Format parfait pour NoCoDB
                             file_attachment = [{
                                 "title": f.get("title", uploaded_doc.name),
-                                "path": path,  # ✅ essentiel pour affichage NoCoDB
-                                "url": url,
+                                "path": path,
+                                "url": signed or url,
                                 "mimetype": f.get("mimetype", uploaded_doc.type or "image/png")
                             }]
+
                             st.toast("📎 Fichier uploadé avec succès", icon="📤")
+                            # 🖼️ Aperçu immédiat dans Streamlit
+                            try:
+                                st.image(uploaded_doc.getvalue(), caption=uploaded_doc.name, use_container_width=True)
+                            except:
+                                pass
                         else:
-                            st.warning("⚠️ Réponse inattendue : aucun fichier détecté dans la réponse.")
+                            st.warning("⚠️ Aucun fichier détecté dans la réponse.")
                     else:
                         st.error(f"⚠️ Erreur upload ({upload_response.status_code}) : {upload_response.text}")
                 except Exception as e:
