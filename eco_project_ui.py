@@ -226,19 +226,22 @@ else:
     titre_synthese = "📋 Synthèse du projet"
     titre_porteur = "👤 Présentation du porteur"
 
+# ✅ ICI commence ton formulaire
 with st.form("user_form"):
-st.markdown(f"""
-    <h2 style='margin-bottom: 0;'>{titre_projet}</h2>
-    <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
-        {sous_titre_projet}
-    </p>
-""", unsafe_allow_html=True)
 
+    # 👇 Tout le code à l’intérieur est indenté de 4 espaces
+    st.markdown(f"""
+        <h2 style='margin-bottom: 0;'>{titre_projet}</h2>
+        <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
+            {sous_titre_projet}
+        </p>
+    """, unsafe_allow_html=True)
 
     title = st.text_input("🏷️ Nom du projet")
     description = st.text_area("📝 Description du projet", height=100)
     objectif = st.text_area("🎯 Objectif du projet", height=100)
     localisation = st.text_input("📍 Localisation")
+
 
     # Espaces dynamiques
 st.markdown(f"""
