@@ -436,41 +436,37 @@ if submitted:
                 st.error(msg_error)
 
 # ==============================
-# 🧩 SYNTHÈSE DU PROJET (version finale robuste et ordonnée)
+# 🧩 SYNTHÈSE DU PROJET — version bilingue intelligente
 # ==============================
 if "final_result" in st.session_state:
     with st.form("synthese_form"):
         st.subheader(titre_synthese)
 
-        # --- Récupération directe des résultats de MultiAgentFusion ---
-        data = st.session_state.final_result
+        import re, requests
 
+        # --- Récupération du résultat brut ---
+        data = st.session_state.final_result
         objectif = data.get("objectif", "")
         impact_eco = data.get("impact_eco", "")
         impact_social = data.get("impact_social", "")
         impact_econ = data.get("impact_econ", "")
         plan_action = data.get("plan_action", "")
 
-        # --- Nettoyage de base ---
-        import re, requests
-
+        # --- Nettoyage du texte ---
         def clean_text_field(text):
-            """Nettoie et simplifie le texte (retire markdown, symboles et espaces superflus)."""
             if not text or text.strip() in [".", "-", "•"]:
                 return ""
-            text = re.sub(r"\*+", "", text)  # enlève les ** et *
+            text = re.sub(r"\*+", "", text)
             text = re.sub(r"^[\-\*\d\.\)]+\s*", "", text, flags=re.MULTILINE)
             text = re.sub(r"\s+", " ", text.strip())
             return text.strip().capitalize()
 
         def first_sentence(text):
-            """Retourne uniquement la première phrase complète du texte."""
             text = clean_text_field(text)
             match = re.match(r'^(.*?[.!?])(\s|$)', text)
             return match.group(1).strip() if match else text.split('.')[0].strip() + '.'
 
         def format_action_plan(plan_text):
-            """Simplifie et structure le plan d’action en 3 étapes maximum."""
             plan_text = clean_text_field(plan_text)
             steps = re.split(r'[.!?]', plan_text)
             steps = [s.strip() for s in steps if len(s.strip()) > 5]
@@ -480,43 +476,49 @@ if "final_result" in st.session_state:
             formatted = "\n".join([f"{i+1}. {step.capitalize()}." for i, step in enumerate(steps)])
             return formatted
 
-        # --- Application du nettoyage ---
+        # --- Nettoyage général ---
         objectif = clean_text_field(objectif)
         impact_eco = first_sentence(impact_eco)
         impact_social = first_sentence(impact_social)
         impact_econ = first_sentence(impact_econ)
         plan_action = format_action_plan(plan_action)
 
-        # --- Si le plan est vide → régénération IA automatique ---
-        if not plan_action:
+        # --- Si le plan est vide OU mal aligné avec la langue, régénère ---
+        if not plan_action or (
+            st.session_state.lang == "French" and re.search(r"[a-z]{3,}", plan_action) and not re.search(r"[éèàçùâêîôû]", plan_action)
+        ) or (
+            st.session_state.lang == "English" and re.search(r"[éèàçùâêîôû]", plan_action)
+        ):
             try:
-                prompt = (
-                    f"Projet : {objectif}\nImpacts : {impact_eco}, {impact_social}, {impact_econ}\n"
-                    "Génère un plan d’action clair en 3 étapes numérotées pour ce projet."
+                role = (
+                    "Tu es un expert en développement durable. Génère un plan d’action clair en 3 étapes numérotées pour ce projet."
                     if st.session_state.lang == "French"
-                    else f"Project: {objectif}\nImpacts: {impact_eco}, {impact_social}, {impact_econ}\n"
-                         "Generate a clear 3-step action plan for this project."
+                    else "You are a sustainability expert. Generate a clear 3-step action plan for this project."
+                )
+                user_input = (
+                    f"Projet : {objectif}\nImpacts : {impact_eco}, {impact_social}, {impact_econ}"
+                    if st.session_state.lang == "French"
+                    else f"Project : {objectif}\nImpacts : {impact_eco}, {impact_social}, {impact_econ}"
                 )
 
                 payload = {
                     "model": "mistralai/mistral-nemo",
                     "messages": [
-                        {"role": "system", "content": "You are an assistant generating concise project action plans."},
-                        {"role": "user", "content": prompt}
+                        {"role": "system", "content": role},
+                        {"role": "user", "content": user_input}
                     ],
-                    "temperature": 0.5,
-                    "max_tokens": 200
+                    "temperature": 0.6,
+                    "max_tokens": 250
                 }
 
                 response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
                 response.raise_for_status()
                 raw_plan = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
                 plan_action = format_action_plan(raw_plan)
-
             except Exception as e:
-                plan_action = f"(Erreur génération du plan : {e})"
+                plan_action = f"(Erreur de génération automatique : {e})"
 
-        # --- Champs affichés à l’utilisateur ---
+        # --- Champs affichés ---
         st.session_state.objectif = st.text_area(
             "🎯 Objectif du projet" if st.session_state.lang == "French" else "🎯 Project Objective",
             objectif, height=100
@@ -538,7 +540,7 @@ if "final_result" in st.session_state:
             plan_action, height=140
         )
 
-        # ✅ Bouton de validation
+        # ✅ Validation
         validated = st.form_submit_button(
             "✅ Valider et ajouter les informations du porteur"
             if st.session_state.lang == "French"
@@ -553,6 +555,7 @@ if "final_result" in st.session_state:
                 else "✅ Sections successfully validated! You can now add the project owner information."
             )
             st.success(msg_valide)
+
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL (version corrigée et alignée)
