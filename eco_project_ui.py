@@ -305,23 +305,42 @@ with st.form("user_form"):
     submitted = st.form_submit_button(labels["submit_analysis"])
 
 # ==============================
-#  ANALYSE DU PROJET
+# 🔍 ANALYSE DU PROJET
 # ==============================
 if submitted:
     if not all([title, description, objectif, localisation]):
-        st.warning("Merci de remplir tous les champs avant l’analyse.")
+        msg_warning = (
+            "⚠️ Please fill in all fields before starting the analysis."
+            if st.session_state.lang == "English"
+            else "⚠️ Merci de remplir tous les champs avant l’analyse."
+        )
+        st.warning(msg_warning)
     else:
-       message_loading = "🌱 Project analysis in progress..." if st.session_state.lang == "English" else "🌱 Analyse du projet en cours..."
-message_success = "✅ Project analysis completed successfully!" if st.session_state.lang == "English" else "✅ Analyse du projet terminée avec succès !"
+        message_loading = (
+            "🌱 Project analysis in progress..."
+            if st.session_state.lang == "English"
+            else "🌱 Analyse du projet en cours..."
+        )
+        message_success = (
+            "✅ Project analysis completed successfully!"
+            if st.session_state.lang == "English"
+            else "✅ Analyse du projet terminée avec succès !"
+        )
 
-with st.spinner(message_loading):
-    try:
-        final_result = MultiAgentFusion(title, description, objectif, localisation)
-        st.session_state.final_result = final_result
-        st.success(message_success)
+        with st.spinner(message_loading):
+            try:
+                final_result = MultiAgentFusion(title, description, objectif, localisation)
+                st.session_state.final_result = final_result
+                st.success(message_success)
 
             except Exception as e:
-                st.error(f"Erreur pendant l’analyse : {e}")
+                msg_error = (
+                    f"❌ Error during analysis: {e}"
+                    if st.session_state.lang == "English"
+                    else f"❌ Erreur pendant l’analyse : {e}"
+                )
+                st.error(msg_error)
+
 
 # ==============================
 #  SYNTHÈSE DU PROJET 
