@@ -436,7 +436,7 @@ if submitted:
                 st.error(msg_error)
 
 # ==============================
-# 🧩 SYNTHÈSE DU PROJET — version bilingue intelligente
+# 🧩 SYNTHÈSE DU PROJET — version finale bilingue stable
 # ==============================
 if "final_result" in st.session_state:
     with st.form("synthese_form"):
@@ -444,7 +444,7 @@ if "final_result" in st.session_state:
 
         import re, requests
 
-        # --- Récupération du résultat brut ---
+        # --- Récupération directe des données ---
         data = st.session_state.final_result
         objectif = data.get("objectif", "")
         impact_eco = data.get("impact_eco", "")
@@ -452,7 +452,9 @@ if "final_result" in st.session_state:
         impact_econ = data.get("impact_econ", "")
         plan_action = data.get("plan_action", "")
 
-        # --- Nettoyage du texte ---
+        # =======================
+        # 🧹 Fonctions de nettoyage
+        # =======================
         def clean_text_field(text):
             if not text or text.strip() in [".", "-", "•"]:
                 return ""
@@ -467,58 +469,74 @@ if "final_result" in st.session_state:
             return match.group(1).strip() if match else text.split('.')[0].strip() + '.'
 
         def format_action_plan(plan_text):
+            """Nettoie et structure le plan d’action (3 étapes max)."""
             plan_text = clean_text_field(plan_text)
             steps = re.split(r'[.!?]', plan_text)
             steps = [s.strip() for s in steps if len(s.strip()) > 5]
             steps = steps[:3]
             if not steps:
                 return ""
-            formatted = "\n".join([f"{i+1}. {step.capitalize()}." for i, step in enumerate(steps)])
-            return formatted
+            return "\n".join([f"{i+1}. {step.capitalize()}." for i, step in enumerate(steps)])
 
-        # --- Nettoyage général ---
+        def detect_language(text):
+            """Détecte rapidement si le texte est en anglais ou français."""
+            english_kw = len(re.findall(r"\b(the|and|project|plan|step|impact|development|based|renewable|energy)\b", text, re.I))
+            french_kw = len(re.findall(r"\b(le|la|et|projet|plan|étape|impact|développement|durable|énergie)\b", text, re.I))
+            return "English" if english_kw > french_kw else "French"
+
+        # ============================
+        # 🧠 Préparation et nettoyage
+        # ============================
         objectif = clean_text_field(objectif)
         impact_eco = first_sentence(impact_eco)
         impact_social = first_sentence(impact_social)
         impact_econ = first_sentence(impact_econ)
         plan_action = format_action_plan(plan_action)
 
-        # --- Si le plan est vide OU mal aligné avec la langue, régénère ---
-        if not plan_action or (
-            st.session_state.lang == "French" and re.search(r"[a-z]{3,}", plan_action) and not re.search(r"[éèàçùâêîôû]", plan_action)
-        ) or (
-            st.session_state.lang == "English" and re.search(r"[éèàçùâêîôû]", plan_action)
-        ):
-            try:
-                role = (
-                    "Tu es un expert en développement durable. Génère un plan d’action clair en 3 étapes numérotées pour ce projet."
-                    if st.session_state.lang == "French"
-                    else "You are a sustainability expert. Generate a clear 3-step action plan for this project."
-                )
-                user_input = (
-                    f"Projet : {objectif}\nImpacts : {impact_eco}, {impact_social}, {impact_econ}"
-                    if st.session_state.lang == "French"
-                    else f"Project : {objectif}\nImpacts : {impact_eco}, {impact_social}, {impact_econ}"
-                )
+        # ============================
+        # 🌍 Vérifie et traduit si besoin
+        # ============================
+        detected_lang = detect_language(plan_action)
 
+        if plan_action and st.session_state.lang == "French" and detected_lang == "English":
+            try:
+                role = "Tu es traducteur professionnel. Traduis ce plan d’action en français clair et fluide, garde la numérotation 1, 2, 3."
                 payload = {
                     "model": "mistralai/mistral-nemo",
                     "messages": [
                         {"role": "system", "content": role},
-                        {"role": "user", "content": user_input}
+                        {"role": "user", "content": plan_action}
                     ],
-                    "temperature": 0.6,
+                    "temperature": 0.3,
                     "max_tokens": 250
                 }
-
                 response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
                 response.raise_for_status()
-                raw_plan = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-                plan_action = format_action_plan(raw_plan)
+                plan_action = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
             except Exception as e:
-                plan_action = f"(Erreur de génération automatique : {e})"
+                plan_action = f"(Erreur de traduction automatique : {e})"
 
-        # --- Champs affichés ---
+        elif plan_action and st.session_state.lang == "English" and detected_lang == "French":
+            try:
+                role = "You are a professional translator. Translate this action plan into English, keeping clear numbering 1, 2, 3."
+                payload = {
+                    "model": "mistralai/mistral-nemo",
+                    "messages": [
+                        {"role": "system", "content": role},
+                        {"role": "user", "content": plan_action}
+                    ],
+                    "temperature": 0.3,
+                    "max_tokens": 250
+                }
+                response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
+                response.raise_for_status()
+                plan_action = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+            except Exception as e:
+                plan_action = f"(Translation error: {e})"
+
+        # ============================
+        # 🧾 Champs affichés à l’utilisateur
+        # ============================
         st.session_state.objectif = st.text_area(
             "🎯 Objectif du projet" if st.session_state.lang == "French" else "🎯 Project Objective",
             objectif, height=100
@@ -537,10 +555,12 @@ if "final_result" in st.session_state:
         )
         st.session_state.plan_action = st.text_area(
             "🧭 Plan d’action" if st.session_state.lang == "French" else "🧭 Action Plan",
-            plan_action, height=140
+            plan_action, height=150
         )
 
-        # ✅ Validation
+        # ============================
+        # ✅ Validation du formulaire
+        # ============================
         validated = st.form_submit_button(
             "✅ Valider et ajouter les informations du porteur"
             if st.session_state.lang == "French"
@@ -549,13 +569,11 @@ if "final_result" in st.session_state:
 
         if validated:
             st.session_state.validation_ok = True
-            msg_valide = (
+            st.success(
                 "✅ Sections validées avec succès ! Vous pouvez maintenant ajouter les informations du porteur."
                 if st.session_state.lang == "French"
                 else "✅ Sections successfully validated! You can now add the project owner information."
             )
-            st.success(msg_valide)
-
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL (version corrigée et alignée)
