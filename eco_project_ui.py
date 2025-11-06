@@ -426,11 +426,11 @@ if submitted:
 
                 # ✅ Message de réussite bilingue
                 st.success(message_success)
-except Exception as e:
-    msg_error = (
-        f"❌ Error during analysis: {e}"
-        if st.session_state.lang == "English"
-        else f"❌ Erreur pendant l’analyse : {e}"
+         except Exception as e:
+            msg_error = (
+            f"❌ Error during analysis: {e}"
+            if st.session_state.lang == "English"
+            else f"❌ Erreur pendant l’analyse : {e}"
     )
     st.error(msg_error)
 
