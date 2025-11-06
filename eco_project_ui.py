@@ -175,26 +175,35 @@ NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
 
 # ==============================
-# ⚡ FUSION INTELLIGENTE MULTI-AGENTS (détection de langue fiable)
+# ⚡ FUSION INTELLIGENTE MULTI-AGENTS (détection de langue compatible Streamlit Cloud)
 # ==============================
-from langdetect import detect
 import re, requests
 
 def detect_language(text):
-    """Détecte la langue principale du texte"""
-    try:
-        lang = detect(text)
-        return "English" if lang == "en" else "French"
-    except:
-        # fallback regex simple si langdetect échoue
-        english_keywords = re.findall(r"\b(the|and|project|impact|plan|objective|location|space)\b", text, re.IGNORECASE)
-        french_keywords = re.findall(r"\b(le|la|et|projet|impact|plan|objectif|localisation|espace)\b", text, re.IGNORECASE)
-        return "English" if len(english_keywords) > len(french_keywords) else "French"
+    """Détecte la langue principale du texte (sans dépendances externes)"""
+    english_keywords = re.findall(
+        r"\b(the|and|project|impact|plan|objective|location|space|environment|community|action)\b",
+        text,
+        re.IGNORECASE,
+    )
+    french_keywords = re.findall(
+        r"\b(le|la|et|projet|impact|plan|objectif|localisation|espace|environnement|communaut|action)\b",
+        text,
+        re.IGNORECASE,
+    )
+
+    if len(english_keywords) > len(french_keywords):
+        return "English"
+    elif len(french_keywords) > len(english_keywords):
+        return "French"
+    else:
+        # Fallback : détecte selon les caractères accentués
+        return "French" if re.search(r"[éèàùçâêîôû]", text) else "English"
 
 def clean_text(text):
-    """Supprime les caractères indésirables et les artefacts multilingues"""
-    text = re.sub(r"[^\x00-\x7FÀ-ÿ\n\.\,\;\:\!\?\-\(\)\'\"\s]", "", text)  # enlève les caractères asiatiques
-    text = re.sub(r"\n{3,}", "\n\n", text.strip())  # limite les sauts de ligne
+    """Nettoie les caractères indésirables et artefacts multilingues"""
+    text = re.sub(r"[^\x00-\x7FÀ-ÿ\n\.\,\;\:\!\?\-\(\)\'\"\s]", "", text)  # enlève caractères asiatiques
+    text = re.sub(r"\n{3,}", "\n\n", text.strip())  # limite sauts de ligne
     return text.strip()
 
 def MultiAgentFusion(title, description, objectif, localisation):
