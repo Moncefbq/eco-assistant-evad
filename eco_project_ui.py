@@ -93,9 +93,71 @@ h1, h2, h3, h4, h5, h6, label, p, span, div {
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
 
-# --- Sélecteur de langue ---
-lang = st.radio("🌐 Langue / Language", ["Français", "English"], horizontal=True)
-st.session_state.lang = lang
+# --- Sélecteur de langue stylisé ---
+st.markdown("""
+<style>
+.lang-switch {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 25px;
+}
+.lang-button {
+  border: 2px solid #018262;
+  color: #018262;
+  background-color: white;
+  font-weight: bold;
+  padding: 8px 20px;
+  border-radius: 30px;
+  margin: 0 5px;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+.lang-button:hover {
+  background-color: #cfeee7;
+  color: #014d3b;
+}
+.lang-active {
+  background-color: #018262;
+  color: white;
+  border-color: #018262;
+}
+</style>
+""", unsafe_allow_html=True)
+
+if "lang" not in st.session_state:
+    st.session_state.lang = "Français"
+
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("🇫🇷 Français", key="fr_button", 
+                 help="Basculer l'interface en Français",
+                 use_container_width=True):
+        st.session_state.lang = "Français"
+        st.rerun()
+with col2:
+    if st.button("🇬🇧 English", key="en_button", 
+                 help="Switch interface to English",
+                 use_container_width=True):
+        st.session_state.lang = "English"
+        st.rerun()
+
+# --- Style dynamique selon la langue ---
+if st.session_state.lang == "Français":
+    st.markdown("""
+    <div class="lang-switch">
+        <button class="lang-button lang-active">🇫🇷 Français</button>
+        <button class="lang-button">🇬🇧 English</button>
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <div class="lang-switch">
+        <button class="lang-button">🇫🇷 Français</button>
+        <button class="lang-button lang-active">🇬🇧 English</button>
+    </div>
+    """, unsafe_allow_html=True)
+
 
 # --- Sous-titre descriptif ---
 if lang == "English":
