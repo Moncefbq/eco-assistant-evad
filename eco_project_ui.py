@@ -228,8 +228,6 @@ else:
 
 # ✅ ICI commence ton formulaire
 with st.form("user_form"):
-
-    # 👇 Tout le code à l’intérieur est indenté de 4 espaces
     st.markdown(f"""
         <h2 style='margin-bottom: 0;'>{titre_projet}</h2>
         <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
@@ -242,19 +240,18 @@ with st.form("user_form"):
     objectif = st.text_area("🎯 Objectif du projet", height=100)
     localisation = st.text_input("📍 Localisation")
 
+    # Section espaces
+    st.markdown(f"""
+        <h3 style='margin-bottom: 0;'>{titre_espaces}</h3>
+        <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
+            {sous_titre_espaces}
+        </p>
+    """, unsafe_allow_html=True)
 
-    # Espaces dynamiques
-st.markdown(f"""
-    <h3 style='margin-bottom: 0;'>{titre_espaces}</h3>
-    <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
-        {sous_titre_espaces}
-    </p>
-""", unsafe_allow_html=True)
-
-
-    espaces = []
+    espaces = []   # 👈 cette ligne doit être indentée ici, 4 espaces
     for i in range(st.session_state.nb_espaces):
         espaces.append(st.text_area(f"🏠 Espace {i+1}", key=f"espace_{i+1}", height=80))
+
 
     if st.session_state.nb_espaces < 5:
         if st.form_submit_button("➕ Ajouter un espace"):
