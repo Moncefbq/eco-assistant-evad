@@ -436,7 +436,7 @@ if submitted:
                 st.error(msg_error)
 
 # ==============================
-# 🧩 SYNTHÈSE DU PROJET (version simplifiée et ordonnée)
+# 🧩 SYNTHÈSE DU PROJET (version finale robuste et ordonnée)
 # ==============================
 if "final_result" in st.session_state:
     with st.form("synthese_form"):
@@ -451,34 +451,32 @@ if "final_result" in st.session_state:
         impact_econ = data.get("impact_econ", "")
         plan_action = data.get("plan_action", "")
 
-        # --- Nettoyage de base des textes générés ---
-        import re
+        # --- Nettoyage de base ---
+        import re, requests
 
         def clean_text_field(text):
-            """Nettoie et simplifie le texte (retire markdown, symboles et espace superflu)."""
+            """Nettoie et simplifie le texte (retire markdown, symboles et espaces superflus)."""
             if not text or text.strip() in [".", "-", "•"]:
                 return ""
-            text = re.sub(r"\*+", "", text)               # enlève les **
+            text = re.sub(r"\*+", "", text)  # enlève les ** et *
             text = re.sub(r"^[\-\*\d\.\)]+\s*", "", text, flags=re.MULTILINE)
             text = re.sub(r"\s+", " ", text.strip())
             return text.strip().capitalize()
 
-        # --- Garde uniquement une phrase complète pour chaque impact ---
         def first_sentence(text):
             """Retourne uniquement la première phrase complète du texte."""
             text = clean_text_field(text)
             match = re.match(r'^(.*?[.!?])(\s|$)', text)
             return match.group(1).strip() if match else text.split('.')[0].strip() + '.'
 
-        # --- Simplifie le plan d’action à 3 étapes maximum ---
         def format_action_plan(plan_text):
+            """Simplifie et structure le plan d’action en 3 étapes maximum."""
             plan_text = clean_text_field(plan_text)
-            # Découpe le texte en phrases
             steps = re.split(r'[.!?]', plan_text)
             steps = [s.strip() for s in steps if len(s.strip()) > 5]
-            # Garde seulement 3 phrases principales
             steps = steps[:3]
-            # Ajoute une numérotation claire
+            if not steps:
+                return ""
             formatted = "\n".join([f"{i+1}. {step.capitalize()}." for i, step in enumerate(steps)])
             return formatted
 
@@ -489,31 +487,55 @@ if "final_result" in st.session_state:
         impact_econ = first_sentence(impact_econ)
         plan_action = format_action_plan(plan_action)
 
+        # --- Si le plan est vide → régénération IA automatique ---
+        if not plan_action:
+            try:
+                prompt = (
+                    f"Projet : {objectif}\nImpacts : {impact_eco}, {impact_social}, {impact_econ}\n"
+                    "Génère un plan d’action clair en 3 étapes numérotées pour ce projet."
+                    if st.session_state.lang == "French"
+                    else f"Project: {objectif}\nImpacts: {impact_eco}, {impact_social}, {impact_econ}\n"
+                         "Generate a clear 3-step action plan for this project."
+                )
+
+                payload = {
+                    "model": "mistralai/mistral-nemo",
+                    "messages": [
+                        {"role": "system", "content": "You are an assistant generating concise project action plans."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.5,
+                    "max_tokens": 200
+                }
+
+                response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
+                response.raise_for_status()
+                raw_plan = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                plan_action = format_action_plan(raw_plan)
+
+            except Exception as e:
+                plan_action = f"(Erreur génération du plan : {e})"
+
         # --- Champs affichés à l’utilisateur ---
         st.session_state.objectif = st.text_area(
             "🎯 Objectif du projet" if st.session_state.lang == "French" else "🎯 Project Objective",
-            objectif,
-            height=100
+            objectif, height=100
         )
         st.session_state.impact_eco = st.text_area(
             "🌿 Impact écologique" if st.session_state.lang == "French" else "🌿 Ecological Impact",
-            impact_eco,
-            height=70
+            impact_eco, height=70
         )
         st.session_state.impact_social = st.text_area(
             "🤝 Impact social" if st.session_state.lang == "French" else "🤝 Social Impact",
-            impact_social,
-            height=70
+            impact_social, height=70
         )
         st.session_state.impact_econ = st.text_area(
             "💰 Impact économique" if st.session_state.lang == "French" else "💰 Economic Impact",
-            impact_econ,
-            height=70
+            impact_econ, height=70
         )
         st.session_state.plan_action = st.text_area(
             "🧭 Plan d’action" if st.session_state.lang == "French" else "🧭 Action Plan",
-            plan_action,
-            height=140
+            plan_action, height=140
         )
 
         # ✅ Bouton de validation
@@ -531,7 +553,6 @@ if "final_result" in st.session_state:
                 else "✅ Sections successfully validated! You can now add the project owner information."
             )
             st.success(msg_valide)
-
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL (version corrigée et alignée)
