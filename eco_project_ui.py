@@ -131,7 +131,20 @@ def ask_agent(role_description, user_input):
     return response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
 
 def MultiAgentFusion(title, description, objectif, localisation):
+    # Détection automatique de la langue selon le contenu utilisateur
+    lang = "english" if re.search(r"[a-zA-Z]", title + description + objectif + localisation) and not re.search(r"[éèàùç]", title + description + objectif + localisation) else "french"
+    
     role = (
+        f"You are a collaborative system made up of 4 expert agents: AnalystAgent, EcoAgent, PlannerAgent, and CoordinatorAgent. "
+        f"Together, you analyze the project and produce the following sections, formatted exactly like this:\n\n"
+        f"Solution: ...\n"
+        f"Ecological Impact: ...\n"
+        f"Social Impact: ...\n"
+        f"Economic Impact: ...\n"
+        f"Action Plan: ... (3 to 5 concrete steps)\n\n"
+        f"Be concise, professional, and clear in each section. Write in {lang}."
+        if lang == "english"
+        else
         "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. "
         "Ensemble, vous analysez le projet et produisez les sections suivantes, formatées exactement comme ceci :\n\n"
         "Solution: ...\n"
@@ -139,10 +152,12 @@ def MultiAgentFusion(title, description, objectif, localisation):
         "Impact social: ...\n"
         "Impact économique: ...\n"
         "Plan d’action: ... (3 à 5 étapes concrètes)\n\n"
-        "Sois concis, professionnel et clair dans chaque section."
+        "Sois concis, professionnel et clair dans chaque section. Rédige en français."
     )
+
     user_input = f"Projet: {title}\nDescription: {description}\nObjectif: {objectif}\nLocalisation: {localisation}"
     return ask_agent(role, user_input)
+
 
 # ==============================
 # INTERFACE STREAMLIT
