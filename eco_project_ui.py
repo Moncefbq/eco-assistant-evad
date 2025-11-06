@@ -436,37 +436,32 @@ if submitted:
                 st.error(msg_error)
 
 # ==============================
-#  SYNTHÈSE DU PROJET 
+# 🧩 SYNTHÈSE DU PROJET
 # ==============================
 if "final_result" in st.session_state:
     with st.form("synthese_form"):
         st.subheader(titre_synthese)
 
-        import re, requests
+        # --- Récupération directe des résultats de MultiAgentFusion ---
+        data = st.session_state.final_result
 
-        def extract_section(text, section):
-            """Extraction robuste et propre"""
-            pattern = rf"{section}\s*[:：\-–]?\s*(.*?)(?=\n(?:Solution|Objectif|Impact|Plan|$))"
-            match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
-            return match.group(1).strip() if match else ""
-
-        text = st.session_state.final_result
-
-        # --- Extraction des sections ---
-        objectif = extract_section(text, "Solution")
-        impact_eco = extract_section(text, "Impact écologique")
-        impact_social = extract_section(text, "Impact social")
-        impact_econ = extract_section(text, "Impact économique")
-        plan_action = extract_section(text, "Plan d’action")
+        objectif = data.get("objectif", "")
+        impact_eco = data.get("impact_eco", "")
+        impact_social = data.get("impact_social", "")
+        impact_econ = data.get("impact_econ", "")
+        plan_action = data.get("plan_action", "")
 
         # --- Si le plan d’action est vide → régénération automatique ---
-        if not plan_action or len(plan_action) < 10:
+        if not plan_action or len(plan_action.strip()) < 10:
             try:
                 role = (
                     "Tu es un expert en développement durable. "
-                    "Génère un plan d’action clair avec 3 à 5 étapes courtes et concrètes."
+                    "Génère un plan d’action clair avec 3 à 5 étapes concrètes."
+                    if st.session_state.lang == "French"
+                    else "You are a sustainability expert. Generate a clear 3–5 step action plan."
                 )
-                user_input = f"Projet: {objectif}\nImpacts: {impact_eco}, {impact_social}, {impact_econ}"
+                user_input = f"Project Objective: {objectif}\nImpacts: {impact_eco}, {impact_social}, {impact_econ}"
+
                 payload = {
                     "model": "mistralai/mistral-nemo",
                     "messages": [
@@ -474,7 +469,7 @@ if "final_result" in st.session_state:
                         {"role": "user", "content": user_input}
                     ],
                     "temperature": 0.6,
-                    "max_tokens": 200
+                    "max_tokens": 250
                 }
                 response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
                 response.raise_for_status()
@@ -482,30 +477,61 @@ if "final_result" in st.session_state:
             except Exception as e:
                 plan_action = f"(Erreur génération du plan : {e})"
 
-        # --- Garde une seule phrase complète par impact ---
+        # --- Nettoyage des impacts pour garder une seule phrase claire ---
         def first_sentence(text):
-            text = re.sub(r'\s+', ' ', text.strip())
-            match = re.match(r'^(.*?[.!?])(\s|$)', text)
-            if match:
-                return match.group(1).strip()
-            return text.split('.')[0].strip() + '.'
+            import re
+            text = re.sub(r"\s+", " ", text.strip())
+            match = re.match(r"^(.*?[.!?])(\s|$)", text)
+            return match.group(1).strip() if match else text.split('.')[0].strip() + '.'
 
         impact_eco = first_sentence(impact_eco)
         impact_social = first_sentence(impact_social)
         impact_econ = first_sentence(impact_econ)
 
-        # --- Champs finaux ---
-        st.session_state.objectif = st.text_area(labels["objective_summary"], objectif, height=100)
-        st.session_state.impact_eco = st.text_area(labels["eco_impact"], impact_eco, height=70)
-        st.session_state.impact_social = st.text_area(labels["social_impact"], impact_social, height=70)
-        st.session_state.impact_econ = st.text_area(labels["economic_impact"], impact_econ, height=70)
-        st.session_state.plan_action = st.text_area(labels["action_plan"], plan_action, height=140)
+        # --- Champs affichés à l’utilisateur ---
+        st.session_state.objectif = st.text_area(
+            "🎯 Objectif du projet" if st.session_state.lang == "French" else "🎯 Project Objective",
+            objectif,
+            height=100
+        )
+        st.session_state.impact_eco = st.text_area(
+            "🌿 Impact écologique" if st.session_state.lang == "French" else "🌿 Ecological Impact",
+            impact_eco,
+            height=70
+        )
+        st.session_state.impact_social = st.text_area(
+            "🤝 Impact social" if st.session_state.lang == "French" else "🤝 Social Impact",
+            impact_social,
+            height=70
+        )
+        st.session_state.impact_econ = st.text_area(
+            "💰 Impact économique" if st.session_state.lang == "French" else "💰 Economic Impact",
+            impact_econ,
+            height=70
+        )
+        st.session_state.plan_action = st.text_area(
+            "🧭 Plan d’action" if st.session_state.lang == "French" else "🧭 Action Plan",
+            plan_action,
+            height=140
+        )
 
-        validated = st.form_submit_button(labels["validate"])
+        # ✅ Bouton de validation du résumé
+        validated = st.form_submit_button(
+            "✅ Valider et ajouter les informations du porteur"
+            if st.session_state.lang == "French"
+            else "✅ Validate and Add Project Owner Information"
+        )
+
+        # --- Validation réussie ---
         if validated:
             st.session_state.validation_ok = True
-            msg_valide = "✅ Sections successfully validated!" if st.session_state.lang == "English" else "✅ Sections validées avec succès !"
+            msg_valide = (
+                "✅ Sections validées avec succès ! Vous pouvez maintenant ajouter les informations du porteur."
+                if st.session_state.lang == "French"
+                else "✅ Sections successfully validated! You can now add the project owner information."
+            )
             st.success(msg_valide)
+
  
 
 
