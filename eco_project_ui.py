@@ -288,6 +288,7 @@ if "final_result" in st.session_state:
         impact_social = extract_section(text, "Impact social") or extract_section(text, "Social impact")
         impact_econ = extract_section(text, "Impact économique") or extract_section(text, "Economic impact")
         plan_action = extract_section(text, "Plan d’action") or extract_section(text, "Action plan")
+
 # --- Si le plan d’action est vide → régénération automatique bilingue ---
 if not plan_action or len(plan_action.strip()) < 10:
     try:
@@ -335,17 +336,19 @@ if not plan_action or len(plan_action.strip()) < 10:
     except Exception as e:
         plan_action = f"(Erreur génération du plan : {e})"
 
+# --- Formulaire Streamlit (affichage) ---
+st.session_state.objectif = st.text_area("🎯 Objectif du projet", objectif, height=100)
+st.session_state.impact_eco = st.text_area("🌿 Impact écologique", impact_eco, height=70)
+st.session_state.impact_social = st.text_area("🤝 Impact social", impact_social, height=70)
+st.session_state.impact_econ = st.text_area("💰 Impact économique", impact_econ, height=70)
+st.session_state.plan_action = st.text_area("🧭 Plan d’action", plan_action, height=140)
 
-        st.session_state.objectif = st.text_area("🎯 Objectif du projet", objectif, height=100)
-        st.session_state.impact_eco = st.text_area("🌿 Impact écologique", impact_eco, height=70)
-        st.session_state.impact_social = st.text_area("🤝 Impact social", impact_social, height=70)
-        st.session_state.impact_econ = st.text_area("💰 Impact économique", impact_econ, height=70)
-        st.session_state.plan_action = st.text_area("🧭 Plan d’action", plan_action, height=140)
+validated = st.form_submit_button("✅ Valider et ajouter les informations du porteur")
 
-        validated = st.form_submit_button("✅ Valider et ajouter les informations du porteur")
-        if validated:
-            st.session_state.validation_ok = True
-            st.success("✅ Sections validées avec succès !")
+if validated:
+    st.session_state.validation_ok = True
+    st.success("✅ Sections validées avec succès !")
+
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL
