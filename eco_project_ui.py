@@ -435,160 +435,124 @@ if submitted:
                 )
                 st.error(msg_error)
 
-
 # ==============================
-# 🧩 Fonction auto-fill (régénération si vide)
-# ==============================
-def regenerate_if_empty(label, context, current_value):
-    if current_value and len(current_value) > 10:
-        return current_value
-
-    role = (
-        f"Tu es un expert en développement durable. Rédige une phrase claire pour : {label}."
-        if current_lang == "French"
-        else f"You are a sustainability expert. Write a clear sentence for: {label}."
-    )
-
-    try:
-        payload = {
-            "model": "mistralai/mistral-nemo",
-            "messages": [
-                {"role": "system", "content": role},
-                {"role": "user", "content": context}
-            ],
-            "temperature": 0.6,
-            "max_tokens": 120
-        }
-
-        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-        response.raise_for_status()
-        text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-        return clean_text(text)
-
-    except Exception as e:
-        st.warning(f"⚠️ Erreur pendant la régénération automatique du texte : {e}")
-        return f"[Erreur auto-fill : {e}]"
-
-# ==============================
-# 🧩 SYNTHÈSE DU PROJET — version finale intelligente et multilingue
+# 🧩 SYNTHÈSE DU PROJET (version finale robuste et ordonnée)
 # ==============================
 if "final_result" in st.session_state:
     with st.form("synthese_form"):
         st.subheader(titre_synthese)
 
+        # --- Récupération directe des résultats de MultiAgentFusion ---
+        data = st.session_state.final_result
+
+        objectif = data.get("objectif", "")
+        impact_eco = data.get("impact_eco", "")
+        impact_social = data.get("impact_social", "")
+        impact_econ = data.get("impact_econ", "")
+        plan_action = data.get("plan_action", "")
+
+        # --- Nettoyage de base ---
         import re, requests
 
-        # --- Récupération des données depuis l’analyse précédente ---
-        data = st.session_state.final_result
-        objectif = data.get("objectif", "").strip()
-        impact_eco = data.get("impact_eco", "").strip()
-        impact_social = data.get("impact_social", "").strip()
-        impact_econ = data.get("impact_econ", "").strip()
-        plan_action = data.get("plan_action", "").strip()
-
-        # ===============================
-        # 🧹 Fonctions utilitaires
-        # ===============================
-        def clean_text(text):
+        def clean_text_field(text):
+            """Nettoie et simplifie le texte (retire markdown, symboles et espaces superflus)."""
             if not text or text.strip() in [".", "-", "•"]:
                 return ""
-            text = re.sub(r"\*+", "", text)
+            text = re.sub(r"\*+", "", text)  # enlève les ** et *
             text = re.sub(r"^[\-\*\d\.\)]+\s*", "", text, flags=re.MULTILINE)
             text = re.sub(r"\s+", " ", text.strip())
             return text.strip().capitalize()
 
         def first_sentence(text):
-            text = clean_text(text)
-            m = re.match(r"^(.*?[.!?])(\s|$)", text)
-            return m.group(1).strip() if m else text.split(".")[0].strip() + "."
+            """Retourne uniquement la première phrase complète du texte."""
+            text = clean_text_field(text)
+            match = re.match(r'^(.*?[.!?])(\s|$)', text)
+            return match.group(1).strip() if match else text.split('.')[0].strip() + '.'
 
         def format_action_plan(plan_text):
-            plan_text = clean_text(plan_text)
-            steps = re.split(r"[.!?]", plan_text)
+            """Simplifie et structure le plan d’action en 3 étapes maximum."""
+            plan_text = clean_text_field(plan_text)
+            steps = re.split(r'[.!?]', plan_text)
             steps = [s.strip() for s in steps if len(s.strip()) > 5]
-            if len(steps) < 3:
-                while len(steps) < 3:
-                    steps.append(
-                        "Compléter cette étape selon les besoins du projet"
-                        if st.session_state.lang == "French"
-                        else "Complete this step according to the project needs"
-                    )
-            formatted = "\n".join([f"{i+1}. {s.capitalize()}." for i, s in enumerate(steps[:3])])
+            steps = steps[:3]
+            if not steps:
+                return ""
+            formatted = "\n".join([f"{i+1}. {step.capitalize()}." for i, step in enumerate(steps)])
             return formatted
 
-        def detect_language(text):
-            """Détecte si le texte est FR ou EN"""
-            en_kw = len(re.findall(r"\b(the|and|project|plan|step|impact|development|energy)\b", text, re.I))
-            fr_kw = len(re.findall(r"\b(le|la|et|projet|plan|étape|impact|développement|énergie|durable)\b", text, re.I))
-            return "English" if en_kw > fr_kw else "French"
-
-        # ===============================
-        # 🧠 Préparation de base
-        # ===============================
-        objectif = clean_text(objectif)
+        # --- Application du nettoyage ---
+        objectif = clean_text_field(objectif)
         impact_eco = first_sentence(impact_eco)
         impact_social = first_sentence(impact_social)
         impact_econ = first_sentence(impact_econ)
         plan_action = format_action_plan(plan_action)
 
-        # ===============================
-        # 🌍 Détection de la langue de l'utilisateur
-        # ===============================
-        user_text = " ".join([objectif, impact_eco, impact_social, impact_econ])
-        detected_user_lang = detect_language(user_text)
-        current_lang = detected_user_lang or st.session_state.lang  # priorité à la langue écrite
-
-        # ===============================
-        # 🧩 Fonction auto-fill (régénération si vide)
-        # ===============================
-        def regenerate_if_empty(label, context, current_value):
-            if current_value and len(current_value) > 10:
-                return current_value
-
-            role = (
-                f"Tu es un expert en développement durable. Rédige une phrase claire pour : {label}."
-                if current_lang == "French"
-                else f"You are a sustainability expert. Write a clear sentence for: {label}."
-            )
-
+        # --- Si le plan est vide → régénération IA automatique ---
+        if not plan_action:
             try:
+                prompt = (
+                    f"Projet : {objectif}\nImpacts : {impact_eco}, {impact_social}, {impact_econ}\n"
+                    "Génère un plan d’action clair en 3 étapes numérotées pour ce projet."
+                    if st.session_state.lang == "French"
+                    else f"Project: {objectif}\nImpacts: {impact_eco}, {impact_social}, {impact_econ}\n"
+                         "Generate a clear 3-step action plan for this project."
+                )
+
                 payload = {
                     "model": "mistralai/mistral-nemo",
                     "messages": [
-                        {"role": "system", "content": role},
-                        {"role": "user", "content": context}
+                        {"role": "system", "content": "You are an assistant generating concise project action plans."},
+                        {"role": "user", "content": prompt}
                     ],
-                    "temperature": 0.6,
-                    "max_tokens": 120
+                    "temperature": 0.5,
+                    "max_tokens": 200
                 }
 
                 response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
                 response.raise_for_status()
-                text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-                return clean_text(text)
+                raw_plan = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                plan_action = format_action_plan(raw_plan)
 
             except Exception as e:
-                st.warning(f"⚠️ Erreur pendant la régénération automatique du texte : {e}")
-                return f"[Erreur auto-fill : {e}]"
+                plan_action = f"(Erreur génération du plan : {e})"
 
-        # ===============================
-        # ✅ Bouton de validation du formulaire (bilingue)
-        # ===============================
+        # --- Champs affichés à l’utilisateur ---
+        st.session_state.objectif = st.text_area(
+            "🎯 Objectif du projet" if st.session_state.lang == "French" else "🎯 Project Objective",
+            objectif, height=100
+        )
+        st.session_state.impact_eco = st.text_area(
+            "🌿 Impact écologique" if st.session_state.lang == "French" else "🌿 Ecological Impact",
+            impact_eco, height=70
+        )
+        st.session_state.impact_social = st.text_area(
+            "🤝 Impact social" if st.session_state.lang == "French" else "🤝 Social Impact",
+            impact_social, height=70
+        )
+        st.session_state.impact_econ = st.text_area(
+            "💰 Impact économique" if st.session_state.lang == "French" else "💰 Economic Impact",
+            impact_econ, height=70
+        )
+        st.session_state.plan_action = st.text_area(
+            "🧭 Plan d’action" if st.session_state.lang == "French" else "🧭 Action Plan",
+            plan_action, height=140
+        )
+
+        # ✅ Bouton de validation
         validated = st.form_submit_button(
             "✅ Valider et ajouter les informations du porteur"
-            if current_lang == "French"
+            if st.session_state.lang == "French"
             else "✅ Validate and Add Project Owner Information"
         )
 
         if validated:
             st.session_state.validation_ok = True
-            success_message = (
+            msg_valide = (
                 "✅ Sections validées avec succès ! Vous pouvez maintenant ajouter les informations du porteur."
-                if current_lang == "French"
+                if st.session_state.lang == "French"
                 else "✅ Sections successfully validated! You can now add the project owner information."
             )
-            st.success(success_message)
-
+            st.success(msg_valide)
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL (version corrigée et alignée)
@@ -597,7 +561,6 @@ if st.session_state.get("validation_ok"):
     with st.form("porteur_form"):
         st.subheader(titre_porteur)
 
-        # --- Champs du porteur ---
         leader = st.text_input(labels["leader_name"])
         email = st.text_input(labels["email"])
         status = st.selectbox(
@@ -606,74 +569,62 @@ if st.session_state.get("validation_ok"):
             index=0
         )
 
-        # --- Bouton d’enregistrement ---
         saved = st.form_submit_button(labels["save"])
 
         if saved:
             UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
             headers = {"xc-token": NOCODB_API_TOKEN, "Accept": "application/json"}
-            file_attachment = []
 
-            # ==============================
-            # 📤 Upload du fichier (optionnel)
-            # ==============================
+            file_attachment = []
             if uploaded_doc is not None:
                 try:
                     files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
                     up = requests.post(UPLOAD_URL, headers=headers, files=files)
                     up.raise_for_status()
                     data = up.json()
-                    file_attachment = [{"path": data["path"], "url": data["url"]}]
+
+                    # Vérifie le format de la réponse (list ou dict)
+                    if isinstance(data, dict) and "list" in data:
+                        f = data["list"][0]
+                    elif isinstance(data, list) and len(data) > 0:
+                        f = data[0]
+                    else:
+                        f = None
+
+                    if f:
+                        url = f.get("url", "")
+                        signed = f.get("signedUrl", "")
+                        title = f.get("title", uploaded_doc.name)
+                        mimetype = f.get("mimetype", uploaded_doc.type or "image/png")
+
+                        # Correction du chemin
+                        path = f.get("path", "")
+                        if not path:
+                            if "/nc/uploads/" in url:
+                                path = url[url.index("/nc/"):]
+                            elif "/nc/uploads/" in signed:
+                                path = signed[signed.index("/nc/"):]
+                            else:
+                                path = f"/nc/uploads/{title}"
+
+                        file_attachment = [{
+                            "title": title,
+                            "path": path,
+                            "url": signed or url,
+                            "mimetype": mimetype
+                        }]
+
+                        st.toast("📎 Fichier uploadé avec succès", icon="📤")
+                        try:
+                            st.image(uploaded_doc.getvalue(), caption=title, use_container_width=True)
+                        except:
+                            pass
+                    else:
+                        st.warning("⚠️ Aucun fichier détecté dans la réponse d’upload.")
                 except Exception as e:
-                    st.warning(f"⚠️ Erreur lors du téléchargement du fichier : {e}")
-                    file_attachment = []
+                    st.error(f"Erreur lors de l’upload : {e}")
 
-            # ==============================
-            # 🧩 Vérification du format de la réponse d’upload
-            # ==============================
-            try:
-                f = None
-                if isinstance(data, dict) and "list" in data:
-                    f = data["list"][0]
-                elif isinstance(data, list) and len(data) > 0:
-                    f = data[0]
-
-                if f:
-                    url = f.get("url", "")
-                    signed = f.get("signedUrl", "")
-                    title = f.get("title", uploaded_doc.name if uploaded_doc else "Document")
-                    mimetype = f.get("mimetype", uploaded_doc.type if uploaded_doc else "image/png")
-
-                    # --- Correction du chemin ---
-                    path = f.get("path", "")
-                    if not path:
-                        if "/nc/uploads/" in url:
-                            path = url[url.index("/nc/"):]
-                        elif "/nc/uploads/" in signed:
-                            path = signed[signed.index("/nc/"):]
-                        else:
-                            path = f"/nc/uploads/{title}"
-
-                    file_attachment = [{
-                        "title": title,
-                        "path": path,
-                        "url": signed or url,
-                        "mimetype": mimetype
-                    }]
-
-                    st.toast("📎 Fichier uploadé avec succès", icon="📤")
-                    try:
-                        st.image(uploaded_doc.getvalue(), caption=title, use_container_width=True)
-                    except Exception:
-                        pass
-                else:
-                    st.warning("⚠️ Aucun fichier détecté dans la réponse d’upload.")
-            except Exception as e:
-                st.error(f"Erreur lors de l’upload : {e}")
-
-            # ==============================
-            # 🧱 Construction du payload principal
-            # ==============================
+            # --- Construction du payload principal ---
             payload = {
                 "Title": title,
                 "Description": description,
@@ -693,18 +644,17 @@ if st.session_state.get("validation_ok"):
                 "espace 5": espaces[4] if len(espaces) > 4 else "",
             }
 
-            # --- Jointure du fichier uploadé ---
             if file_attachment:
-                payload["Logo + docs"] = file_attachment  # ✅ format NoCoDB correct
+                payload["Logo + docs"] = file_attachment  # ✅ format correct pour NoCoDB
 
-            # ==============================
-            # 🚀 Envoi du projet vers NoCoDB
-            # ==============================
+            # --- Envoi vers NoCoDB ---
             try:
+                # 🔐 En-têtes pour NoCoDB
                 headers = {
                     "xc-token": NOCODB_API_TOKEN,
                     "Accept": "application/json"
                 }
+
                 r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
 
                 if r.status_code in (200, 201):
@@ -721,6 +671,7 @@ if st.session_state.get("validation_ok"):
                         else "🌱 Projet enregistré avec succès"
                     )
                     st.toast(msg_toast, icon="🌱")
+
                 else:
                     msg_error_api = (
                         f"❌ API Error {r.status_code}: {r.text}"
