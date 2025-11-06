@@ -436,7 +436,7 @@ if submitted:
                 st.error(msg_error)
 
 # ==============================
-# 🧩 SYNTHÈSE DU PROJET
+# 🧩 SYNTHÈSE DU PROJET (version simplifiée et ordonnée)
 # ==============================
 if "final_result" in st.session_state:
     with st.form("synthese_form"):
@@ -451,60 +451,43 @@ if "final_result" in st.session_state:
         impact_econ = data.get("impact_econ", "")
         plan_action = data.get("plan_action", "")
 
-        # --- Si le plan d’action est vide → régénération automatique ---
-        if not plan_action or len(plan_action.strip()) < 10:
-            try:
-                role = (
-                    "Tu es un expert en développement durable. "
-                    "Génère un plan d’action clair avec 3 à 5 étapes concrètes."
-                    if st.session_state.lang == "French"
-                    else "You are a sustainability expert. Generate a clear 3–5 step action plan."
-                )
-                user_input = f"Project Objective: {objectif}\nImpacts: {impact_eco}, {impact_social}, {impact_econ}"
+        # --- Nettoyage de base des textes générés ---
+        import re
 
-                payload = {
-                    "model": "mistralai/mistral-nemo",
-                    "messages": [
-                        {"role": "system", "content": role},
-                        {"role": "user", "content": user_input}
-                    ],
-                    "temperature": 0.6,
-                    "max_tokens": 250
-                }
-                response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-                response.raise_for_status()
-                plan_action = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-            except Exception as e:
-                plan_action = f"(Erreur génération du plan : {e})"
-
-        # --- Nettoyage et correction des textes générés ---
         def clean_text_field(text):
-            """Nettoie le texte brut généré (markdown, espaces, caractères inutiles)"""
-            import re
+            """Nettoie et simplifie le texte (retire markdown, symboles et espace superflu)."""
             if not text or text.strip() in [".", "-", "•"]:
-                return ""  # remplace les points ou tirets vides
-
-            # Supprime les balises markdown
-            text = re.sub(r"\*+", "", text)
-
-            # Supprime les listes ou caractères parasites
-            text = re.sub(r"^[\-\*\d\.\)]+\s*", "", text, flags=re.MULTILINE)
-
-            # Normalise les espaces
-            text = re.sub(r"\s+", " ", text.strip())
-
-            # Supprime les lignes trop courtes ou sans sens
-            if len(text) < 3:
                 return ""
-
+            text = re.sub(r"\*+", "", text)               # enlève les **
+            text = re.sub(r"^[\-\*\d\.\)]+\s*", "", text, flags=re.MULTILINE)
+            text = re.sub(r"\s+", " ", text.strip())
             return text.strip().capitalize()
 
-        # --- Application du nettoyage sur toutes les sections ---
+        # --- Garde uniquement une phrase complète pour chaque impact ---
+        def first_sentence(text):
+            """Retourne uniquement la première phrase complète du texte."""
+            text = clean_text_field(text)
+            match = re.match(r'^(.*?[.!?])(\s|$)', text)
+            return match.group(1).strip() if match else text.split('.')[0].strip() + '.'
+
+        # --- Simplifie le plan d’action à 3 étapes maximum ---
+        def format_action_plan(plan_text):
+            plan_text = clean_text_field(plan_text)
+            # Découpe le texte en phrases
+            steps = re.split(r'[.!?]', plan_text)
+            steps = [s.strip() for s in steps if len(s.strip()) > 5]
+            # Garde seulement 3 phrases principales
+            steps = steps[:3]
+            # Ajoute une numérotation claire
+            formatted = "\n".join([f"{i+1}. {step.capitalize()}." for i, step in enumerate(steps)])
+            return formatted
+
+        # --- Application du nettoyage ---
         objectif = clean_text_field(objectif)
-        impact_eco = clean_text_field(impact_eco)
-        impact_social = clean_text_field(impact_social)
-        impact_econ = clean_text_field(impact_econ)
-        plan_action = clean_text_field(plan_action)
+        impact_eco = first_sentence(impact_eco)
+        impact_social = first_sentence(impact_social)
+        impact_econ = first_sentence(impact_econ)
+        plan_action = format_action_plan(plan_action)
 
         # --- Champs affichés à l’utilisateur ---
         st.session_state.objectif = st.text_area(
@@ -533,14 +516,13 @@ if "final_result" in st.session_state:
             height=140
         )
 
-        # ✅ Bouton de validation du résumé
+        # ✅ Bouton de validation
         validated = st.form_submit_button(
             "✅ Valider et ajouter les informations du porteur"
             if st.session_state.lang == "French"
             else "✅ Validate and Add Project Owner Information"
         )
 
-        # --- Validation réussie ---
         if validated:
             st.session_state.validation_ok = True
             msg_valide = (
@@ -549,6 +531,7 @@ if "final_result" in st.session_state:
                 else "✅ Sections successfully validated! You can now add the project owner information."
             )
             st.success(msg_valide)
+
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL (version corrigée et alignée)
