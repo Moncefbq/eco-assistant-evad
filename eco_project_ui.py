@@ -195,6 +195,7 @@ if submitted:
                 final_result = MultiAgentFusion(title, description, objectif, localisation)
                 st.session_state.final_result = final_result
                 st.success("✅ Analyse du projet terminée avec succès !")
+                st.experimental_rerun()  # ⚡ Ajout ici
             except Exception as e:
                 st.error(f"Erreur pendant l’analyse : {e}")
 
