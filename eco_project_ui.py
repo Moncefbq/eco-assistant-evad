@@ -175,18 +175,42 @@ def MultiAgentFusion(title, description, objectif, localisation, lang):
     if lang == "English":
         role = (
             "You are a collaborative system made of 4 experts: AnalystAgent, EcoAgent, PlannerAgent, and CoordinatorAgent. "
-            "Together you analyze the project and generate these sections:\n\n"
-            "Solution: ...\nEcological impact: ...\nSocial impact: ...\nEconomic impact: ...\nAction plan: ... (3 to 5 concrete steps)"
+            "Together, you analyze the project and produce the following structured sections clearly and concisely:\n\n"
+            "Solution:\n"
+            "Ecological Impact:\n"
+            "Social Impact:\n"
+            "Economic Impact:\n"
+            "Action Plan: (3 to 5 short and concrete steps)\n\n"
+            "Please respond strictly in English, keeping a professional and readable tone."
         )
-        user_input = f"Project: {title}\nDescription: {description}\nObjective: {objectif}\nLocation: {localisation}"
+        user_input = (
+            f"Project Name: {title}\n"
+            f"Description: {description}\n"
+            f"Objective: {objectif}\n"
+            f"Location: {localisation}\n"
+            f"Language: English"
+        )
     else:
         role = (
             "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. "
-            "Ensemble, vous analysez le projet et produisez les sections suivantes : "
-            "Solution, Impact écologique, Impact social, Impact économique, Plan d’action (3 à 5 étapes concrètes)."
+            "Ensemble, vous analysez le projet et produisez les sections suivantes, de manière claire et professionnelle :\n\n"
+            "Solution :\n"
+            "Impact écologique :\n"
+            "Impact social :\n"
+            "Impact économique :\n"
+            "Plan d’action : (3 à 5 étapes concrètes)\n\n"
+            "Réponds strictement en français."
         )
-        user_input = f"Projet: {title}\nDescription: {description}\nObjectif: {objectif}\nLocalisation: {localisation}"
+        user_input = (
+            f"Nom du projet : {title}\n"
+            f"Description : {description}\n"
+            f"Objectif : {objectif}\n"
+            f"Localisation : {localisation}\n"
+            f"Langue : Français"
+        )
+
     return ask_agent(role, user_input)
+
 
 # ===============================
 # 🧾 FORMULAIRE PRINCIPAL
