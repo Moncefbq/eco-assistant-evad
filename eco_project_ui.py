@@ -175,35 +175,60 @@ NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
 
 # ==============================
-# ⚡ FUSION INTELLIGENTE MULTI-AGENTS
+# ⚡ FUSION INTELLIGENTE MULTI-AGENTS (avec détection de langue)
 # ==============================
-def ask_agent(role_description, user_input):
+def detect_language(text):
+    """Détecte si le texte est majoritairement en anglais ou en français"""
+    import re
+    english_keywords = re.findall(r"\b(the|and|project|impact|plan|objective|location|space)\b", text, re.IGNORECASE)
+    french_keywords = re.findall(r"\b(le|la|et|projet|impact|plan|objectif|localisation|espace)\b", text, re.IGNORECASE)
+    return "English" if len(english_keywords) > len(french_keywords) else "French"
+
+def MultiAgentFusion(title, description, objectif, localisation):
+    # Concatène le contenu utilisateur
+    user_input = f"Title: {title}\nDescription: {description}\nObjective: {objectif}\nLocation: {localisation}"
+    
+    # 🔍 Détection automatique de la langue
+    detected_lang = detect_language(user_input)
+
+    # 🌐 Rôle de l’agent multilingue
+    if detected_lang == "English":
+        role = (
+            "You are a collaborative system of 4 experts: AnalystAgent, EcoAgent, PlannerAgent, and CoordinatorAgent. "
+            "Together you analyze the project and produce the following sections in English, with clear and concise language:\n\n"
+            "Solution: ...\n"
+            "Ecological Impact: ...\n"
+            "Social Impact: ...\n"
+            "Economic Impact: ...\n"
+            "Action Plan: ... (3 to 5 clear and practical steps)\n\n"
+            "Keep the tone professional and the content coherent."
+        )
+    else:
+        role = (
+            "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. "
+            "Ensemble, vous analysez le projet et produisez les sections suivantes en français, de manière claire et concise :\n\n"
+            "Solution : ...\n"
+            "Impact écologique : ...\n"
+            "Impact social : ...\n"
+            "Impact économique : ...\n"
+            "Plan d’action : ... (3 à 5 étapes concrètes et réalistes)\n\n"
+            "Reste professionnel et cohérent dans chaque section."
+        )
+
     payload = {
         "model": "mistralai/mistral-nemo",
         "messages": [
-            {"role": "system", "content": role_description},
+            {"role": "system", "content": role},
             {"role": "user", "content": user_input}
         ],
         "temperature": 0.7,
         "max_tokens": 800
     }
+
     response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
     response.raise_for_status()
     return response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
 
-def MultiAgentFusion(title, description, objectif, localisation):
-    role = (
-        "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. "
-        "Ensemble, vous analysez le projet et produisez les sections suivantes, formatées exactement comme ceci :\n\n"
-        "Solution: ...\n"
-        "Impact écologique: ...\n"
-        "Impact social: ...\n"
-        "Impact économique: ...\n"
-        "Plan d’action: ... (3 à 5 étapes concrètes)\n\n"
-        "Sois concis, professionnel et clair dans chaque section."
-    )
-    user_input = f"Projet: {title}\nDescription: {description}\nObjectif: {objectif}\nLocalisation: {localisation}"
-    return ask_agent(role, user_input)
 
 # ==============================
 # INTERFACE STREAMLIT
