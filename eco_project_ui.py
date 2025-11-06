@@ -426,18 +426,45 @@ if submitted:
 
                 # ✅ Message de réussite bilingue
                 st.success(message_success)
+except Exception as e:
+    msg_error = (
+        f"❌ Error during analysis: {e}"
+        if st.session_state.lang == "English"
+        else f"❌ Erreur pendant l’analyse : {e}"
+    )
+    st.error(msg_error)
 
-            except Exception as e:
-                msg_error = (
-                    f"❌ Error during analysis: {e}"
-                    if st.session_state.lang == "English"
-                    else f"❌ Erreur pendant l’analyse : {e}"
-                )
-                st.error(msg_error)
-        except Exception as e:
-            st.warning(f"⚠️ Erreur pendant la régénération automatique du texte : {e}")
-            return f"[Erreur auto-fill : {e}]"
+# ==============================
+# 🧩 Fonction auto-fill (régénération si vide)
+# ==============================
+def regenerate_if_empty(label, context, current_value):
+    if current_value and len(current_value) > 10:
+        return current_value
 
+    role = (
+        f"Tu es un expert en développement durable. Rédige une phrase claire pour : {label}."
+        if current_lang == "French"
+        else f"You are a sustainability expert. Write a clear sentence for: {label}."
+    )
+
+    try:
+        payload = {
+            "model": "mistralai/mistral-nemo",
+            "messages": [
+                {"role": "system", "content": role},
+                {"role": "user", "content": context}
+            ],
+            "temperature": 0.6,
+            "max_tokens": 120
+        }
+        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
+        response.raise_for_status()
+        text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+        return clean_text(text)
+
+    except Exception as e:
+        st.warning(f"⚠️ Erreur pendant la régénération automatique du texte : {e}")
+        return f"[Erreur auto-fill : {e}]"
 
 # ==============================
 # 🧩 SYNTHÈSE DU PROJET — version finale intelligente et multilingue
