@@ -175,58 +175,46 @@ NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
 
 # ==============================
-# ⚡ FUSION INTELLIGENTE MULTI-AGENTS (détection de langue compatible Streamlit Cloud)
+# ⚡ FUSION INTELLIGENTE MULTI-AGENTS (robuste et bilingue)
 # ==============================
 import re, requests
 
 def detect_language(text):
-    """Détecte la langue principale du texte (sans dépendances externes)"""
     english_keywords = re.findall(
         r"\b(the|and|project|impact|plan|objective|location|space|environment|community|action)\b",
-        text,
-        re.IGNORECASE,
-    )
+        text, re.IGNORECASE)
     french_keywords = re.findall(
         r"\b(le|la|et|projet|impact|plan|objectif|localisation|espace|environnement|communaut|action)\b",
-        text,
-        re.IGNORECASE,
-    )
-
+        text, re.IGNORECASE)
     if len(english_keywords) > len(french_keywords):
         return "English"
     elif len(french_keywords) > len(english_keywords):
         return "French"
     else:
-        # Fallback : détecte selon les caractères accentués
         return "French" if re.search(r"[éèàùçâêîôû]", text) else "English"
 
 def clean_text(text):
-    """Nettoie les caractères indésirables et artefacts multilingues"""
-    text = re.sub(r"[^\x00-\x7FÀ-ÿ\n\.\,\;\:\!\?\-\(\)\'\"\s]", "", text)  # enlève caractères asiatiques
-    text = re.sub(r"\n{3,}", "\n\n", text.strip())  # limite sauts de ligne
+    text = re.sub(r"[^\x00-\x7FÀ-ÿ\n\.\,\;\:\!\?\-\(\)\'\"\s]", "", text)
+    text = re.sub(r"\n{3,}", "\n\n", text.strip())
     return text.strip()
 
 def MultiAgentFusion(title, description, objectif, localisation):
-    # Concatène le contenu utilisateur
     user_input = f"Title: {title}\nDescription: {description}\nObjective: {objectif}\nLocation: {localisation}"
-    
-    # 🔍 Détection automatique de la langue
     detected_lang = detect_language(user_input)
 
-    # 🌐 Rôle du système IA
     if detected_lang == "English":
         role = (
-            "You are a collaborative system of 4 expert agents: AnalystAgent, EcoAgent, PlannerAgent, and CoordinatorAgent. "
-            "Analyze the project and generate the following sections **entirely in English**, using clear and concise sentences:\n\n"
-            "Solution:\nEcological Impact:\nSocial Impact:\nEconomic Impact:\nAction Plan (3–5 practical steps).\n\n"
-            "Keep the tone professional, structured, and coherent. Avoid foreign characters."
+            "You are a collaborative team of 4 experts: AnalystAgent, EcoAgent, PlannerAgent, and CoordinatorAgent. "
+            "Analyze this project and generate **all outputs entirely in English** with the following structure:\n\n"
+            "Solution:\nEcological Impact:\nSocial Impact:\nEconomic Impact:\nAction Plan (3–5 clear practical steps).\n\n"
+            "Be clear, concise, and professional."
         )
     else:
         role = (
             "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. "
-            "Analyse le projet et rédige les sections suivantes **entièrement en français**, de manière claire et concise :\n\n"
+            "Analyse ce projet et produis **toutes les sections en français** avec la structure suivante :\n\n"
             "Solution :\nImpact écologique :\nImpact social :\nImpact économique :\nPlan d’action (3 à 5 étapes concrètes et réalistes).\n\n"
-            "Reste professionnel, structuré et cohérent. N’utilise aucune autre langue."
+            "Sois clair, concis et professionnel."
         )
 
     payload = {
@@ -236,14 +224,30 @@ def MultiAgentFusion(title, description, objectif, localisation):
             {"role": "user", "content": user_input}
         ],
         "temperature": 0.6,
-        "max_tokens": 800
+        "max_tokens": 900
     }
 
-    response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-    response.raise_for_status()
+    try:
+        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
+        response.raise_for_status()
+        result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+        result = clean_text(result)
 
-    result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-    return clean_text(result)
+        # 🔁 Relance automatique si vide
+        if len(result.strip()) < 30:
+            st.warning("⚠️ Première réponse vide, relance automatique de l'analyse...")
+            response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
+            response.raise_for_status()
+            result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+            result = clean_text(result)
+
+        if not result:
+            st.error("❌ Aucune réponse générée par l’IA.")
+        return result
+
+    except Exception as e:
+        st.error(f"⚠️ Erreur lors de la génération IA : {e}")
+        return "⚠️ Error during AI generation. Please try again."
 
 
 # ==============================
