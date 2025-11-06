@@ -426,13 +426,15 @@ if submitted:
 
                 # ✅ Message de réussite bilingue
                 st.success(message_success)
-         except Exception as e:
-            msg_error = (
-            f"❌ Error during analysis: {e}"
-            if st.session_state.lang == "English"
-            else f"❌ Erreur pendant l’analyse : {e}"
-    )
-    st.error(msg_error)
+
+            except Exception as e:
+                msg_error = (
+                    f"❌ Error during analysis: {e}"
+                    if st.session_state.lang == "English"
+                    else f"❌ Erreur pendant l’analyse : {e}"
+                )
+                st.error(msg_error)
+
 
 # ==============================
 # 🧩 Fonction auto-fill (régénération si vide)
@@ -457,6 +459,7 @@ def regenerate_if_empty(label, context, current_value):
             "temperature": 0.6,
             "max_tokens": 120
         }
+
         response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
         response.raise_for_status()
         text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
