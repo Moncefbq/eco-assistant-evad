@@ -442,7 +442,7 @@ if "final_result" in st.session_state:
 
 
 # ==============================
-# 🧑‍💼 ENREGISTREMENT FINAL (version corrigée)
+# 🧑‍💼 ENREGISTREMENT FINAL (version corrigée et alignée)
 # ==============================
 if st.session_state.get("validation_ok"):
     with st.form("porteur_form"):
@@ -511,7 +511,7 @@ if st.session_state.get("validation_ok"):
                 except Exception as e:
                     st.error(f"Erreur lors de l’upload : {e}")
 
-            # --- Envoi principal vers NoCoDB ---
+            # --- Construction du payload principal ---
             payload = {
                 "Title": title,
                 "Description": description,
@@ -533,42 +533,44 @@ if st.session_state.get("validation_ok"):
 
             if file_attachment:
                 payload["Logo + docs"] = file_attachment  # ✅ format correct pour NoCoDB
-try:
-    # 🔐 En-têtes pour NoCoDB
-    headers = {
-        "xc-token": NOCODB_API_TOKEN,
-        "Accept": "application/json"
-    }
 
-    r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
+            # --- Envoi vers NoCoDB ---
+            try:
+                # 🔐 En-têtes pour NoCoDB
+                headers = {
+                    "xc-token": NOCODB_API_TOKEN,
+                    "Accept": "application/json"
+                }
 
-    if r.status_code in (200, 201):
-        msg_save = (
-            "🌿 Project successfully saved in the EVAD database!"
-            if st.session_state.lang == "English"
-            else "🌿 Projet enregistré avec succès dans la base EVAD !"
-        )
-        st.success(msg_save)
+                r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
 
-        msg_toast = (
-            "🌱 Project saved successfully"
-            if st.session_state.lang == "English"
-            else "🌱 Projet enregistré avec succès"
-        )
-        st.toast(msg_toast, icon="🌱")
+                if r.status_code in (200, 201):
+                    msg_save = (
+                        "🌿 Project successfully saved in the EVAD database!"
+                        if st.session_state.lang == "English"
+                        else "🌿 Projet enregistré avec succès dans la base EVAD !"
+                    )
+                    st.success(msg_save)
 
-    else:
-        msg_error_api = (
-            f"❌ API Error {r.status_code}: {r.text}"
-            if st.session_state.lang == "English"
-            else f"❌ Erreur API {r.status_code} : {r.text}"
-        )
-        st.error(msg_error_api)
+                    msg_toast = (
+                        "🌱 Project saved successfully"
+                        if st.session_state.lang == "English"
+                        else "🌱 Projet enregistré avec succès"
+                    )
+                    st.toast(msg_toast, icon="🌱")
 
-except Exception as e:
-    msg_error_noco = (
-        f"❌ Error while sending to NoCoDB: {e}"
-        if st.session_state.lang == "English"
-        else f"❌ Erreur lors de l’envoi à NoCoDB : {e}"
-    )
-    st.error(msg_error_noco)
+                else:
+                    msg_error_api = (
+                        f"❌ API Error {r.status_code}: {r.text}"
+                        if st.session_state.lang == "English"
+                        else f"❌ Erreur API {r.status_code} : {r.text}"
+                    )
+                    st.error(msg_error_api)
+
+            except Exception as e:
+                msg_error_noco = (
+                    f"❌ Error while sending to NoCoDB: {e}"
+                    if st.session_state.lang == "English"
+                    else f"❌ Erreur lors de l’envoi à NoCoDB : {e}"
+                )
+                st.error(msg_error_noco)
