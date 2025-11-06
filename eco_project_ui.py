@@ -372,5 +372,3 @@ if st.session_state.get("validation_ok"):
             except Exception as e:
                 st.error(f"❌ Erreur lors de l’envoi à NoCoDB : {e}")
 
-
-
