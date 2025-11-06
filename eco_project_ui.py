@@ -434,6 +434,10 @@ if submitted:
                     else f"❌ Erreur pendant l’analyse : {e}"
                 )
                 st.error(msg_error)
+        except Exception as e:
+            st.warning(f"⚠️ Erreur pendant la régénération automatique du texte : {e}")
+            return f"[Erreur auto-fill : {e}]"
+
 
 # ==============================
 # 🧩 SYNTHÈSE DU PROJET — version finale intelligente et multilingue
