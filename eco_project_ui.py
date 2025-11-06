@@ -175,11 +175,12 @@ NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
 
 # ==============================
-# ⚡ FUSION INTELLIGENTE MULTI-AGENTS (robuste et bilingue)
+# ⚡ FUSION INTELLIGENTE MULTI-AGENTS (bilingue et complète)
 # ==============================
 import re, requests
 
 def detect_language(text):
+    """Détection simple de la langue"""
     english_keywords = re.findall(
         r"\b(the|and|project|impact|plan|objective|location|space|environment|community|action)\b",
         text, re.IGNORECASE)
@@ -194,27 +195,37 @@ def detect_language(text):
         return "French" if re.search(r"[éèàùçâêîôû]", text) else "English"
 
 def clean_text(text):
+    """Nettoyage du texte brut"""
     text = re.sub(r"[^\x00-\x7FÀ-ÿ\n\.\,\;\:\!\?\-\(\)\'\"\s]", "", text)
     text = re.sub(r"\n{3,}", "\n\n", text.strip())
     return text.strip()
 
 def MultiAgentFusion(title, description, objectif, localisation):
+    """Fusion intelligente avec réponse complète dans la langue détectée"""
     user_input = f"Title: {title}\nDescription: {description}\nObjective: {objectif}\nLocation: {localisation}"
     detected_lang = detect_language(user_input)
 
     if detected_lang == "English":
         role = (
-            "You are a collaborative team of 4 experts: AnalystAgent, EcoAgent, PlannerAgent, and CoordinatorAgent. "
-            "Analyze this project and generate **all outputs entirely in English** with the following structure:\n\n"
-            "Solution:\nEcological Impact:\nSocial Impact:\nEconomic Impact:\nAction Plan (3–5 clear practical steps).\n\n"
-            "Be clear, concise, and professional."
+            "You are a multi-agent expert team composed of AnalystAgent, EcoAgent, SocialAgent, EconomicAgent, and PlannerAgent. "
+            "Analyze this project and generate **a complete, structured report entirely in English**, with the following format:\n\n"
+            "1. Project Objective:\n(Describe the main goal of the project clearly.)\n\n"
+            "2. Ecological Impact:\n(Explain environmental and sustainability effects.)\n\n"
+            "3. Social Impact:\n(Explain how this project benefits the community or people.)\n\n"
+            "4. Economic Impact:\n(Explain financial or local economic effects.)\n\n"
+            "5. Action Plan:\n(Create 3–5 realistic steps for implementation.)\n\n"
+            "Keep tone professional, concise, and coherent. Do not use foreign languages."
         )
     else:
         role = (
-            "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. "
-            "Analyse ce projet et produis **toutes les sections en français** avec la structure suivante :\n\n"
-            "Solution :\nImpact écologique :\nImpact social :\nImpact économique :\nPlan d’action (3 à 5 étapes concrètes et réalistes).\n\n"
-            "Sois clair, concis et professionnel."
+            "Tu es un système collaboratif composé de plusieurs experts : AnalystAgent, EcoAgent, SocialAgent, EconomicAgent et PlannerAgent. "
+            "Analyse ce projet et génère **un rapport complet et structuré entièrement en français**, avec le format suivant :\n\n"
+            "1. Objectif du projet :\n(Décris clairement le but principal du projet.)\n\n"
+            "2. Impact écologique :\n(Explique les effets environnementaux et de durabilité.)\n\n"
+            "3. Impact social :\n(Explique comment ce projet bénéficie à la communauté ou aux citoyens.)\n\n"
+            "4. Impact économique :\n(Explique les effets financiers ou économiques locaux.)\n\n"
+            "5. Plan d’action :\n(Donne 3 à 5 étapes réalistes et concrètes pour la mise en œuvre.)\n\n"
+            "Sois professionnel, cohérent et évite d’utiliser d’autres langues."
         )
 
     payload = {
@@ -223,32 +234,58 @@ def MultiAgentFusion(title, description, objectif, localisation):
             {"role": "system", "content": role},
             {"role": "user", "content": user_input}
         ],
-        "temperature": 0.6,
+        "temperature": 0.7,
         "max_tokens": 900
     }
 
     try:
         response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
         response.raise_for_status()
-        result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-        result = clean_text(result)
+        content = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+        text = clean_text(content)
 
-        # 🔁 Relance automatique si vide
-        if len(result.strip()) < 30:
-            st.warning("⚠️ Première réponse vide, relance automatique de l'analyse...")
-            response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-            response.raise_for_status()
-            result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-            result = clean_text(result)
+        # 🧠 Découpage des sections
+        sections = {
+            "objectif": "",
+            "impact_eco": "",
+            "impact_social": "",
+            "impact_econ": "",
+            "plan_action": ""
+        }
 
-        if not result:
-            st.error("❌ Aucune réponse générée par l’IA.")
-        return result
+        # 🔍 Extraction automatique selon les labels
+        patterns = {
+            "objectif": r"(?:Project Objective|Objectif du projet)\s*[:\-–]\s*(.+?)(?=(?:Ecological Impact|Impact écologique|$))",
+            "impact_eco": r"(?:Ecological Impact|Impact écologique)\s*[:\-–]\s*(.+?)(?=(?:Social Impact|Impact social|$))",
+            "impact_social": r"(?:Social Impact|Impact social)\s*[:\-–]\s*(.+?)(?=(?:Economic Impact|Impact économique|$))",
+            "impact_econ": r"(?:Economic Impact|Impact économique)\s*[:\-–]\s*(.+?)(?=(?:Action Plan|Plan d’action|$))",
+            "plan_action": r"(?:Action Plan|Plan d’action)\s*[:\-–]\s*(.+)"
+        }
+
+        for key, pattern in patterns.items():
+            match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+            if match:
+                sections[key] = clean_text(match.group(1))
+
+        # Si IA n’a pas respecté la structure → fallback global
+        if not any(sections.values()):
+            sections["objectif"] = text
+            sections["impact_eco"] = text
+            sections["impact_social"] = text
+            sections["impact_econ"] = text
+            sections["plan_action"] = text
+
+        return sections
 
     except Exception as e:
-        st.error(f"⚠️ Erreur lors de la génération IA : {e}")
-        return "⚠️ Error during AI generation. Please try again."
-
+        st.error(f"❌ Error during AI fusion: {e}")
+        return {
+            "objectif": "Error",
+            "impact_eco": "Error",
+            "impact_social": "Error",
+            "impact_econ": "Error",
+            "plan_action": "Error"
+        }
 
 # ==============================
 # INTERFACE STREAMLIT
