@@ -268,6 +268,8 @@ if "final_result" in st.session_state:
         if validated:
             st.session_state.validation_ok = True
             st.success("✅ Sections validées avec succès !")
+            st.rerun()  # 🔁 Force la mise à jour pour afficher la section du porteur
+
 
 
 # ==============================
