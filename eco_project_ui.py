@@ -160,6 +160,20 @@ else:
     grâce à une intelligence collaborative, open-source et régénérative.
     """)
 
+if st.session_state.lang == "English":
+    title_label = "🏷️ Project Name"
+    desc_label = "📝 Project Description"
+    objectif_label = "🎯 Project Objective"
+    localisation_label = "📍 Location"
+    launch_btn = "🚀 Launch Project Analysis"
+else:
+    title_label = "🏷️ Nom du projet"
+    desc_label = "📝 Description du projet"
+    objectif_label = "🎯 Objectif du projet"
+    localisation_label = "📍 Localisation"
+    launch_btn = "🚀 Lancer l’analyse du projet"
+
+
 # --- SECRETS ---
 OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
 NOCODB_API_TOKEN = st.secrets["NOCODB_API_TOKEN"]
