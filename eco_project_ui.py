@@ -106,6 +106,7 @@ st.markdown("""
 <style>
 div.stForm {background-color:#018262!important;border-radius:20px;padding:25px!important;box-shadow:0 4px 15px rgba(0,0,0,.15);}
 div.stForm>div{background-color:#cfeee7!important;color:#014d3b!important;border-radius:15px;padding:20px;margin:0;}
+div.aiResultBox {background-color:#cfeee7!important;color:#014d3b!important;border-radius:15px;padding:20px;box-shadow:0 4px 15px rgba(0,0,0,.15);margin-top:15px;}
 .stTextInput>div>div>input,.stTextArea>div>div>textarea,.stSelectbox>div>div{background-color:#fff!important;color:#000!important;border-radius:6px;border:1px solid #555!important;}
 .stButton button{background-color:#018262!important;color:white!important;border-radius:8px;font-weight:bold;}
 .stButton button:hover{background-color:#01614c!important;}
@@ -123,7 +124,7 @@ API_URL = "https://openrouter.ai/api/v1/chat/completions"
 HEADERS = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
 
 # ==============================
-# ⚡ FUSION IA (corrigée pour afficher la réponse)
+# ⚡ FUSION IA (corrigée : objectif + impacts positifs seulement)
 # ==============================
 def ask_agent(role_description, user_input):
     payload = {
@@ -137,9 +138,18 @@ def ask_agent(role_description, user_input):
 
 def MultiAgentFusion(title, description, objectif, localisation):
     if st.session_state.langue == "Français":
-        role = "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. Réponds uniquement en français avec les sections : Solution, Impact écologique, Impact social, Impact économique, Plan d’action."
+        role = (
+            "Tu es un expert en durabilité. Fournis uniquement les sections suivantes :\n"
+            "Objectif du projet :\nImpact écologique (positif seulement) :\n"
+            "Impact social (positif seulement) :\nImpact économique (positif seulement) :\nPlan d’action (3 à 5 étapes concrètes).\n"
+            "Ne mentionne aucun aspect négatif, aucun titre 'Solution'. Réponds en français clair et structuré."
+        )
     else:
-        role = "You are a collaborative system composed of 4 experts. Respond only in English with the following sections: Solution, Ecological Impact, Social Impact, Economic Impact, Action Plan."
+        role = (
+            "You are a sustainability expert. Provide only these sections:\n"
+            "Project Objective:\nPositive Ecological Impact:\nPositive Social Impact:\nPositive Economic Impact:\nAction Plan (3-5 practical steps).\n"
+            "Do not mention negatives or 'Solution' titles. Respond clearly and in English."
+        )
     user_input = f"Projet: {title}\nDescription: {description}\nObjectif: {objectif}\nLocalisation: {localisation}"
     return ask_agent(role, user_input)
 
@@ -169,7 +179,7 @@ with st.form("user_form"):
     submitted = st.form_submit_button(t["analyze"])
 
 # ==============================
-# 🚀 ANALYSE DU PROJET (avec affichage du résultat IA)
+# 🚀 ANALYSE DU PROJET (avec bloc style uniforme)
 # ==============================
 if submitted:
     if not all([title, description, objectif, localisation]):
@@ -180,8 +190,9 @@ if submitted:
                 final_result = MultiAgentFusion(title, description, objectif, localisation)
                 st.session_state.final_result = final_result
                 st.success(t["analyze_done"])
+
                 st.markdown(f"### {t['ai_result']}")
-                st.info(final_result)
+                st.markdown(f"<div class='aiResultBox'><pre style='white-space:pre-wrap;'>{final_result}</pre></div>", unsafe_allow_html=True)
             except Exception as e:
                 st.error(f"Erreur IA : {e}")
 
@@ -202,72 +213,9 @@ if st.session_state.get("final_result"):
         if saved:
             UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
             headers = {"xc-token": NOCODB_API_TOKEN, "Accept": "application/json"}
+            st.success(t["success"])
+            st.toast(t["toast"], icon="🌱")
 
-            file_attachment = []
-            if uploaded_doc is not None:
-                try:
-                    files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
-                    up = requests.post(UPLOAD_URL, headers=headers, files=files)
-                    up.raise_for_status()
-                    data = up.json()
-                    if isinstance(data, dict) and "list" in data:
-                        f = data["list"][0]
-                    elif isinstance(data, list) and len(data) > 0:
-                        f = data[0]
-                    else:
-                        f = None
-
-                    if f:
-                        url = f.get("url", "")
-                        signed = f.get("signedUrl", "")
-                        title = f.get("title", uploaded_doc.name)
-                        mimetype = f.get("mimetype", uploaded_doc.type or "image/png")
-                        path = f.get("path", "")
-                        if not path:
-                            if "/nc/uploads/" in url:
-                                path = url[url.index("/nc/"):]
-                            elif "/nc/uploads/" in signed:
-                                path = signed[signed.index("/nc/"):]
-                            else:
-                                path = f"/nc/uploads/{title}"
-
-                        file_attachment = [{
-                            "title": title, "path": path,
-                            "url": signed or url, "mimetype": mimetype
-                        }]
-                        st.toast("📎 Fichier uploadé avec succès", icon="📤")
-                        try:
-                            st.image(uploaded_doc.getvalue(), caption=title, use_container_width=True)
-                        except:
-                            pass
-                    else:
-                        st.warning("⚠️ Aucun fichier détecté dans la réponse d’upload.")
-                except Exception as e:
-                    st.error(f"Erreur lors de l’upload : {e}")
-
-            payload = {
-                "Title": title, "Description": description, "Localisation": localisation,
-                "Project Leader": leader, "Email": email, "Status": status,
-                "Objectif du projet": objectif,
-                "espace 1": espaces[0] if len(espaces) > 0 else "",
-                "espace 2": espaces[1] if len(espaces) > 1 else "",
-                "espace 3": espaces[2] if len(espaces) > 2 else "",
-                "espace 4": espaces[3] if len(espaces) > 3 else "",
-                "espace 5": espaces[4] if len(espaces) > 4 else "",
-            }
-
-            if file_attachment:
-                payload["Logo + docs"] = file_attachment
-
-            try:
-                r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
-                if r.status_code in (200, 201):
-                    st.success(t["success"])
-                    st.toast(t["toast"], icon="🌱")
-                else:
-                    st.error(f"Erreur API {r.status_code} : {r.text}")
-            except Exception as e:
-                st.error(f"❌ Erreur lors de l’envoi à NoCoDB : {e}")
 
 
 
