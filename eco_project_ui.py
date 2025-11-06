@@ -547,25 +547,27 @@ if "final_result" in st.session_state:
                 if current_lang == "French"
                 else f"You are a sustainability expert. Write a clear sentence for: {label}."
             )
-    try:
-        payload = {
-            "model": "mistralai/mistral-nemo",
-            "messages": [
-                {"role": "system", "content": role},
-                {"role": "user", "content": context}
-            ],
-            "temperature": 0.6,
-            "max_tokens": 120
-        }
 
-        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-        response.raise_for_status()
-        text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-        return clean_text(text)
+            try:
+                payload = {
+                    "model": "mistralai/mistral-nemo",
+                    "messages": [
+                        {"role": "system", "content": role},
+                        {"role": "user", "content": context}
+                    ],
+                    "temperature": 0.6,
+                    "max_tokens": 120
+                }
 
-    except Exception as e:
-        st.warning(f"⚠️ Erreur pendant la régénération automatique du texte : {e}")
-        return f"[Erreur auto-fill : {e}]"
+                response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
+                response.raise_for_status()
+                text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                return clean_text(text)
+
+            except Exception as e:
+                st.warning(f"⚠️ Erreur pendant la régénération automatique du texte : {e}")
+                return f"[Erreur auto-fill : {e}]"
+
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL (version corrigée et alignée)
