@@ -279,11 +279,10 @@ with st.form("user_form"):
         </p>
     """, unsafe_allow_html=True)
 
-title = st.text_input(f"🏷️ {labels['project_name']}")
-description = st.text_area(f"📝 {labels['project_description']}", height=100)
-objectif = st.text_area(f"🎯 {labels['project_objective']}", height=100)
-localisation = st.text_input(f"📍 {labels['location']}")
-
+    title = st.text_input(f"🏷️ {labels['project_name']}")
+    description = st.text_area(f"📝 {labels['project_description']}", height=100)
+    objectif = st.text_area(f"🎯 {labels['project_objective']}", height=100)
+    localisation = st.text_input(f"📍 {labels['location']}")
 
     # Section espaces
     st.markdown(f"""
@@ -293,20 +292,17 @@ localisation = st.text_input(f"📍 {labels['location']}")
         </p>
     """, unsafe_allow_html=True)
 
-        espaces = []  # ❌ Mauvaise indentation (trop d'espaces)
-
+    espaces = []
     for i in range(st.session_state.nb_espaces):
         espaces.append(st.text_area(f"🏠 {labels['space']} {i+1}", key=f"espace_{i+1}", height=80))
-
-
 
     if st.session_state.nb_espaces < 5:
         if st.form_submit_button(labels["add_space"]):
             st.session_state.nb_espaces += 1
             st.rerun()
 
-    uploaded_doc = st.file_uploader("📄 Document lié (optionnel)", type=["pdf", "png", "jpg", "jpeg", "docx"])
-    submitted = st.form_submit_button("🚀 Lancer l’analyse du projet")  # ✅ Nouveau texte ici
+    uploaded_doc = st.file_uploader(labels["upload_doc"], type=["pdf", "png", "jpg", "jpeg", "docx"])
+    submitted = st.form_submit_button(labels["submit_analysis"])
 
 # ==============================
 #  ANALYSE DU PROJET
