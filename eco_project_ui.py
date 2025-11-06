@@ -507,7 +507,7 @@ if st.session_state.get("validation_ok"):
             }
 
             if file_attachment:
-    payload["Logo + docs"] = file_attachment  # ✅ format correct pour NoCoDB
+                payload["Logo + docs"] = file_attachment  # ✅ format correct pour NoCoDB
 
 try:
     r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
