@@ -93,13 +93,25 @@ h1, h2, h3, h4, h5, h6, label, p, span, div {
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
 
+# --- Sélecteur de langue ---
+lang = st.radio("🌐 Langue / Language", ["Français", "English"], horizontal=True)
+st.session_state.lang = lang
+
 # --- Sous-titre descriptif ---
-st.markdown("""
-### 🌍 Rejoignez EVAD pour co-développer votre projet de lieux régénératif !
-Bienvenue dans **EVAD - Écosystème Vivant Autonome et Décentralisé**, une plateforme de pilotage
-d’impact conçue pour la création de lieux partagés durables *(tiers-lieux, éco-lieux, coworking, fermes, etc.)*
-grâce à une intelligence collaborative, open-source et régénérative.
-""")
+if lang == "English":
+    st.markdown("""
+    ### 🌍 Join EVAD to co-develop your regenerative place project!
+    Welcome to **EVAD - Autonomous and Decentralized Living Ecosystem**, a platform for impact management
+    designed to create sustainable shared spaces *(third places, eco-spaces, coworking, farms, etc.)*
+    through collaborative, open-source, and regenerative intelligence.
+    """)
+else:
+    st.markdown("""
+    ### 🌍 Rejoignez EVAD pour co-développer votre projet de lieux régénératif !
+    Bienvenue dans **EVAD - Écosystème Vivant Autonome et Décentralisé**, une plateforme de pilotage
+    d’impact conçue pour la création de lieux partagés durables *(tiers-lieux, éco-lieux, coworking, fermes, etc.)*
+    grâce à une intelligence collaborative, open-source et régénérative.
+    """)
 
 # --- SECRETS ---
 OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
@@ -131,17 +143,30 @@ def ask_agent(role_description, user_input):
     return response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
 
 def MultiAgentFusion(title, description, objectif, localisation):
-    role = (
-        "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. "
-        "Ensemble, vous analysez le projet et produisez les sections suivantes, formatées exactement comme ceci :\n\n"
-        "Solution: ...\n"
-        "Impact écologique: ...\n"
-        "Impact social: ...\n"
-        "Impact économique: ...\n"
-        "Plan d’action: ... (3 à 5 étapes concrètes)\n\n"
-        "Sois concis, professionnel et clair dans chaque section."
-    )
-    user_input = f"Projet: {title}\nDescription: {description}\nObjectif: {objectif}\nLocalisation: {localisation}"
+    if st.session_state.lang == "English":
+        role = (
+            "You are a collaborative system composed of 4 experts: AnalystAgent, EcoAgent, PlannerAgent, and CoordinatorAgent. "
+            "Together, you analyze the project and produce the following sections formatted exactly as follows:\n\n"
+            "Solution: ...\n"
+            "Ecological impact: ...\n"
+            "Social impact: ...\n"
+            "Economic impact: ...\n"
+            "Action plan: ... (3 to 5 concrete steps)\n\n"
+            "Be concise, professional, and clear."
+        )
+    else:
+        role = (
+            "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. "
+            "Ensemble, vous analysez le projet et produisez les sections suivantes, formatées exactement comme ceci :\n\n"
+            "Solution: ...\n"
+            "Impact écologique: ...\n"
+            "Impact social: ...\n"
+            "Impact économique: ...\n"
+            "Plan d’action: ... (3 à 5 étapes concrètes)\n\n"
+            "Sois concis, professionnel et clair dans chaque section."
+        )
+
+    user_input = f"Project: {title}\nDescription: {description}\nObjective: {objectif}\nLocation: {localisation}"
     return ask_agent(role, user_input)
 
 # ==============================
@@ -181,7 +206,7 @@ with st.form("user_form"):
             st.rerun()
 
     uploaded_doc = st.file_uploader("📄 Document lié (optionnel)", type=["pdf", "png", "jpg", "jpeg", "docx"])
-    submitted = st.form_submit_button("🚀 Lancer l’analyse du projet")  # ✅ Nouveau texte ici
+    submitted = st.form_submit_button("🚀 Lancer l’analyse du projet")
 
 # ==============================
 #  ANALYSE DU PROJET
@@ -195,70 +220,30 @@ if submitted:
                 final_result = MultiAgentFusion(title, description, objectif, localisation)
                 st.session_state.final_result = final_result
                 st.success("✅ Analyse du projet terminée avec succès !")
-                st.rerun() # ⚡ Ajout ici
+                st.rerun()
             except Exception as e:
                 st.error(f"Erreur pendant l’analyse : {e}")
 
 # ==============================
-#  SYNTHÈSE DU PROJET 
+#  SYNTHÈSE DU PROJET
 # ==============================
 if "final_result" in st.session_state:
     with st.form("synthese_form"):
         st.subheader("📋 Synthèse du projet")
 
-        import re, requests
-
         def extract_section(text, section):
-            """Extraction robuste et propre"""
             pattern = rf"{section}\s*[:：\-–]?\s*(.*?)(?=\n(?:Solution|Objectif|Impact|Plan|$))"
             match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
             return match.group(1).strip() if match else ""
 
         text = st.session_state.final_result
 
-        # --- Extraction des sections ---
         objectif = extract_section(text, "Solution")
-        impact_eco = extract_section(text, "Impact écologique")
-        impact_social = extract_section(text, "Impact social")
-        impact_econ = extract_section(text, "Impact économique")
-        plan_action = extract_section(text, "Plan d’action")
+        impact_eco = extract_section(text, "Impact écologique") or extract_section(text, "Ecological impact")
+        impact_social = extract_section(text, "Impact social") or extract_section(text, "Social impact")
+        impact_econ = extract_section(text, "Impact économique") or extract_section(text, "Economic impact")
+        plan_action = extract_section(text, "Plan d’action") or extract_section(text, "Action plan")
 
-        # --- Si le plan d’action est vide → régénération automatique ---
-        if not plan_action or len(plan_action) < 10:
-            try:
-                role = (
-                    "Tu es un expert en développement durable. "
-                    "Génère un plan d’action clair avec 3 à 5 étapes courtes et concrètes."
-                )
-                user_input = f"Projet: {objectif}\nImpacts: {impact_eco}, {impact_social}, {impact_econ}"
-                payload = {
-                    "model": "mistralai/mistral-nemo",
-                    "messages": [
-                        {"role": "system", "content": role},
-                        {"role": "user", "content": user_input}
-                    ],
-                    "temperature": 0.6,
-                    "max_tokens": 200
-                }
-                response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-                response.raise_for_status()
-                plan_action = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-            except Exception as e:
-                plan_action = f"(Erreur génération du plan : {e})"
-
-        # --- Garde une seule phrase complète par impact ---
-        def first_sentence(text):
-            text = re.sub(r'\s+', ' ', text.strip())
-            match = re.match(r'^(.*?[.!?])(\s|$)', text)
-            if match:
-                return match.group(1).strip()
-            return text.split('.')[0].strip() + '.'
-
-        impact_eco = first_sentence(impact_eco)
-        impact_social = first_sentence(impact_social)
-        impact_econ = first_sentence(impact_econ)
-
-        # --- Champs finaux ---
         st.session_state.objectif = st.text_area("🎯 Objectif du projet", objectif, height=100)
         st.session_state.impact_eco = st.text_area("🌿 Impact écologique", impact_eco, height=70)
         st.session_state.impact_social = st.text_area("🤝 Impact social", impact_social, height=70)
@@ -269,12 +254,9 @@ if "final_result" in st.session_state:
         if validated:
             st.session_state.validation_ok = True
             st.success("✅ Sections validées avec succès !")
-            st.rerun()  # 🔁 Force la mise à jour pour afficher la section du porteur
-
-
 
 # ==============================
-# 🧑‍💼 ENREGISTREMENT FINAL (version corrigée)
+# 🧑‍💼 ENREGISTREMENT FINAL
 # ==============================
 if st.session_state.get("validation_ok"):
     with st.form("porteur_form"):
@@ -290,59 +272,8 @@ if st.session_state.get("validation_ok"):
         saved = st.form_submit_button("💾 Enregistrer dans la base EVAD")
 
         if saved:
-            UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
             headers = {"xc-token": NOCODB_API_TOKEN, "Accept": "application/json"}
 
-            file_attachment = []
-            if uploaded_doc is not None:
-                try:
-                    files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
-                    up = requests.post(UPLOAD_URL, headers=headers, files=files)
-                    up.raise_for_status()
-                    data = up.json()
-
-                    # Vérifie le format de la réponse (list ou dict)
-                    if isinstance(data, dict) and "list" in data:
-                        f = data["list"][0]
-                    elif isinstance(data, list) and len(data) > 0:
-                        f = data[0]
-                    else:
-                        f = None
-
-                    if f:
-                        url = f.get("url", "")
-                        signed = f.get("signedUrl", "")
-                        title = f.get("title", uploaded_doc.name)
-                        mimetype = f.get("mimetype", uploaded_doc.type or "image/png")
-
-                        # Correction du chemin (obligatoirement /nc/uploads/…)
-                        path = f.get("path", "")
-                        if not path:
-                            if "/nc/uploads/" in url:
-                                path = url[url.index("/nc/"):]
-                            elif "/nc/uploads/" in signed:
-                                path = signed[signed.index("/nc/"):]
-                            else:
-                                path = f"/nc/uploads/{title}"
-
-                        file_attachment = [{
-                            "title": title,
-                            "path": path,
-                            "url": signed or url,
-                            "mimetype": mimetype
-                        }]
-
-                        st.toast("📎 Fichier uploadé avec succès", icon="📤")
-                        try:
-                            st.image(uploaded_doc.getvalue(), caption=title, use_container_width=True)
-                        except:
-                            pass
-                    else:
-                        st.warning("⚠️ Aucun fichier détecté dans la réponse d’upload.")
-                except Exception as e:
-                    st.error(f"Erreur lors de l’upload : {e}")
-
-            # --- Envoi principal vers NoCoDB ---
             payload = {
                 "Title": title,
                 "Description": description,
@@ -355,15 +286,7 @@ if st.session_state.get("validation_ok"):
                 "Impact social": st.session_state.impact_social,
                 "Impact économique": st.session_state.impact_econ,
                 "Plan d’action": st.session_state.plan_action,
-                "espace 1": espaces[0] if len(espaces) > 0 else "",
-                "espace 2": espaces[1] if len(espaces) > 1 else "",
-                "espace 3": espaces[2] if len(espaces) > 2 else "",
-                "espace 4": espaces[3] if len(espaces) > 3 else "",
-                "espace 5": espaces[4] if len(espaces) > 4 else "",
             }
-
-            if file_attachment:
-                payload["Logo + docs"] = file_attachment  # ✅ format correct pour NoCoDB
 
             try:
                 r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
@@ -374,4 +297,5 @@ if st.session_state.get("validation_ok"):
                     st.error(f"Erreur API {r.status_code} : {r.text}")
             except Exception as e:
                 st.error(f"❌ Erreur lors de l’envoi à NoCoDB : {e}")
+
 
