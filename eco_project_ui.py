@@ -531,6 +531,7 @@ if st.session_state.get("validation_ok"):
     with st.form("porteur_form"):
         st.subheader(titre_porteur)
 
+        # --- Champs du porteur ---
         leader = st.text_input(labels["leader_name"])
         email = st.text_input(labels["email"])
         status = st.selectbox(
@@ -539,67 +540,74 @@ if st.session_state.get("validation_ok"):
             index=0
         )
 
+        # --- Bouton d’enregistrement ---
         saved = st.form_submit_button(labels["save"])
 
         if saved:
             UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
             headers = {"xc-token": NOCODB_API_TOKEN, "Accept": "application/json"}
-
             file_attachment = []
-if uploaded_doc is not None:
-    try:
-        files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
-        up = requests.post(UPLOAD_URL, headers=headers, files=files)
-        up.raise_for_status()
-        data = up.json()
-        file_attachment = [{"path": data["path"], "url": data["url"]}]
-    except Exception as e:
-        st.warning(f"⚠️ Erreur lors du téléchargement du fichier : {e}")
-        file_attachment = []
 
-
-                    # Vérifie le format de la réponse (list ou dict)
-                    if isinstance(data, dict) and "list" in data:
-                        f = data["list"][0]
-                    elif isinstance(data, list) and len(data) > 0:
-                        f = data[0]
-                    else:
-                        f = None
-
-                    if f:
-                        url = f.get("url", "")
-                        signed = f.get("signedUrl", "")
-                        title = f.get("title", uploaded_doc.name)
-                        mimetype = f.get("mimetype", uploaded_doc.type or "image/png")
-
-                        # Correction du chemin
-                        path = f.get("path", "")
-                        if not path:
-                            if "/nc/uploads/" in url:
-                                path = url[url.index("/nc/"):]
-                            elif "/nc/uploads/" in signed:
-                                path = signed[signed.index("/nc/"):]
-                            else:
-                                path = f"/nc/uploads/{title}"
-
-                        file_attachment = [{
-                            "title": title,
-                            "path": path,
-                            "url": signed or url,
-                            "mimetype": mimetype
-                        }]
-
-                        st.toast("📎 Fichier uploadé avec succès", icon="📤")
-                        try:
-                            st.image(uploaded_doc.getvalue(), caption=title, use_container_width=True)
-                        except:
-                            pass
-                    else:
-                        st.warning("⚠️ Aucun fichier détecté dans la réponse d’upload.")
+            # ==============================
+            # 📤 Upload du fichier (optionnel)
+            # ==============================
+            if uploaded_doc is not None:
+                try:
+                    files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
+                    up = requests.post(UPLOAD_URL, headers=headers, files=files)
+                    up.raise_for_status()
+                    data = up.json()
+                    file_attachment = [{"path": data["path"], "url": data["url"]}]
                 except Exception as e:
-                    st.error(f"Erreur lors de l’upload : {e}")
+                    st.warning(f"⚠️ Erreur lors du téléchargement du fichier : {e}")
+                    file_attachment = []
 
-            # --- Construction du payload principal ---
+            # ==============================
+            # 🧩 Vérification du format de la réponse d’upload
+            # ==============================
+            try:
+                f = None
+                if isinstance(data, dict) and "list" in data:
+                    f = data["list"][0]
+                elif isinstance(data, list) and len(data) > 0:
+                    f = data[0]
+
+                if f:
+                    url = f.get("url", "")
+                    signed = f.get("signedUrl", "")
+                    title = f.get("title", uploaded_doc.name if uploaded_doc else "Document")
+                    mimetype = f.get("mimetype", uploaded_doc.type if uploaded_doc else "image/png")
+
+                    # --- Correction du chemin ---
+                    path = f.get("path", "")
+                    if not path:
+                        if "/nc/uploads/" in url:
+                            path = url[url.index("/nc/"):]
+                        elif "/nc/uploads/" in signed:
+                            path = signed[signed.index("/nc/"):]
+                        else:
+                            path = f"/nc/uploads/{title}"
+
+                    file_attachment = [{
+                        "title": title,
+                        "path": path,
+                        "url": signed or url,
+                        "mimetype": mimetype
+                    }]
+
+                    st.toast("📎 Fichier uploadé avec succès", icon="📤")
+                    try:
+                        st.image(uploaded_doc.getvalue(), caption=title, use_container_width=True)
+                    except Exception:
+                        pass
+                else:
+                    st.warning("⚠️ Aucun fichier détecté dans la réponse d’upload.")
+            except Exception as e:
+                st.error(f"Erreur lors de l’upload : {e}")
+
+            # ==============================
+            # 🧱 Construction du payload principal
+            # ==============================
             payload = {
                 "Title": title,
                 "Description": description,
@@ -619,17 +627,18 @@ if uploaded_doc is not None:
                 "espace 5": espaces[4] if len(espaces) > 4 else "",
             }
 
+            # --- Jointure du fichier uploadé ---
             if file_attachment:
-                payload["Logo + docs"] = file_attachment  # ✅ format correct pour NoCoDB
+                payload["Logo + docs"] = file_attachment  # ✅ format NoCoDB correct
 
-            # --- Envoi vers NoCoDB ---
+            # ==============================
+            # 🚀 Envoi du projet vers NoCoDB
+            # ==============================
             try:
-                # 🔐 En-têtes pour NoCoDB
                 headers = {
                     "xc-token": NOCODB_API_TOKEN,
                     "Accept": "application/json"
                 }
-
                 r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
 
                 if r.status_code in (200, 201):
@@ -646,7 +655,6 @@ if uploaded_doc is not None:
                         else "🌱 Projet enregistré avec succès"
                     )
                     st.toast(msg_toast, icon="🌱")
-
                 else:
                     msg_error_api = (
                         f"❌ API Error {r.status_code}: {r.text}"
