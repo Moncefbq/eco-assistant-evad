@@ -175,14 +175,27 @@ NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
 
 # ==============================
-# ⚡ FUSION INTELLIGENTE MULTI-AGENTS (avec détection de langue)
+# ⚡ FUSION INTELLIGENTE MULTI-AGENTS (détection de langue fiable)
 # ==============================
+from langdetect import detect
+import re, requests
+
 def detect_language(text):
-    """Détecte si le texte est majoritairement en anglais ou en français"""
-    import re
-    english_keywords = re.findall(r"\b(the|and|project|impact|plan|objective|location|space)\b", text, re.IGNORECASE)
-    french_keywords = re.findall(r"\b(le|la|et|projet|impact|plan|objectif|localisation|espace)\b", text, re.IGNORECASE)
-    return "English" if len(english_keywords) > len(french_keywords) else "French"
+    """Détecte la langue principale du texte"""
+    try:
+        lang = detect(text)
+        return "English" if lang == "en" else "French"
+    except:
+        # fallback regex simple si langdetect échoue
+        english_keywords = re.findall(r"\b(the|and|project|impact|plan|objective|location|space)\b", text, re.IGNORECASE)
+        french_keywords = re.findall(r"\b(le|la|et|projet|impact|plan|objectif|localisation|espace)\b", text, re.IGNORECASE)
+        return "English" if len(english_keywords) > len(french_keywords) else "French"
+
+def clean_text(text):
+    """Supprime les caractères indésirables et les artefacts multilingues"""
+    text = re.sub(r"[^\x00-\x7FÀ-ÿ\n\.\,\;\:\!\?\-\(\)\'\"\s]", "", text)  # enlève les caractères asiatiques
+    text = re.sub(r"\n{3,}", "\n\n", text.strip())  # limite les sauts de ligne
+    return text.strip()
 
 def MultiAgentFusion(title, description, objectif, localisation):
     # Concatène le contenu utilisateur
@@ -191,28 +204,20 @@ def MultiAgentFusion(title, description, objectif, localisation):
     # 🔍 Détection automatique de la langue
     detected_lang = detect_language(user_input)
 
-    # 🌐 Rôle de l’agent multilingue
+    # 🌐 Rôle du système IA
     if detected_lang == "English":
         role = (
-            "You are a collaborative system of 4 experts: AnalystAgent, EcoAgent, PlannerAgent, and CoordinatorAgent. "
-            "Together you analyze the project and produce the following sections in English, with clear and concise language:\n\n"
-            "Solution: ...\n"
-            "Ecological Impact: ...\n"
-            "Social Impact: ...\n"
-            "Economic Impact: ...\n"
-            "Action Plan: ... (3 to 5 clear and practical steps)\n\n"
-            "Keep the tone professional and the content coherent."
+            "You are a collaborative system of 4 expert agents: AnalystAgent, EcoAgent, PlannerAgent, and CoordinatorAgent. "
+            "Analyze the project and generate the following sections **entirely in English**, using clear and concise sentences:\n\n"
+            "Solution:\nEcological Impact:\nSocial Impact:\nEconomic Impact:\nAction Plan (3–5 practical steps).\n\n"
+            "Keep the tone professional, structured, and coherent. Avoid foreign characters."
         )
     else:
         role = (
             "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. "
-            "Ensemble, vous analysez le projet et produisez les sections suivantes en français, de manière claire et concise :\n\n"
-            "Solution : ...\n"
-            "Impact écologique : ...\n"
-            "Impact social : ...\n"
-            "Impact économique : ...\n"
-            "Plan d’action : ... (3 à 5 étapes concrètes et réalistes)\n\n"
-            "Reste professionnel et cohérent dans chaque section."
+            "Analyse le projet et rédige les sections suivantes **entièrement en français**, de manière claire et concise :\n\n"
+            "Solution :\nImpact écologique :\nImpact social :\nImpact économique :\nPlan d’action (3 à 5 étapes concrètes et réalistes).\n\n"
+            "Reste professionnel, structuré et cohérent. N’utilise aucune autre langue."
         )
 
     payload = {
@@ -221,13 +226,15 @@ def MultiAgentFusion(title, description, objectif, localisation):
             {"role": "system", "content": role},
             {"role": "user", "content": user_input}
         ],
-        "temperature": 0.7,
+        "temperature": 0.6,
         "max_tokens": 800
     }
 
     response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
     response.raise_for_status()
-    return response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+
+    result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+    return clean_text(result)
 
 
 # ==============================
