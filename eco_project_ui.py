@@ -5,27 +5,6 @@ import re
 import base64
 import json
 
-# --- CONFIGURATION ---
-st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
-
-# --- 🌐 Bouton de changement de langue (ajouté) ---
-if "lang" not in st.session_state:
-    st.session_state.lang = "fr"
-
-col1, col2 = st.columns([8, 1])
-with col1:
-    pass
-with col2:
-    lang_btn = "🇬🇧 English" if st.session_state.lang == "fr" else "🇫🇷 Français"
-    if st.button(lang_btn):
-        st.session_state.lang = "en" if st.session_state.lang == "fr" else "fr"
-        st.rerun()
-
-# --- Fonction utilitaire pour traduire dynamiquement ---
-def t(fr, en):
-    return fr if st.session_state.lang == "fr" else en
-
-
 # --- EN-TÊTE EVAD (logo centré, net et sans cadre) ---
 @st.cache_data
 def get_base64_image(image_path):
@@ -51,51 +30,78 @@ if logo_base64:
                  width="240"
                  style="margin: 0 auto; display: block; image-rendering: -webkit-optimize-contrast; -ms-interpolation-mode: nearest-neighbor;">
             <h1 style="font-size: 2.1em; color: #014d3b; margin-top: 10px; margin-bottom: 5px; text-align: center;">
-                {t("Formulaire Pilote d'impact", "Impact Pilot Form")}
+                Formulaire Pilote d'impact
             </h1>
         </div>
         <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 5px 0 20px 0;">
     """, unsafe_allow_html=True)
 else:
-    st.markdown(f"""
-        <h1 style="text-align:center; color:#014d3b;">{t("Formulaire Pilote d'impact", "Impact Pilot Form")}</h1>
+    st.markdown("""
+        <h1 style="text-align:center; color:#014d3b;">Formulaire Pilote d'impact</h1>
         <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 10px 0 20px 0;">
     """, unsafe_allow_html=True)
 
-
-# --- STYLE GLOBAL (inchangé) ---
+# --- STYLE GLOBAL ---
 st.markdown("""
 <style>
-body {background-color: #ffffff; color: #000000 !important;}
-div.block-container {background-color: #ffffff !important; padding: 25px !important;}
-div.stForm {background-color: #018262 !important; border-radius: 20px; padding: 25px !important; box-shadow: 0px 4px 15px rgba(0,0,0,0.15);}
-div.stForm > div {background-color: #cfeee7 !important; color: #014d3b !important; border-radius: 15px; padding: 20px; margin: 0;}
-.stTextInput > div > div > input, .stTextArea > div > div > textarea, .stSelectbox > div > div, .stMultiSelect > div > div {
-    background-color: #ffffff !important; color: #000000 !important; border-radius: 6px; border: 1px solid #555 !important;
+body {
+    background-color: #ffffff;
+    color: #000000 !important;
 }
-h1, h2, h3, h4, h5, h6, label, p, span, div {color: #000000 !important;}
-.stButton button {background-color: #018262 !important; color: white !important; border-radius: 8px; border: none; font-weight: bold;}
-.stButton button:hover {background-color: #01614c !important;}
+div.block-container {
+    background-color: #ffffff !important;
+    padding: 25px !important;
+}
+div.stForm {
+    background-color: #018262 !important;
+    border-radius: 20px;
+    padding: 25px !important;
+    box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
+}
+div.stForm > div {
+    background-color: #cfeee7 !important;
+    color: #014d3b !important;
+    border-radius: 15px;
+    padding: 20px;
+    margin: 0;
+}
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div,
+.stMultiSelect > div > div {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border-radius: 6px;
+    border: 1px solid #555 !important;
+}
+h1, h2, h3, h4, h5, h6, label, p, span, div {
+    color: #000000 !important;
+}
+.stButton button {
+    background-color: #018262 !important;
+    color: white !important;
+    border-radius: 8px;
+    border: none;
+    font-weight: bold;
+}
+.stButton button:hover {
+    background-color: #01614c !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
+# --- CONFIGURATION ---
+st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
+
 # --- Sous-titre descriptif ---
-st.markdown(t(
-"""
+st.markdown("""
 ### 🌍 Rejoignez EVAD pour co-développer votre projet de lieux régénératif !
 Bienvenue dans **EVAD - Écosystème Vivant Autonome et Décentralisé**, une plateforme de pilotage
 d’impact conçue pour la création de lieux partagés durables *(tiers-lieux, éco-lieux, coworking, fermes, etc.)*
 grâce à une intelligence collaborative, open-source et régénérative.
-""",
-"""
-### 🌍 Join EVAD to co-develop your regenerative project!
-Welcome to **EVAD - Autonomous and Decentralized Living Ecosystem**, a platform for co-piloting
-the creation of sustainable shared spaces *(eco-places, coworking, community hubs, farms, etc.)*
-through collaborative, open-source, and regenerative intelligence.
-"""
-))
+""")
 
-# --- SECRETS & CONFIG ---
+# --- SECRETS ---
 OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
 NOCODB_API_TOKEN = st.secrets["NOCODB_API_TOKEN"]
 NOCODB_API_URL = st.secrets["NOCODB_API_URL"]
@@ -106,7 +112,6 @@ HEADERS = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "app
 # --- NoCoDB CONFIG ---
 NOCODB_API_TOKEN = "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe"
 NOCODB_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
-
 
 # ==============================
 # ⚡ FUSION INTELLIGENTE MULTI-AGENTS
@@ -125,7 +130,6 @@ def ask_agent(role_description, user_input):
     response.raise_for_status()
     return response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
 
-
 def MultiAgentFusion(title, description, objectif, localisation):
     role = (
         "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. "
@@ -140,58 +144,44 @@ def MultiAgentFusion(title, description, objectif, localisation):
     user_input = f"Projet: {title}\nDescription: {description}\nObjectif: {objectif}\nLocalisation: {localisation}"
     return ask_agent(role, user_input)
 
-
 # ==============================
-# 🧾 INTERFACE STREAMLIT (inchangée)
+# INTERFACE STREAMLIT
 # ==============================
 if "nb_espaces" not in st.session_state:
     st.session_state.nb_espaces = 1
 
 with st.form("user_form"):
-    st.markdown(t(
-        """
+    st.markdown("""
         <h2 style='margin-bottom: 0;'>📘 Présentation du projet</h2>
         <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
             Informations sur le projet de lieu durable
         </p>
-        """,
-        """
-        <h2 style='margin-bottom: 0;'>📘 Project Overview</h2>
-        <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
-            Information about your sustainable place project
-        </p>
-        """), unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-    title = st.text_input(t("🏷️ Nom du projet", "🏷️ Project name"))
-    description = st.text_area(t("📝 Description du projet", "📝 Project description"), height=100)
-    objectif = st.text_area(t("🎯 Objectif du projet", "🎯 Project objective"), height=100)
-    localisation = st.text_input(t("📍 Localisation", "📍 Location"))
+    title = st.text_input("🏷️ Nom du projet")
+    description = st.text_area("📝 Description du projet", height=100)
+    objectif = st.text_area("🎯 Objectif du projet", height=100)
+    localisation = st.text_input("📍 Localisation")
 
-    st.markdown(t(
-        """
+    # Espaces dynamiques
+    st.markdown("""
         <h3 style='margin-bottom: 0;'>📂 Détails du projet par espace</h3>
         <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
             Informations sur chaque espace qui compose le projet
         </p>
-        """,
-        """
-        <h3 style='margin-bottom: 0;'>📂 Project details by area</h3>
-        <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
-            Information about each space composing your project
-        </p>
-        """), unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
     espaces = []
     for i in range(st.session_state.nb_espaces):
-        espaces.append(st.text_area(f"🏠 {t('Espace', 'Area')} {i+1}", key=f"espace_{i+1}", height=80))
+        espaces.append(st.text_area(f"🏠 Espace {i+1}", key=f"espace_{i+1}", height=80))
 
     if st.session_state.nb_espaces < 5:
-        if st.form_submit_button(t("➕ Ajouter un espace", "➕ Add another area")):
+        if st.form_submit_button("➕ Ajouter un espace"):
             st.session_state.nb_espaces += 1
             st.rerun()
 
-    uploaded_doc = st.file_uploader(t("📄 Document lié (optionnel)", "📄 Related document (optional)"), type=["pdf", "png", "jpg", "jpeg", "docx"])
-    submitted = st.form_submit_button(t("🚀 Lancer l’analyse du projet", "🚀 Launch project analysis"))
+    uploaded_doc = st.file_uploader("📄 Document lié (optionnel)", type=["pdf", "png", "jpg", "jpeg", "docx"])
+    submitted = st.form_submit_button("🚀 Lancer l’analyse du projet")  # ✅ Nouveau texte ici
 
 # ==============================
 #  ANALYSE DU PROJET
