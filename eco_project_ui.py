@@ -159,8 +159,8 @@ else:
     """, unsafe_allow_html=True)
 
 
-# --- Sous-titre descriptif ---
-if lang == "English":
+# --- Sous-titre descriptif (corrigé) ---
+if st.session_state.lang == "English":
     st.markdown("""
     ### 🌍 Join EVAD to co-develop your regenerative place project!
     Welcome to **EVAD - Autonomous and Decentralized Living Ecosystem**, a platform for impact management
