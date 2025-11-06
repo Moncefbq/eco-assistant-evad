@@ -411,8 +411,20 @@ if submitted:
 
         with st.spinner(message_loading):
             try:
+                # 🧠 Lancement de l’analyse multilingue
                 final_result = MultiAgentFusion(title, description, objectif, localisation)
+
+                # 🪄 Enregistre chaque section dans le session_state
+                st.session_state.objectif = final_result["objectif"]
+                st.session_state.impact_eco = final_result["impact_eco"]
+                st.session_state.impact_social = final_result["impact_social"]
+                st.session_state.impact_econ = final_result["impact_econ"]
+                st.session_state.plan_action = final_result["plan_action"]
+
+                # 💾 Garde la version brute si besoin ailleurs
                 st.session_state.final_result = final_result
+
+                # ✅ Message de réussite bilingue
                 st.success(message_success)
 
             except Exception as e:
@@ -422,7 +434,6 @@ if submitted:
                     else f"❌ Erreur pendant l’analyse : {e}"
                 )
                 st.error(msg_error)
-
 
 # ==============================
 #  SYNTHÈSE DU PROJET 
