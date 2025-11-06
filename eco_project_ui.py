@@ -293,7 +293,8 @@ localisation = st.text_input(f"📍 {labels['location']}")
         </p>
     """, unsafe_allow_html=True)
 
-    espaces = []   # 👈 cette ligne doit être indentée ici, 4 espaces
+        espaces = []  # ❌ Mauvaise indentation (trop d'espaces)
+
     for i in range(st.session_state.nb_espaces):
         espaces.append(st.text_area(f"🏠 {labels['space']} {i+1}", key=f"espace_{i+1}", height=80))
 
