@@ -79,9 +79,9 @@ def get_base64_image(image_path):
 
 logo_base64 = get_base64_image("evad_logo.png")
 
-if logo_base64:
-    col1, col2 = st.columns([8, 1])
-    with col1:
+col1, col2 = st.columns([8, 1])
+with col1:
+    if logo_base64:
         st.markdown(f"""
             <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:20px;margin-bottom:10px;">
                 <img src="data:image/png;base64,{logo_base64}" width="240" style="margin:0 auto;display:block;">
@@ -90,31 +90,20 @@ if logo_base64:
                 </h1>
             </div>
         """, unsafe_allow_html=True)
-    with col2:
-        st.button("🌐 " + ("EN" if st.session_state.langue == "Français" else "FR"), on_click=switch_langue)
-    st.markdown("<hr style='border:none;height:2px;background-color:#cfeee7;margin:5px 0 20px 0;'>", unsafe_allow_html=True)
-else:
-    col1, col2 = st.columns([8, 1])
-    with col1:
+    else:
         st.markdown(f"<h1 style='text-align:center;color:#014d3b;'>{t['title']}</h1>", unsafe_allow_html=True)
-    with col2:
-        st.button("🌐 " + ("EN" if st.session_state.langue == "Français" else "FR"), on_click=switch_langue)
-    st.markdown("<hr style='border:none;height:2px;background-color:#cfeee7;margin:10px 0 20px 0;'>", unsafe_allow_html=True)
+with col2:
+    st.button("🌐 " + ("EN" if st.session_state.langue == "Français" else "FR"), on_click=switch_langue)
+
+st.markdown("<hr style='border:none;height:2px;background-color:#cfeee7;margin:5px 0 20px 0;'>", unsafe_allow_html=True)
 
 # --- STYLE GLOBAL ---
 st.markdown("""
 <style>
 div.stForm {background-color:#018262!important;border-radius:20px;padding:25px!important;box-shadow:0 4px 15px rgba(0,0,0,.15);}
-div.stForm>div{background-color:#cfeee7!important;color:#014d3b!important;border-radius:15px;padding:20px;margin:0;}
-div.syntheseBox {
-    background-color:#cfeee7!important;
-    color:#014d3b!important;
-    border-radius:15px;
-    padding:25px;
-    box-shadow:0 4px 15px rgba(0,0,0,.15);
-    margin-top:15px;
-    font-size:15px;
-    line-height:1.6;
+div.stForm>div, div.syntheseBox {
+    background-color:#cfeee7!important;color:#014d3b!important;border-radius:15px;
+    padding:25px;margin:0;box-shadow:0 4px 15px rgba(0,0,0,.15);
 }
 .stTextInput>div>div>input,.stTextArea>div>div>textarea,.stSelectbox>div>div{
     background-color:#fff!important;color:#000!important;border-radius:6px;border:1px solid #555!important;
@@ -139,7 +128,7 @@ def ask_agent(role_description, user_input):
     payload = {
         "model": "mistralai/mistral-nemo",
         "messages": [{"role": "system", "content": role_description}, {"role": "user", "content": user_input}],
-        "temperature": 0.7, "max_tokens": 800
+        "temperature": 0.7, "max_tokens": 600
     }
     response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
     response.raise_for_status()
@@ -148,16 +137,16 @@ def ask_agent(role_description, user_input):
 def MultiAgentFusion(title, description, objectif, localisation):
     if st.session_state.langue == "Français":
         role = (
-            "Tu es un expert en durabilité. Fournis uniquement les sections suivantes :\n"
-            "Objectif du projet :\nImpact écologique (positif seulement) :\n"
-            "Impact social (positif seulement) :\nImpact économique (positif seulement) :\nPlan d’action (3 à 5 étapes concrètes).\n"
-            "Ne mentionne aucun aspect négatif ni le mot 'Solution'. Réponds en français clair et structuré."
+            "Tu es un expert en durabilité. Résume le projet avec 1 seul impact positif par catégorie : "
+            "Impact écologique, Impact social et Impact économique. "
+            "Présente aussi un plan d’action en 3 étapes claires. "
+            "N’utilise pas de puces, sois concis, clair et professionnel."
         )
     else:
         role = (
-            "You are a sustainability expert. Provide only these sections:\n"
-            "Project Objective:\nPositive Ecological Impact:\nPositive Social Impact:\nPositive Economic Impact:\nAction Plan (3-5 practical steps).\n"
-            "Do not include negatives or the word 'Solution'. Respond clearly and in English."
+            "You are a sustainability expert. Summarize the project with one positive impact per type: "
+            "Ecological, Social, and Economic Impact. "
+            "Also include a 3-step clear action plan. Be concise, professional, and avoid bullet points."
         )
     user_input = f"Projet: {title}\nDescription: {description}\nObjectif: {objectif}\nLocalisation: {localisation}"
     return ask_agent(role, user_input)
@@ -192,12 +181,21 @@ if submitted:
     else:
         with st.spinner(t["analyzing"]):
             try:
-                final_result = MultiAgentFusion(title, description, objectif, localisation)
-                st.session_state.final_result = final_result
+                result = MultiAgentFusion(title, description, objectif, localisation)
+                st.session_state.final_result = result
                 st.success(t["analyze_done"])
 
                 st.markdown(f"### {t['ai_result']}")
-                st.markdown(f"<div class='syntheseBox'><pre style='white-space:pre-wrap;'>{final_result}</pre></div>", unsafe_allow_html=True)
+                st.markdown("<div class='syntheseBox'>", unsafe_allow_html=True)
+
+                st.session_state.objectif = st.text_area("🎯 Objectif du projet", objectif, height=80)
+                st.session_state.impact_eco = st.text_area("🌿 Impact écologique", "", height=60, placeholder="Impact positif résumé ici…")
+                st.session_state.impact_social = st.text_area("🤝 Impact social", "", height=60, placeholder="Impact positif résumé ici…")
+                st.session_state.impact_econ = st.text_area("💰 Impact économique", "", height=60, placeholder="Impact positif résumé ici…")
+                st.session_state.plan_action = st.text_area("🧭 Plan d’action (3 étapes)", "", height=120, placeholder="Étapes clés du plan d’action…")
+
+                st.markdown("</div>", unsafe_allow_html=True)
+
             except Exception as e:
                 st.error(f"Erreur IA : {e}")
 
@@ -214,10 +212,9 @@ if st.session_state.get("final_result"):
         )
         saved = st.form_submit_button(t["save"])
         if saved:
-            UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
-            headers = {"xc-token": NOCODB_API_TOKEN, "Accept": "application/json"}
             st.success(t["success"])
             st.toast(t["toast"], icon="🌱")
+
 
 
 
