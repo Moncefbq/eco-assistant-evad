@@ -397,11 +397,16 @@ if "final_result" in st.session_state:
 if st.session_state.get("validation_ok"):
     with st.form("porteur_form"):
         st.subheader(titre_porteur)
-         leader = st.text_input(labels["leader_name"])
-         email = st.text_input(labels["email"])
-         status = st.selectbox(labels["status"], ["Thinking", "Modélisation", "Construction", "Développement", "Financement", "Student"], index=0)
-         saved = st.form_submit_button(labels["save"])
 
+        leader = st.text_input(labels["leader_name"])
+        email = st.text_input(labels["email"])
+        status = st.selectbox(
+            labels["status"],
+            ["Thinking", "Modélisation", "Construction", "Développement", "Financement", "Student"],
+            index=0
+        )
+
+        saved = st.form_submit_button(labels["save"])
 
         if saved:
             UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
@@ -429,7 +434,7 @@ if st.session_state.get("validation_ok"):
                         title = f.get("title", uploaded_doc.name)
                         mimetype = f.get("mimetype", uploaded_doc.type or "image/png")
 
-                        # Correction du chemin (obligatoirement /nc/uploads/…)
+                        # Correction du chemin
                         path = f.get("path", "")
                         if not path:
                             if "/nc/uploads/" in url:
@@ -488,5 +493,3 @@ if st.session_state.get("validation_ok"):
                     st.error(f"Erreur API {r.status_code} : {r.text}")
             except Exception as e:
                 st.error(f"❌ Erreur lors de l’envoi à NoCoDB : {e}")
-
-
