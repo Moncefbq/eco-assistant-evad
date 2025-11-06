@@ -142,6 +142,77 @@ with col2:
         st.session_state.lang = "English"
         st.rerun()
 
+# --- TEXTES MULTILINGUES ---
+if st.session_state.lang == "English":
+    T = {
+        "intro_title": "🌍 Join EVAD to co-develop your regenerative place project!",
+        "intro_desc": (
+            "Welcome to **EVAD - Autonomous and Decentralized Living Ecosystem**, "
+            "a platform for impact management designed to create sustainable shared spaces "
+            "(*third places, eco-spaces, coworking, farms, etc.*) "
+            "through collaborative, open-source, and regenerative intelligence."
+        ),
+        "form_title": "📘 Project Overview",
+        "form_desc": "Information about your sustainable place project",
+        "project_name": "🏷️ Project Name",
+        "description": "📝 Project Description",
+        "objective": "🎯 Project Objective",
+        "location": "📍 Location",
+        "space_details": "📂 Project Details by Space",
+        "space_desc": "Information about each space within the project",
+        "add_space": "➕ Add a Space",
+        "upload_doc": "📄 Related Document (optional)",
+        "analyze": "🚀 Launch Project Analysis",
+        "summary": "📋 Project Summary",
+        "eco_impact": "🌿 Ecological Impact",
+        "social_impact": "🤝 Social Impact",
+        "econ_impact": "💰 Economic Impact",
+        "plan_action": "🧭 Action Plan",
+        "validate": "✅ Validate and Add Project Owner Information",
+        "owner_title": "👤 Project Owner Information",
+        "owner_name": "Project Leader Name",
+        "owner_email": "Contact Email",
+        "status": "📊 Project Stage",
+        "save": "💾 Save to EVAD Database",
+        "success_analysis": "✅ Project analysis completed successfully!",
+        "success_save": "🌿 Project successfully saved to the EVAD database!",
+    }
+else:
+    T = {
+        "intro_title": "🌍 Rejoignez EVAD pour co-développer votre projet de lieux régénératif !",
+        "intro_desc": (
+            "Bienvenue dans **EVAD - Écosystème Vivant Autonome et Décentralisé**, "
+            "une plateforme de pilotage d’impact conçue pour la création de lieux partagés durables "
+            "(*tiers-lieux, éco-lieux, coworking, fermes, etc.*) "
+            "grâce à une intelligence collaborative, open-source et régénérative."
+        ),
+        "form_title": "📘 Présentation du projet",
+        "form_desc": "Informations sur le projet de lieu durable",
+        "project_name": "🏷️ Nom du projet",
+        "description": "📝 Description du projet",
+        "objective": "🎯 Objectif du projet",
+        "location": "📍 Localisation",
+        "space_details": "📂 Détails du projet par espace",
+        "space_desc": "Informations sur chaque espace qui compose le projet",
+        "add_space": "➕ Ajouter un espace",
+        "upload_doc": "📄 Document lié (optionnel)",
+        "analyze": "🚀 Lancer l’analyse du projet",
+        "summary": "📋 Synthèse du projet",
+        "eco_impact": "🌿 Impact écologique",
+        "social_impact": "🤝 Impact social",
+        "econ_impact": "💰 Impact économique",
+        "plan_action": "🧭 Plan d’action",
+        "validate": "✅ Valider et ajouter les informations du porteur",
+        "owner_title": "👤 Présentation du porteur",
+        "owner_name": "Nom du porteur de projet",
+        "owner_email": "Email de contact",
+        "status": "📊 Étape du projet",
+        "save": "💾 Enregistrer dans la base EVAD",
+        "success_analysis": "✅ Analyse du projet terminée avec succès !",
+        "success_save": "🌿 Projet enregistré avec succès dans la base EVAD !",
+    }
+
+
 # --- Sous-titre descriptif (corrigé) ---
 if st.session_state.lang == "English":
     st.markdown("""
