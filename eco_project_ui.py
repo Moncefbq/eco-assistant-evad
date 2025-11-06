@@ -126,14 +126,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 if "lang" not in st.session_state:
-    st.session_state.lang = "Français"
+    st.session_state.lang = "French"  # langue par défaut
 
 col1, col2 = st.columns(2)
 with col1:
     if st.button("🇫🇷 Français", key="fr_button", 
                  help="Basculer l'interface en Français",
                  use_container_width=True):
-        st.session_state.lang = "Français"
+        st.session_state.lang = "French"
         st.rerun()
 with col2:
     if st.button("🇬🇧 English", key="en_button", 
@@ -141,6 +141,7 @@ with col2:
                  use_container_width=True):
         st.session_state.lang = "English"
         st.rerun()
+)
 
 
 
