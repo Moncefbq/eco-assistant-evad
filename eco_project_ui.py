@@ -508,7 +508,11 @@ if "final_result" in st.session_state:
             steps = [s.strip() for s in steps if len(s.strip()) > 5]
             if len(steps) < 3:
                 while len(steps) < 3:
-                    steps.append("Compléter cette étape selon les besoins du projet")
+                    steps.append(
+                        "Compléter cette étape selon les besoins du projet"
+                        if st.session_state.lang == "French"
+                        else "Complete this step according to the project needs"
+                    )
             formatted = "\n".join([f"{i+1}. {s.capitalize()}." for i, s in enumerate(steps[:3])])
             return formatted
 
@@ -530,7 +534,6 @@ if "final_result" in st.session_state:
         # ===============================
         # 🌍 Détection de la langue de l'utilisateur
         # ===============================
-        # Si l’utilisateur tape un texte en anglais, on adapte automatiquement la sortie
         user_text = " ".join([objectif, impact_eco, impact_social, impact_econ])
         detected_user_lang = detect_language(user_text)
         current_lang = detected_user_lang or st.session_state.lang  # priorité à la langue écrite
@@ -567,6 +570,24 @@ if "final_result" in st.session_state:
             except Exception as e:
                 st.warning(f"⚠️ Erreur pendant la régénération automatique du texte : {e}")
                 return f"[Erreur auto-fill : {e}]"
+
+        # ===============================
+        # ✅ Bouton de validation du formulaire (bilingue)
+        # ===============================
+        validated = st.form_submit_button(
+            "✅ Valider et ajouter les informations du porteur"
+            if current_lang == "French"
+            else "✅ Validate and Add Project Owner Information"
+        )
+
+        if validated:
+            st.session_state.validation_ok = True
+            success_message = (
+                "✅ Sections validées avec succès ! Vous pouvez maintenant ajouter les informations du porteur."
+                if current_lang == "French"
+                else "✅ Sections successfully validated! You can now add the project owner information."
+            )
+            st.success(success_message)
 
 
 # ==============================
