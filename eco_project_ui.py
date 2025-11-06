@@ -546,12 +546,17 @@ if st.session_state.get("validation_ok"):
             headers = {"xc-token": NOCODB_API_TOKEN, "Accept": "application/json"}
 
             file_attachment = []
-            if uploaded_doc is not None:
-                try:
-                    files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
-                    up = requests.post(UPLOAD_URL, headers=headers, files=files)
-                    up.raise_for_status()
-                    data = up.json()
+if uploaded_doc is not None:
+    try:
+        files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
+        up = requests.post(UPLOAD_URL, headers=headers, files=files)
+        up.raise_for_status()
+        data = up.json()
+        file_attachment = [{"path": data["path"], "url": data["url"]}]
+    except Exception as e:
+        st.warning(f"⚠️ Erreur lors du téléchargement du fichier : {e}")
+        file_attachment = []
+
 
                     # Vérifie le format de la réponse (list ou dict)
                     if isinstance(data, dict) and "list" in data:
