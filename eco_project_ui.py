@@ -477,16 +477,34 @@ if "final_result" in st.session_state:
             except Exception as e:
                 plan_action = f"(Erreur génération du plan : {e})"
 
-        # --- Nettoyage des impacts pour garder une seule phrase claire ---
-        def first_sentence(text):
+        # --- Nettoyage et correction des textes générés ---
+        def clean_text_field(text):
+            """Nettoie le texte brut généré (markdown, espaces, caractères inutiles)"""
             import re
-            text = re.sub(r"\s+", " ", text.strip())
-            match = re.match(r"^(.*?[.!?])(\s|$)", text)
-            return match.group(1).strip() if match else text.split('.')[0].strip() + '.'
+            if not text or text.strip() in [".", "-", "•"]:
+                return ""  # remplace les points ou tirets vides
 
-        impact_eco = first_sentence(impact_eco)
-        impact_social = first_sentence(impact_social)
-        impact_econ = first_sentence(impact_econ)
+            # Supprime les balises markdown
+            text = re.sub(r"\*+", "", text)
+
+            # Supprime les listes ou caractères parasites
+            text = re.sub(r"^[\-\*\d\.\)]+\s*", "", text, flags=re.MULTILINE)
+
+            # Normalise les espaces
+            text = re.sub(r"\s+", " ", text.strip())
+
+            # Supprime les lignes trop courtes ou sans sens
+            if len(text) < 3:
+                return ""
+
+            return text.strip().capitalize()
+
+        # --- Application du nettoyage sur toutes les sections ---
+        objectif = clean_text_field(objectif)
+        impact_eco = clean_text_field(impact_eco)
+        impact_social = clean_text_field(impact_social)
+        impact_econ = clean_text_field(impact_econ)
+        plan_action = clean_text_field(plan_action)
 
         # --- Champs affichés à l’utilisateur ---
         st.session_state.objectif = st.text_area(
@@ -531,9 +549,6 @@ if "final_result" in st.session_state:
                 else "✅ Sections successfully validated! You can now add the project owner information."
             )
             st.success(msg_valide)
-
- 
-
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL (version corrigée et alignée)
