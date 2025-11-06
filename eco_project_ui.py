@@ -436,7 +436,7 @@ if submitted:
                 st.error(msg_error)
 
 # ==============================
-# 🧩 SYNTHÈSE DU PROJET — version finale bilingue et dynamique
+# 🧩 SYNTHÈSE DU PROJET — version finale bilingue avec plan d’action auto-généré
 # ==============================
 if "final_result" in st.session_state:
     # --- Titre et sous-titre multilingues ---
@@ -455,7 +455,9 @@ if "final_result" in st.session_state:
             </p>
         """, unsafe_allow_html=True)
 
-        # --- Récupération des données générées ---
+        import re, requests
+
+        # --- Données générées ---
         data = st.session_state.final_result
         objectif = data.get("objectif", "")
         impact_eco = data.get("impact_eco", "")
@@ -464,8 +466,6 @@ if "final_result" in st.session_state:
         plan_action = data.get("plan_action", "")
 
         # --- Fonctions utilitaires ---
-        import re, requests
-
         def clean_text_field(text):
             if not text or text.strip() in [".", "-", "•"]:
                 return ""
@@ -480,22 +480,71 @@ if "final_result" in st.session_state:
             return match.group(1).strip() if match else text.split('.')[0].strip() + '.'
 
         def format_action_plan(plan_text):
+            """Formate ou crée un plan d’action en 3 étapes."""
             plan_text = clean_text_field(plan_text)
             steps = re.split(r'[.!?]', plan_text)
             steps = [s.strip() for s in steps if len(s.strip()) > 5]
             steps = steps[:3]
-            if not steps:
-                return ""
+            if len(steps) == 0:
+                # Si rien, on génère un modèle standard selon la langue
+                if st.session_state.lang == "English":
+                    steps = [
+                        "Define project objectives and sustainability indicators",
+                        "Implement environmental and social impact measures",
+                        "Monitor and improve results through periodic evaluation"
+                    ]
+                else:
+                    steps = [
+                        "Définir les objectifs du projet et les indicateurs de durabilité",
+                        "Mettre en œuvre les actions écologiques et sociales",
+                        "Suivre et améliorer les résultats grâce à une évaluation régulière"
+                    ]
             return "\n".join([f"{i+1}. {step.capitalize()}." for i, step in enumerate(steps)])
 
-        # --- Application du nettoyage ---
+        # --- Nettoyage et préparation ---
         objectif = clean_text_field(objectif)
         impact_eco = first_sentence(impact_eco)
         impact_social = first_sentence(impact_social)
         impact_econ = first_sentence(impact_econ)
         plan_action = format_action_plan(plan_action)
 
-        # --- Libellés bilingues pour cette section ---
+        # --- Si le plan reste vide → génération IA automatique dans la bonne langue ---
+        if not plan_action.strip():
+            try:
+                if st.session_state.lang == "English":
+                    prompt = (
+                        f"Project: {objectif}\nImpacts: {impact_eco}, {impact_social}, {impact_econ}\n"
+                        "Generate a clear, numbered 3-step action plan in English for this project."
+                    )
+                else:
+                    prompt = (
+                        f"Projet : {objectif}\nImpacts : {impact_eco}, {impact_social}, {impact_econ}\n"
+                        "Génère un plan d’action clair en 3 étapes numérotées pour ce projet, en français."
+                    )
+
+                payload = {
+                    "model": "mistralai/mistral-nemo",
+                    "messages": [
+                        {"role": "system", "content": "You are an expert in sustainable project planning."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.5,
+                    "max_tokens": 220
+                }
+
+                response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
+                response.raise_for_status()
+                raw_plan = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                plan_action = format_action_plan(raw_plan)
+
+            except Exception as e:
+                plan_action = (
+                    f"(Erreur génération automatique du plan : {e})"
+                    if st.session_state.lang == "French"
+                    else f"(Error generating action plan: {e})"
+                )
+
+        # --- Libellés bilingues ---
         if st.session_state.lang == "English":
             synthese_labels = {
                 "objective": "🎯 Project Objective",
@@ -517,14 +566,14 @@ if "final_result" in st.session_state:
                 "success": "✅ Sections validées avec succès ! Vous pouvez maintenant ajouter les informations du porteur."
             }
 
-        # --- Champs affichés à l’utilisateur ---
+        # --- Champs affichés ---
         st.session_state.objectif = st.text_area(synthese_labels["objective"], objectif, height=100)
         st.session_state.impact_eco = st.text_area(synthese_labels["eco"], impact_eco, height=70)
         st.session_state.impact_social = st.text_area(synthese_labels["social"], impact_social, height=70)
         st.session_state.impact_econ = st.text_area(synthese_labels["econ"], impact_econ, height=70)
         st.session_state.plan_action = st.text_area(synthese_labels["plan"], plan_action, height=140)
 
-        # --- Bouton de validation bilingue ---
+        # --- Bouton de validation ---
         validated = st.form_submit_button(synthese_labels["validate"])
 
         if validated:
