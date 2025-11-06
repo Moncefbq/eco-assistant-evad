@@ -379,16 +379,13 @@ if "final_result" in st.session_state:
         impact_econ = first_sentence(impact_econ)
 
         # --- Champs finaux ---
-st.session_state.objectif = st.text_area(labels["objective_summary"], objectif, height=100)
-st.session_state.impact_eco = st.text_area(labels["eco_impact"], impact_eco, height=70)
-st.session_state.impact_social = st.text_area(labels["social_impact"], impact_social, height=70)
-st.session_state.impact_econ = st.text_area(labels["economic_impact"], impact_econ, height=70)
-st.session_state.plan_action = st.text_area(labels["action_plan"], plan_action, height=140)
-validated = st.form_submit_button(labels["validate"])
+        st.session_state.objectif = st.text_area(labels["objective_summary"], objectif, height=100)
+        st.session_state.impact_eco = st.text_area(labels["eco_impact"], impact_eco, height=70)
+        st.session_state.impact_social = st.text_area(labels["social_impact"], impact_social, height=70)
+        st.session_state.impact_econ = st.text_area(labels["economic_impact"], impact_econ, height=70)
+        st.session_state.plan_action = st.text_area(labels["action_plan"], plan_action, height=140)
 
-
-
-        validated = st.form_submit_button("✅ Valider et ajouter les informations du porteur")
+        validated = st.form_submit_button(labels["validate"])
         if validated:
             st.session_state.validation_ok = True
             st.success("✅ Sections validées avec succès !")
