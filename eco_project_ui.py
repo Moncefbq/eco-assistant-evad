@@ -33,6 +33,7 @@ TEXTS = {
         "fill_warn": "Merci de remplir tous les champs avant l’analyse.",
         "analyzing": "🌱 Analyse du projet en cours...",
         "analyze_done": "✅ Analyse du projet terminée avec succès !",
+        "ai_result": "🧩 Résultat généré automatiquement :",
         "leader": "Nom du porteur de projet",
         "email": "Email de contact",
         "status": "📊 Étape du projet",
@@ -56,6 +57,7 @@ TEXTS = {
         "fill_warn": "Please fill in all fields before analysis.",
         "analyzing": "🌱 Analyzing your project...",
         "analyze_done": "✅ Project analysis completed successfully !",
+        "ai_result": "🧩 AI generated result:",
         "leader": "Project leader name",
         "email": "Contact email",
         "status": "📊 Project stage",
@@ -66,7 +68,7 @@ TEXTS = {
 }
 t = TEXTS[st.session_state.langue]
 
-# --- EN-TÊTE EVAD (logo centré + bouton de langue à droite) ---
+# --- EN-TÊTE EVAD (logo centré + bouton langue à droite) ---
 @st.cache_data
 def get_base64_image(image_path):
     try:
@@ -90,7 +92,6 @@ if logo_base64:
         """, unsafe_allow_html=True)
     with col2:
         st.button("🌐 " + ("EN" if st.session_state.langue == "Français" else "FR"), on_click=switch_langue)
-
     st.markdown("<hr style='border:none;height:2px;background-color:#cfeee7;margin:5px 0 20px 0;'>", unsafe_allow_html=True)
 else:
     col1, col2 = st.columns([8, 1])
@@ -122,7 +123,7 @@ API_URL = "https://openrouter.ai/api/v1/chat/completions"
 HEADERS = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
 
 # ==============================
-# ⚡ FUSION IA (bilingue, inchangée)
+# ⚡ FUSION IA (corrigée pour afficher la réponse)
 # ==============================
 def ask_agent(role_description, user_input):
     payload = {
@@ -130,18 +131,20 @@ def ask_agent(role_description, user_input):
         "messages": [{"role": "system", "content": role_description}, {"role": "user", "content": user_input}],
         "temperature": 0.7, "max_tokens": 800
     }
-    requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
+    response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
+    response.raise_for_status()
+    return response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
 
 def MultiAgentFusion(title, description, objectif, localisation):
     if st.session_state.langue == "Français":
-        role = "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. Réponds uniquement en français."
+        role = "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. Réponds uniquement en français avec les sections : Solution, Impact écologique, Impact social, Impact économique, Plan d’action."
     else:
-        role = "You are a collaborative system composed of 4 experts. Answer only in English."
+        role = "You are a collaborative system composed of 4 experts. Respond only in English with the following sections: Solution, Ecological Impact, Social Impact, Economic Impact, Action Plan."
     user_input = f"Projet: {title}\nDescription: {description}\nObjectif: {objectif}\nLocalisation: {localisation}"
-    ask_agent(role, user_input)
+    return ask_agent(role, user_input)
 
 # ==============================
-# 🧾 FORMULAIRE PRINCIPAL (identique)
+# 🧾 FORMULAIRE PRINCIPAL
 # ==============================
 if "nb_espaces" not in st.session_state:
     st.session_state.nb_espaces = 1
@@ -166,19 +169,24 @@ with st.form("user_form"):
     submitted = st.form_submit_button(t["analyze"])
 
 # ==============================
-# 🚀 ANALYSE
+# 🚀 ANALYSE DU PROJET (avec affichage du résultat IA)
 # ==============================
 if submitted:
     if not all([title, description, objectif, localisation]):
         st.warning(t["fill_warn"])
     else:
         with st.spinner(t["analyzing"]):
-            MultiAgentFusion(title, description, objectif, localisation)
-            st.session_state.final_result = True
-            st.success(t["analyze_done"])
+            try:
+                final_result = MultiAgentFusion(title, description, objectif, localisation)
+                st.session_state.final_result = final_result
+                st.success(t["analyze_done"])
+                st.markdown(f"### {t['ai_result']}")
+                st.info(final_result)
+            except Exception as e:
+                st.error(f"Erreur IA : {e}")
 
 # ==============================
-# 🧑‍💼 ENREGISTREMENT FINAL (TON CODE ORIGINEL)
+# 🧑‍💼 ENREGISTREMENT FINAL (inchangé)
 # ==============================
 if st.session_state.get("final_result"):
     with st.form("porteur_form"):
@@ -249,7 +257,7 @@ if st.session_state.get("final_result"):
             }
 
             if file_attachment:
-                payload["Logo + docs"] = file_attachment  # ✅ ton format NoCoDB original
+                payload["Logo + docs"] = file_attachment
 
             try:
                 r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
@@ -260,6 +268,7 @@ if st.session_state.get("final_result"):
                     st.error(f"Erreur API {r.status_code} : {r.text}")
             except Exception as e:
                 st.error(f"❌ Erreur lors de l’envoi à NoCoDB : {e}")
+
 
 
 
