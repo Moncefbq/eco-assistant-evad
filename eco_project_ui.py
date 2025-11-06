@@ -436,7 +436,7 @@ if submitted:
                 st.error(msg_error)
 
 # ==============================
-# 🧩 SYNTHÈSE DU PROJET — version finale bilingue stable
+# 🧩 SYNTHÈSE DU PROJET — version finale intelligente et multilingue
 # ==============================
 if "final_result" in st.session_state:
     with st.form("synthese_form"):
@@ -444,18 +444,18 @@ if "final_result" in st.session_state:
 
         import re, requests
 
-        # --- Récupération directe des données ---
+        # --- Récupération des données depuis l’analyse précédente ---
         data = st.session_state.final_result
-        objectif = data.get("objectif", "")
-        impact_eco = data.get("impact_eco", "")
-        impact_social = data.get("impact_social", "")
-        impact_econ = data.get("impact_econ", "")
-        plan_action = data.get("plan_action", "")
+        objectif = data.get("objectif", "").strip()
+        impact_eco = data.get("impact_eco", "").strip()
+        impact_social = data.get("impact_social", "").strip()
+        impact_econ = data.get("impact_econ", "").strip()
+        plan_action = data.get("plan_action", "").strip()
 
-        # =======================
-        # 🧹 Fonctions de nettoyage
-        # =======================
-        def clean_text_field(text):
+        # ===============================
+        # 🧹 Fonctions utilitaires
+        # ===============================
+        def clean_text(text):
             if not text or text.strip() in [".", "-", "•"]:
                 return ""
             text = re.sub(r"\*+", "", text)
@@ -464,116 +464,65 @@ if "final_result" in st.session_state:
             return text.strip().capitalize()
 
         def first_sentence(text):
-            text = clean_text_field(text)
-            match = re.match(r'^(.*?[.!?])(\s|$)', text)
-            return match.group(1).strip() if match else text.split('.')[0].strip() + '.'
+            text = clean_text(text)
+            m = re.match(r"^(.*?[.!?])(\s|$)", text)
+            return m.group(1).strip() if m else text.split(".")[0].strip() + "."
 
         def format_action_plan(plan_text):
-            """Nettoie et structure le plan d’action (3 étapes max)."""
-            plan_text = clean_text_field(plan_text)
-            steps = re.split(r'[.!?]', plan_text)
+            plan_text = clean_text(plan_text)
+            steps = re.split(r"[.!?]", plan_text)
             steps = [s.strip() for s in steps if len(s.strip()) > 5]
-            steps = steps[:3]
-            if not steps:
-                return ""
-            return "\n".join([f"{i+1}. {step.capitalize()}." for i, step in enumerate(steps)])
+            if len(steps) < 3:
+                while len(steps) < 3:
+                    steps.append("Compléter cette étape selon les besoins du projet")
+            formatted = "\n".join([f"{i+1}. {s.capitalize()}." for i, s in enumerate(steps[:3])])
+            return formatted
 
         def detect_language(text):
-            """Détecte rapidement si le texte est en anglais ou français."""
-            english_kw = len(re.findall(r"\b(the|and|project|plan|step|impact|development|based|renewable|energy)\b", text, re.I))
-            french_kw = len(re.findall(r"\b(le|la|et|projet|plan|étape|impact|développement|durable|énergie)\b", text, re.I))
-            return "English" if english_kw > french_kw else "French"
+            """Détecte si le texte est FR ou EN"""
+            en_kw = len(re.findall(r"\b(the|and|project|plan|step|impact|development|energy)\b", text, re.I))
+            fr_kw = len(re.findall(r"\b(le|la|et|projet|plan|étape|impact|développement|énergie|durable)\b", text, re.I))
+            return "English" if en_kw > fr_kw else "French"
 
-        # ============================
-        # 🧠 Préparation et nettoyage
-        # ============================
-        objectif = clean_text_field(objectif)
+        # ===============================
+        # 🧠 Préparation de base
+        # ===============================
+        objectif = clean_text(objectif)
         impact_eco = first_sentence(impact_eco)
         impact_social = first_sentence(impact_social)
         impact_econ = first_sentence(impact_econ)
         plan_action = format_action_plan(plan_action)
 
-        # ============================
-        # 🌍 Vérifie et traduit si besoin
-        # ============================
-        detected_lang = detect_language(plan_action)
+        # ===============================
+        # 🌍 Détection de la langue de l'utilisateur
+        # ===============================
+        # Si l’utilisateur tape un texte en anglais, on adapte automatiquement la sortie
+        user_text = " ".join([objectif, impact_eco, impact_social, impact_econ])
+        detected_user_lang = detect_language(user_text)
+        current_lang = detected_user_lang or st.session_state.lang  # priorité à la langue écrite
 
-        if plan_action and st.session_state.lang == "French" and detected_lang == "English":
-            try:
-                role = "Tu es traducteur professionnel. Traduis ce plan d’action en français clair et fluide, garde la numérotation 1, 2, 3."
-                payload = {
-                    "model": "mistralai/mistral-nemo",
-                    "messages": [
-                        {"role": "system", "content": role},
-                        {"role": "user", "content": plan_action}
-                    ],
-                    "temperature": 0.3,
-                    "max_tokens": 250
-                }
-                response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-                response.raise_for_status()
-                plan_action = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-            except Exception as e:
-                plan_action = f"(Erreur de traduction automatique : {e})"
+        # ===============================
+        # 🧩 Fonction auto-fill (régénération si vide)
+        # ===============================
+        def regenerate_if_empty(label, context, current_value):
+            if current_value and len(current_value) > 10:
+                return current_value
 
-        elif plan_action and st.session_state.lang == "English" and detected_lang == "French":
-            try:
-                role = "You are a professional translator. Translate this action plan into English, keeping clear numbering 1, 2, 3."
-                payload = {
-                    "model": "mistralai/mistral-nemo",
-                    "messages": [
-                        {"role": "system", "content": role},
-                        {"role": "user", "content": plan_action}
-                    ],
-                    "temperature": 0.3,
-                    "max_tokens": 250
-                }
-                response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-                response.raise_for_status()
-                plan_action = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-            except Exception as e:
-                plan_action = f"(Translation error: {e})"
-
-        # ============================
-        # 🧾 Champs affichés à l’utilisateur
-        # ============================
-        st.session_state.objectif = st.text_area(
-            "🎯 Objectif du projet" if st.session_state.lang == "French" else "🎯 Project Objective",
-            objectif, height=100
-        )
-        st.session_state.impact_eco = st.text_area(
-            "🌿 Impact écologique" if st.session_state.lang == "French" else "🌿 Ecological Impact",
-            impact_eco, height=70
-        )
-        st.session_state.impact_social = st.text_area(
-            "🤝 Impact social" if st.session_state.lang == "French" else "🤝 Social Impact",
-            impact_social, height=70
-        )
-        st.session_state.impact_econ = st.text_area(
-            "💰 Impact économique" if st.session_state.lang == "French" else "💰 Economic Impact",
-            impact_econ, height=70
-        )
-        st.session_state.plan_action = st.text_area(
-            "🧭 Plan d’action" if st.session_state.lang == "French" else "🧭 Action Plan",
-            plan_action, height=150
-        )
-
-        # ============================
-        # ✅ Validation du formulaire
-        # ============================
-        validated = st.form_submit_button(
-            "✅ Valider et ajouter les informations du porteur"
-            if st.session_state.lang == "French"
-            else "✅ Validate and Add Project Owner Information"
-        )
-
-        if validated:
-            st.session_state.validation_ok = True
-            st.success(
-                "✅ Sections validées avec succès ! Vous pouvez maintenant ajouter les informations du porteur."
-                if st.session_state.lang == "French"
-                else "✅ Sections successfully validated! You can now add the project owner information."
+            role = (
+                f"Tu es un expert en développement durable. Rédige une phrase claire pour : {label}."
+                if current_lang == "French"
+                else f"You are a sustainability expert. Write a clear sentence for: {label}."
             )
+            try:
+                payload = {
+                    "model": "mistralai/mistral-nemo",
+                    "messages": [
+                        {"role": "system", "content": role},
+                        {"role": "user", "content": context}
+                    ],
+                    "temperature": 0.6,
+                    "max_tokens": 120
+                }
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL (version corrigée et alignée)
