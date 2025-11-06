@@ -212,7 +212,6 @@ else:
         "success_save": "🌿 Projet enregistré avec succès dans la base EVAD !",
     }
 
-
 # --- Sous-titre descriptif (corrigé) ---
 if st.session_state.lang == "English":
     st.markdown("""
