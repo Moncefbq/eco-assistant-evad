@@ -172,6 +172,12 @@ else:
     objectif_label = "🎯 Objectif du projet"
     localisation_label = "📍 Localisation"
     launch_btn = "🚀 Lancer l’analyse du projet"
+title = st.text_input(title_label)
+description = st.text_area(desc_label, height=100)
+objectif = st.text_area(objectif_label, height=100)
+localisation = st.text_input(localisation_label)
+submitted = st.form_submit_button(launch_btn)
+
 
 
 # --- SECRETS ---
