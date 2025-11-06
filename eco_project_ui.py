@@ -5,7 +5,7 @@ import re
 import base64
 import json
 
-# --- EN-TÊTE EVAD ---
+# --- EN-TÊTE EVAD (logo centré) ---
 @st.cache_data
 def get_base64_image(image_path):
     try:
@@ -58,7 +58,7 @@ API_URL = "https://openrouter.ai/api/v1/chat/completions"
 HEADERS = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
 
 # ==============================
-# ⚡ FUSION INTELLIGENTE MULTI-AGENTS
+# ⚡ MULTI-AGENT INTELLIGENT
 # ==============================
 def ask_agent(role_description, user_input):
     payload = {
@@ -79,34 +79,47 @@ def MultiAgentFusion(title, description, objectif, localisation):
     english_keywords = ["project", "community", "garden", "green", "development", "objective", "plan", "impact", "solution", "action"]
     score = sum(1 for w in english_keywords if w in text)
     lang = "english" if score >= 2 else "french"
-    st.write(f"🌐 Langue détectée : {lang}")
+    st.markdown(f"🌐 **Langue détectée : {lang}**")
 
     if lang == "english":
         role = (
-            "You are a collaborative system made up of 4 expert agents: AnalystAgent, EcoAgent, PlannerAgent, and CoordinatorAgent. "
-            "Together, you analyze the project and produce the following sections, formatted exactly like this:\n\n"
-            "Solution: ...\n"
-            "Ecological Impact: ...\n"
-            "Social Impact: ...\n"
-            "Economic Impact: ...\n"
-            "Action Plan: ... (3 to 5 concrete steps)\n\n"
-            "Be concise, professional, and clear in each section. Write in English."
+            "You are a collaborative system of 4 expert agents (AnalystAgent, EcoAgent, PlannerAgent, CoordinatorAgent). "
+            "Analyze the following project and produce a structured synthesis strictly in this format:\n\n"
+            "Solution: (short paragraph)\n"
+            "Ecological Impact: (1-2 sentences)\n"
+            "Social Impact: (1-2 sentences)\n"
+            "Economic Impact: (1-2 sentences)\n"
+            "Action Plan: (3 to 5 clear and numbered steps)\n\n"
+            "⚠️ IMPORTANT: Always include all section titles exactly as written above, in English."
         )
     else:
         role = (
-            "Tu es un système collaboratif composé de 4 experts : AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent. "
-            "Ensemble, vous analysez le projet et produisez les sections suivantes :\n\n"
-            "Solution: ...\n"
-            "Impact écologique: ...\n"
-            "Impact social: ...\n"
-            "Impact économique: ...\n"
-            "Plan d’action: ... (3 à 5 étapes concrètes)\n\n"
-            "Sois concis, professionnel et clair dans chaque section. Rédige en français."
+            "Tu es un système collaboratif composé de 4 experts (AnalystAgent, EcoAgent, PlannerAgent et CoordinatorAgent). "
+            "Analyse le projet suivant et produis une synthèse structurée avec ce format précis :\n\n"
+            "Solution: (court paragraphe)\n"
+            "Impact écologique: (1-2 phrases)\n"
+            "Impact social: (1-2 phrases)\n"
+            "Impact économique: (1-2 phrases)\n"
+            "Plan d’action: (3 à 5 étapes claires et numérotées)\n\n"
+            "⚠️ IMPORTANT : Inclure tous les titres de section exactement comme ci-dessus, en français."
         )
 
-    user_input = f"Project: {title}\nDescription: {description}\nObjective: {objectif}\nLocation: {localisation}"
-    return ask_agent(role, user_input), lang
+    user_input = f"Project title: {title}\nDescription: {description}\nObjective: {objectif}\nLocation: {localisation}"
+    
+    try:
+        response = ask_agent(role, user_input)
+        # 🔍 Vérifie si les sections attendues existent
+        if not any(keyword.lower() in response.lower() for keyword in ["impact", "solution", "plan"]):
+            # 🧠 Si mal structuré, reformate automatiquement
+            role_fix = (
+                "Reformat this text into a structured summary using the exact section headers "
+                f"in {'English' if lang=='english' else 'French'} as specified previously."
+            )
+            response = ask_agent(role_fix, response)
+    except Exception as e:
+        response = f"⚠️ AI generation error: {e}"
 
+    return response, lang
 
 # ==============================
 # 🧾 FORMULAIRE PRINCIPAL
@@ -158,7 +171,6 @@ if "final_result" in st.session_state:
         text = st.session_state.final_result
         lang = st.session_state.get("detected_lang", "french")
 
-        # --- Extraction bilingue ---
         def extract_section(text, keys):
             pattern = rf"({'|'.join(keys)})\s*[:：\-–]?\s*(.*?)(?=\n(?:Solution|Impact|Plan|$))"
             match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
@@ -191,5 +203,6 @@ if "final_result" in st.session_state:
         if validated:
             st.session_state.validation_ok = True
             st.success("✅ Sections validées avec succès !")
+
 
 
