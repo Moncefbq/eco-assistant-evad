@@ -288,6 +288,53 @@ if "final_result" in st.session_state:
         impact_social = extract_section(text, "Impact social") or extract_section(text, "Social impact")
         impact_econ = extract_section(text, "Impact économique") or extract_section(text, "Economic impact")
         plan_action = extract_section(text, "Plan d’action") or extract_section(text, "Action plan")
+# --- Si le plan d’action est vide → régénération automatique bilingue ---
+if not plan_action or len(plan_action.strip()) < 10:
+    try:
+        if st.session_state.lang == "English":
+            role = (
+                "You are a sustainability and project planning expert. "
+                "Generate a clear and concise 3–5 step action plan "
+                "based on the project's goal and impacts."
+            )
+            user_input = (
+                f"Project goal: {objectif}\n"
+                f"Ecological impact: {impact_eco}\n"
+                f"Social impact: {impact_social}\n"
+                f"Economic impact: {impact_econ}"
+            )
+        else:
+            role = (
+                "Tu es un expert en développement durable. "
+                "Génère un plan d’action clair avec 3 à 5 étapes courtes et concrètes "
+                "à partir de l’objectif et des impacts du projet."
+            )
+            user_input = (
+                f"Objectif du projet: {objectif}\n"
+                f"Impact écologique: {impact_eco}\n"
+                f"Impact social: {impact_social}\n"
+                f"Impact économique: {impact_econ}"
+            )
+
+        payload = {
+            "model": "mistralai/mistral-nemo",
+            "messages": [
+                {"role": "system", "content": role},
+                {"role": "user", "content": user_input}
+            ],
+            "temperature": 0.6,
+            "max_tokens": 250
+        }
+
+        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
+        response.raise_for_status()
+        plan_action = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+
+        if not plan_action:
+            plan_action = "⚠️ Aucun plan d’action généré automatiquement."
+    except Exception as e:
+        plan_action = f"(Erreur génération du plan : {e})"
+
 
         st.session_state.objectif = st.text_area("🎯 Objectif du projet", objectif, height=100)
         st.session_state.impact_eco = st.text_area("🌿 Impact écologique", impact_eco, height=70)
