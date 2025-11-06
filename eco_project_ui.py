@@ -533,6 +533,10 @@ if st.session_state.get("validation_ok"):
 
             if file_attachment:
                 payload["Logo + docs"] = file_attachment  # ✅ format correct pour NoCoDB
+headers = {
+    "xc-token": NOCODB_API_TOKEN,
+    "Accept": "application/json"
+}
 
 try:
     r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
