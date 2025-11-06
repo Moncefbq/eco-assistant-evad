@@ -273,6 +273,7 @@ if submitted:
 #  SYNTHÈSE DU PROJET
 # ==============================
 if "final_result" in st.session_state:
+    # --- Début du formulaire ---
     with st.form("synthese_form"):
         st.subheader("📋 Synthèse du projet")
 
@@ -289,65 +290,66 @@ if "final_result" in st.session_state:
         impact_econ = extract_section(text, "Impact économique") or extract_section(text, "Economic impact")
         plan_action = extract_section(text, "Plan d’action") or extract_section(text, "Action plan")
 
-# --- Si le plan d’action est vide → régénération automatique bilingue ---
-if not plan_action or len(plan_action.strip()) < 10:
-    try:
-        if st.session_state.lang == "English":
-            role = (
-                "You are a sustainability and project planning expert. "
-                "Generate a clear and concise 3–5 step action plan "
-                "based on the project's goal and impacts."
-            )
-            user_input = (
-                f"Project goal: {objectif}\n"
-                f"Ecological impact: {impact_eco}\n"
-                f"Social impact: {impact_social}\n"
-                f"Economic impact: {impact_econ}"
-            )
-        else:
-            role = (
-                "Tu es un expert en développement durable. "
-                "Génère un plan d’action clair avec 3 à 5 étapes courtes et concrètes "
-                "à partir de l’objectif et des impacts du projet."
-            )
-            user_input = (
-                f"Objectif du projet: {objectif}\n"
-                f"Impact écologique: {impact_eco}\n"
-                f"Impact social: {impact_social}\n"
-                f"Impact économique: {impact_econ}"
-            )
+        # --- Si le plan d’action est vide → régénération automatique bilingue ---
+        if not plan_action or len(plan_action.strip()) < 10:
+            try:
+                if st.session_state.lang == "English":
+                    role = (
+                        "You are a sustainability and project planning expert. "
+                        "Generate a clear and concise 3–5 step action plan "
+                        "based on the project's goal and impacts."
+                    )
+                    user_input = (
+                        f"Project goal: {objectif}\n"
+                        f"Ecological impact: {impact_eco}\n"
+                        f"Social impact: {impact_social}\n"
+                        f"Economic impact: {impact_econ}"
+                    )
+                else:
+                    role = (
+                        "Tu es un expert en développement durable. "
+                        "Génère un plan d’action clair avec 3 à 5 étapes courtes et concrètes "
+                        "à partir de l’objectif et des impacts du projet."
+                    )
+                    user_input = (
+                        f"Objectif du projet: {objectif}\n"
+                        f"Impact écologique: {impact_eco}\n"
+                        f"Impact social: {impact_social}\n"
+                        f"Impact économique: {impact_econ}"
+                    )
 
-        payload = {
-            "model": "mistralai/mistral-nemo",
-            "messages": [
-                {"role": "system", "content": role},
-                {"role": "user", "content": user_input}
-            ],
-            "temperature": 0.6,
-            "max_tokens": 250
-        }
+                payload = {
+                    "model": "mistralai/mistral-nemo",
+                    "messages": [
+                        {"role": "system", "content": role},
+                        {"role": "user", "content": user_input}
+                    ],
+                    "temperature": 0.6,
+                    "max_tokens": 250
+                }
 
-        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-        response.raise_for_status()
-        plan_action = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+                response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
+                response.raise_for_status()
+                plan_action = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
 
-        if not plan_action:
-            plan_action = "⚠️ Aucun plan d’action généré automatiquement."
-    except Exception as e:
-        plan_action = f"(Erreur génération du plan : {e})"
+                if not plan_action:
+                    plan_action = "⚠️ Aucun plan d’action généré automatiquement."
+            except Exception as e:
+                plan_action = f"(Erreur génération du plan : {e})"
 
-# --- Formulaire Streamlit (affichage) ---
-st.session_state.objectif = st.text_area("🎯 Objectif du projet", objectif, height=100)
-st.session_state.impact_eco = st.text_area("🌿 Impact écologique", impact_eco, height=70)
-st.session_state.impact_social = st.text_area("🤝 Impact social", impact_social, height=70)
-st.session_state.impact_econ = st.text_area("💰 Impact économique", impact_econ, height=70)
-st.session_state.plan_action = st.text_area("🧭 Plan d’action", plan_action, height=140)
+        # --- Champs modifiables ---
+        st.session_state.objectif = st.text_area("🎯 Objectif du projet", objectif, height=100)
+        st.session_state.impact_eco = st.text_area("🌿 Impact écologique", impact_eco, height=70)
+        st.session_state.impact_social = st.text_area("🤝 Impact social", impact_social, height=70)
+        st.session_state.impact_econ = st.text_area("💰 Impact économique", impact_econ, height=70)
+        st.session_state.plan_action = st.text_area("🧭 Plan d’action", plan_action, height=140)
 
-validated = st.form_submit_button("✅ Valider et ajouter les informations du porteur")
+        # --- Bouton de validation (DOIT être dans le form) ---
+        validated = st.form_submit_button("✅ Valider et ajouter les informations du porteur")
 
-if validated:
-    st.session_state.validation_ok = True
-    st.success("✅ Sections validées avec succès !")
+        if validated:
+            st.session_state.validation_ok = True
+            st.success("✅ Sections validées avec succès !")
 
 
 # ==============================
