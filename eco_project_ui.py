@@ -2,7 +2,6 @@
 import streamlit as st
 import requests
 import base64
-import json
 
 # --- CONFIGURATION GLOBALE ---
 st.set_page_config(page_title="Formulaire Pilote d'impact", page_icon="🏡", layout="centered")
@@ -19,7 +18,7 @@ TEXTS = {
     "Français": {
         "title": "Formulaire Pilote d'impact",
         "intro_title": "🌍 Rejoignez EVAD pour co-développer votre projet de lieux régénératif !",
-        "intro_text": "Bienvenue dans **EVAD – Écosystème Vivant Autonome et Décentralisé**, une plateforme de pilotage d’impact conçue pour la création de lieux partagés durables *(tiers-lieux, éco-lieux, coworking, fermes, etc.)* grâce à une intelligence collaborative, open-source et régénérative.",
+        "intro_text": "Bienvenue dans **EVAD – Écosystème Vivant Autonome et Décentralisé**, une plateforme de pilotage d’impact pour créer des lieux durables *(tiers-lieux, éco-lieux, coworking, fermes, etc.)* grâce à une intelligence collaborative, open-source et régénérative.",
         "presentation": "📘 Présentation du projet",
         "presentation_sub": "Informations sur le projet de lieu durable",
         "details": "📑 Détails du projet par espace",
@@ -33,15 +32,16 @@ TEXTS = {
         "fill_warn": "Merci de remplir tous les champs avant l’analyse.",
         "analyzing": "🌱 Analyse du projet en cours...",
         "analyze_done": "✅ Analyse du projet terminée avec succès !",
-        "synthese": "📋 Synthèse du projet",
+        "synthese": "🗂️ Synthèse du projet",
         "ecological": "🌿 Impact écologique",
         "social": "🤝 Impact social",
         "economic": "💰 Impact économique",
         "action": "🗺️ Plan d’action",
         "validate": "✅ Valider et ajouter les informations du porteur",
         "validated": "✅ Sections validées avec succès !",
-        "leader": "👤 Nom du porteur de projet",
-        "email": "✉️ Email de contact",
+        "leader": "👤 Présentation du porteur",
+        "leader_name": "Nom du porteur de projet",
+        "email": "Email de contact",
         "status": "📊 Étape du projet",
         "save": "💾 Enregistrer dans la base EVAD",
         "success": "🌿 Projet enregistré avec succès dans la base EVAD !",
@@ -50,7 +50,7 @@ TEXTS = {
     "English": {
         "title": "Impact Pilot Form",
         "intro_title": "🌍 Join EVAD to co-develop your regenerative place project !",
-        "intro_text": "Welcome to **EVAD – Living Autonomous & Decentralized Ecosystem**, a platform designed to guide the creation of shared sustainable places *(third places, eco-farms, coworking hubs, etc.)* through collaborative, open-source and regenerative intelligence.",
+        "intro_text": "Welcome to **EVAD – Living Autonomous & Decentralized Ecosystem**, a platform designed to support the creation of sustainable shared places *(third places, eco-farms, coworking hubs, etc.)* through collaborative, open-source and regenerative intelligence.",
         "presentation": "📘 Project Overview",
         "presentation_sub": "Information about your sustainable place project",
         "details": "📑 Project Details by Space",
@@ -64,24 +64,25 @@ TEXTS = {
         "fill_warn": "Please fill in all fields before analysis.",
         "analyzing": "🌱 Analyzing your project...",
         "analyze_done": "✅ Project analysis completed successfully !",
-        "synthese": "📋 Project synthesis",
+        "synthese": "🗂️ Project synthesis",
         "ecological": "🌿 Ecological Impact",
         "social": "🤝 Social Impact",
         "economic": "💰 Economic Impact",
         "action": "🗺️ Action Plan",
         "validate": "✅ Validate and add project leader information",
         "validated": "✅ Sections validated successfully !",
-        "leader": "👤 Project leader name",
-        "email": "✉️ Contact email",
+        "leader": "👤 Project Leader Presentation",
+        "leader_name": "Project leader name",
+        "email": "Contact email",
         "status": "📊 Project stage",
         "save": "💾 Save to EVAD database",
         "success": "🌿 Project successfully saved to EVAD database !",
         "toast": "Project saved successfully",
-    },
+    }
 }
 t = TEXTS[st.session_state.langue]
 
-# --- EN-TÊTE EVAD (Logo + Titre + Bouton langue) ---
+# --- EN-TÊTE EVAD (logo + bouton langue) ---
 @st.cache_data
 def get_base64_image(image_path):
     try:
@@ -95,7 +96,7 @@ col1, col2 = st.columns([8, 1])
 with col1:
     if logo_base64:
         st.markdown(
-            f"<div style='text-align:center;'><img src='data:image/png;base64,{logo_base64}' width='240'><h3>{t['title']}</h3></div>",
+            f"<div style='text-align:center;'><img src='data:image/png;base64,{logo_base64}' width='220'><h3>{t['title']}</h3></div>",
             unsafe_allow_html=True)
     else:
         st.markdown(f"<h3 style='text-align:center;'>{t['title']}</h3>", unsafe_allow_html=True)
@@ -129,7 +130,7 @@ with st.form("user_form"):
     objectif = st.text_area(t["goal"], height=100)
     localisation = st.text_input(t["loc"])
 
-    st.markdown(f"<h4>{t['details']}</h4><p><i>{t['presentation_sub']}</i></p>", unsafe_allow_html=True)
+    st.markdown(f"<h4>{t['details']}</h4>", unsafe_allow_html=True)
     espaces = []
     for i in range(st.session_state.nb_espaces):
         espaces.append(st.text_area(f"🏠 Espace {i+1}", key=f"espace_{i+1}", height=80))
@@ -141,29 +142,33 @@ with st.form("user_form"):
     uploaded_doc = st.file_uploader(t["upload"], type=["pdf", "png", "jpg", "jpeg", "docx"])
     submitted = st.form_submit_button(t["analyze"])
 
+# --- SYNTHÈSE DU PROJET ---
 if submitted:
     if not all([title, description, objectif, localisation]):
         st.warning(t["fill_warn"])
     else:
         st.success(t["analyze_done"])
-        st.markdown(f"### {t['synthese']}")
-        objectif_gen = st.text_area(t["goal"], "Exemple : Aménager un espace durable et éducatif...", height=80)
-        eco = st.text_area(t["ecological"], "Exemple : Réduire l'empreinte carbone grâce à des matériaux locaux.", height=80)
-        social = st.text_area(t["social"], "Exemple : Favoriser la cohésion sociale par des activités communautaires.", height=80)
-        eco2 = st.text_area(t["economic"], "Exemple : Créer des emplois verts et des partenariats locaux.", height=80)
-        plan = st.text_area(t["action"], "Exemple : Planifier en 3 étapes l'aménagement et la maintenance durable.", height=80)
-        if st.button(t["validate"]):
-            st.session_state.final_result = True
-            st.success(t["validated"])
+        with st.form("synthese_form"):
+            st.markdown(f"<h2>{t['synthese']}</h2>", unsafe_allow_html=True)
+            objectif_txt = st.text_area(t["goal"], "Exemple : Aménager un espace durable et éducatif...", height=80)
+            eco_txt = st.text_area(t["ecological"], "Exemple : Réduire l'empreinte carbone grâce à des matériaux locaux.", height=80)
+            social_txt = st.text_area(t["social"], "Exemple : Favoriser la cohésion sociale par des activités communautaires.", height=80)
+            eco2_txt = st.text_area(t["economic"], "Exemple : Créer des emplois verts et des partenariats locaux.", height=80)
+            plan_txt = st.text_area(t["action"], "Exemple : Planifier en 3 étapes l'aménagement et la maintenance durable.", height=80)
+            valid = st.form_submit_button(t["validate"])
+            if valid:
+                st.session_state.final_result = True
+                st.success(t["validated"])
 
+# --- ENREGISTREMENT FINAL ---
 if st.session_state.get("final_result"):
     with st.form("porteur_form"):
-        st.subheader("👤 " + t["leader"])
-        leader = st.text_input(t["leader"])
+        st.markdown(f"<h2>{t['leader']}</h2>", unsafe_allow_html=True)
+        leader = st.text_input(t["leader_name"])
         email = st.text_input(t["email"])
         status = st.selectbox(t["status"], ["Thinking", "Modélisation", "Construction", "Développement", "Financement", "Student"], index=0)
-        saved = st.form_submit_button(t["save"])
-        if saved:
+        save = st.form_submit_button(t["save"])
+        if save:
             st.success(t["success"])
             st.toast(t["toast"], icon="🌱")
 
