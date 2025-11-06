@@ -311,11 +311,15 @@ if submitted:
     if not all([title, description, objectif, localisation]):
         st.warning("Merci de remplir tous les champs avant l’analyse.")
     else:
-        with st.spinner("🌱 Analyse du projet en cours..."):
-            try:
-                final_result = MultiAgentFusion(title, description, objectif, localisation)
-                st.session_state.final_result = final_result
-                st.success("✅ Analyse du projet terminée avec succès !")
+       message_loading = "🌱 Project analysis in progress..." if st.session_state.lang == "English" else "🌱 Analyse du projet en cours..."
+message_success = "✅ Project analysis completed successfully!" if st.session_state.lang == "English" else "✅ Analyse du projet terminée avec succès !"
+
+with st.spinner(message_loading):
+    try:
+        final_result = MultiAgentFusion(title, description, objectif, localisation)
+        st.session_state.final_result = final_result
+        st.success(message_success)
+
             except Exception as e:
                 st.error(f"Erreur pendant l’analyse : {e}")
 
@@ -388,7 +392,9 @@ if "final_result" in st.session_state:
         validated = st.form_submit_button(labels["validate"])
         if validated:
             st.session_state.validation_ok = True
-            st.success("✅ Sections validées avec succès !")
+            msg_valide = "✅ Sections successfully validated!" if st.session_state.lang == "English" else "✅ Sections validées avec succès !"
+            st.success(msg_valide)
+ 
 
 
 # ==============================
@@ -487,8 +493,14 @@ if st.session_state.get("validation_ok"):
             try:
                 r = requests.post(NOCODB_API_URL, headers=headers, json=payload)
                 if r.status_code in (200, 201):
-                    st.success("🌿 Projet enregistré avec succès dans la base EVAD !")
-                    st.toast("Projet enregistré avec succès", icon="🌱")
+                    msg_save = (
+    "🌿 Project successfully saved in the EVAD database!"
+    if st.session_state.lang == "English"
+    else "🌿 Projet enregistré avec succès dans la base EVAD !"
+)
+st.success(msg_save)
+st.toast("🌱 Project saved successfully" if st.session_state.lang == "English" else "🌱 Projet enregistré avec succès", icon="🌱")
+
                 else:
                     st.error(f"Erreur API {r.status_code} : {r.text}")
             except Exception as e:
