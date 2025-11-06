@@ -436,49 +436,57 @@ if submitted:
                 st.error(msg_error)
 
 # ==============================
-# 🧩 SYNTHÈSE DU PROJET (version finale robuste et ordonnée)
+# 🧩 SYNTHÈSE DU PROJET — version finale bilingue et dynamique
 # ==============================
 if "final_result" in st.session_state:
+    # --- Titre et sous-titre multilingues ---
+    if st.session_state.lang == "English":
+        titre_synthese = "📋 Project Summary"
+        sous_titre_synthese = "Final synthesis of your sustainable project analysis"
+    else:
+        titre_synthese = "📋 Synthèse du projet"
+        sous_titre_synthese = "Synthèse finale de l’analyse de votre projet durable"
+
     with st.form("synthese_form"):
-        st.subheader(titre_synthese)
+        st.markdown(f"""
+            <h2 style='margin-bottom: 0;'>{titre_synthese}</h2>
+            <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
+                {sous_titre_synthese}
+            </p>
+        """, unsafe_allow_html=True)
 
-        # --- Récupération directe des résultats de MultiAgentFusion ---
+        # --- Récupération des données générées ---
         data = st.session_state.final_result
-
         objectif = data.get("objectif", "")
         impact_eco = data.get("impact_eco", "")
         impact_social = data.get("impact_social", "")
         impact_econ = data.get("impact_econ", "")
         plan_action = data.get("plan_action", "")
 
-        # --- Nettoyage de base ---
+        # --- Fonctions utilitaires ---
         import re, requests
 
         def clean_text_field(text):
-            """Nettoie et simplifie le texte (retire markdown, symboles et espaces superflus)."""
             if not text or text.strip() in [".", "-", "•"]:
                 return ""
-            text = re.sub(r"\*+", "", text)  # enlève les ** et *
+            text = re.sub(r"\*+", "", text)
             text = re.sub(r"^[\-\*\d\.\)]+\s*", "", text, flags=re.MULTILINE)
             text = re.sub(r"\s+", " ", text.strip())
             return text.strip().capitalize()
 
         def first_sentence(text):
-            """Retourne uniquement la première phrase complète du texte."""
             text = clean_text_field(text)
             match = re.match(r'^(.*?[.!?])(\s|$)', text)
             return match.group(1).strip() if match else text.split('.')[0].strip() + '.'
 
         def format_action_plan(plan_text):
-            """Simplifie et structure le plan d’action en 3 étapes maximum."""
             plan_text = clean_text_field(plan_text)
             steps = re.split(r'[.!?]', plan_text)
             steps = [s.strip() for s in steps if len(s.strip()) > 5]
             steps = steps[:3]
             if not steps:
                 return ""
-            formatted = "\n".join([f"{i+1}. {step.capitalize()}." for i, step in enumerate(steps)])
-            return formatted
+            return "\n".join([f"{i+1}. {step.capitalize()}." for i, step in enumerate(steps)])
 
         # --- Application du nettoyage ---
         objectif = clean_text_field(objectif)
@@ -487,72 +495,41 @@ if "final_result" in st.session_state:
         impact_econ = first_sentence(impact_econ)
         plan_action = format_action_plan(plan_action)
 
-        # --- Si le plan est vide → régénération IA automatique ---
-        if not plan_action:
-            try:
-                prompt = (
-                    f"Projet : {objectif}\nImpacts : {impact_eco}, {impact_social}, {impact_econ}\n"
-                    "Génère un plan d’action clair en 3 étapes numérotées pour ce projet."
-                    if st.session_state.lang == "French"
-                    else f"Project: {objectif}\nImpacts: {impact_eco}, {impact_social}, {impact_econ}\n"
-                         "Generate a clear 3-step action plan for this project."
-                )
-
-                payload = {
-                    "model": "mistralai/mistral-nemo",
-                    "messages": [
-                        {"role": "system", "content": "You are an assistant generating concise project action plans."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    "temperature": 0.5,
-                    "max_tokens": 200
-                }
-
-                response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-                response.raise_for_status()
-                raw_plan = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-                plan_action = format_action_plan(raw_plan)
-
-            except Exception as e:
-                plan_action = f"(Erreur génération du plan : {e})"
+        # --- Libellés bilingues pour cette section ---
+        if st.session_state.lang == "English":
+            synthese_labels = {
+                "objective": "🎯 Project Objective",
+                "eco": "🌿 Ecological Impact",
+                "social": "🤝 Social Impact",
+                "econ": "💰 Economic Impact",
+                "plan": "🧭 Action Plan",
+                "validate": "✅ Validate and Add Project Owner Information",
+                "success": "✅ Sections successfully validated! You can now add the project owner information."
+            }
+        else:
+            synthese_labels = {
+                "objective": "🎯 Objectif du projet",
+                "eco": "🌿 Impact écologique",
+                "social": "🤝 Impact social",
+                "econ": "💰 Impact économique",
+                "plan": "🧭 Plan d’action",
+                "validate": "✅ Valider et ajouter les informations du porteur",
+                "success": "✅ Sections validées avec succès ! Vous pouvez maintenant ajouter les informations du porteur."
+            }
 
         # --- Champs affichés à l’utilisateur ---
-        st.session_state.objectif = st.text_area(
-            "🎯 Objectif du projet" if st.session_state.lang == "French" else "🎯 Project Objective",
-            objectif, height=100
-        )
-        st.session_state.impact_eco = st.text_area(
-            "🌿 Impact écologique" if st.session_state.lang == "French" else "🌿 Ecological Impact",
-            impact_eco, height=70
-        )
-        st.session_state.impact_social = st.text_area(
-            "🤝 Impact social" if st.session_state.lang == "French" else "🤝 Social Impact",
-            impact_social, height=70
-        )
-        st.session_state.impact_econ = st.text_area(
-            "💰 Impact économique" if st.session_state.lang == "French" else "💰 Economic Impact",
-            impact_econ, height=70
-        )
-        st.session_state.plan_action = st.text_area(
-            "🧭 Plan d’action" if st.session_state.lang == "French" else "🧭 Action Plan",
-            plan_action, height=140
-        )
+        st.session_state.objectif = st.text_area(synthese_labels["objective"], objectif, height=100)
+        st.session_state.impact_eco = st.text_area(synthese_labels["eco"], impact_eco, height=70)
+        st.session_state.impact_social = st.text_area(synthese_labels["social"], impact_social, height=70)
+        st.session_state.impact_econ = st.text_area(synthese_labels["econ"], impact_econ, height=70)
+        st.session_state.plan_action = st.text_area(synthese_labels["plan"], plan_action, height=140)
 
-        # ✅ Bouton de validation
-        validated = st.form_submit_button(
-            "✅ Valider et ajouter les informations du porteur"
-            if st.session_state.lang == "French"
-            else "✅ Validate and Add Project Owner Information"
-        )
+        # --- Bouton de validation bilingue ---
+        validated = st.form_submit_button(synthese_labels["validate"])
 
         if validated:
             st.session_state.validation_ok = True
-            msg_valide = (
-                "✅ Sections validées avec succès ! Vous pouvez maintenant ajouter les informations du porteur."
-                if st.session_state.lang == "French"
-                else "✅ Sections successfully validated! You can now add the project owner information."
-            )
-            st.success(msg_valide)
+            st.success(synthese_labels["success"])
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL (version corrigée et alignée)
