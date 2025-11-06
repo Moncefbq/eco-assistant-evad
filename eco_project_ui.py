@@ -294,29 +294,6 @@ if "final_result" in st.session_state:
         st.session_state.impact_social = st.text_area("🤝 Impact social", impact_social, height=70)
         st.session_state.impact_econ = st.text_area("💰 Impact économique", impact_econ, height=70)
         st.session_state.plan_action = st.text_area("🧭 Plan d’action", plan_action, height=140)
-# --- Si le plan d’action est vide → régénération automatique ---
-if not plan_action or len(plan_action) < 10:
-    try:
-        role = (
-            "Tu es un expert en développement durable. "
-            "Génère un plan d’action clair avec 3 à 5 étapes courtes et concrètes."
-        )
-        user_input = f"Projet: {objectif}\nImpacts: {impact_eco}, {impact_social}, {impact_econ}"
-        payload = {
-            "model": "mistralai/mistral-nemo",
-            "messages": [
-                {"role": "system", "content": role},
-                {"role": "user", "content": user_input}
-            ],
-            "temperature": 0.6,
-            "max_tokens": 200
-        }
-        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-        response.raise_for_status()
-        plan_action = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-    except Exception as e:
-        plan_action = f"(Erreur génération du plan : {e})"
-
 
         validated = st.form_submit_button("✅ Valider et ajouter les informations du porteur")
         if validated:
