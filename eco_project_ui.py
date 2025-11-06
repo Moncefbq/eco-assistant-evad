@@ -33,7 +33,7 @@ TEXTS = {
         "fill_warn": "Merci de remplir tous les champs avant l’analyse.",
         "analyzing": "🌱 Analyse du projet en cours...",
         "analyze_done": "✅ Analyse du projet terminée avec succès !",
-        "ai_result": "🧩 Résultat généré automatiquement :",
+        "ai_result": "🧩 Synthèse du projet",
         "leader": "Nom du porteur de projet",
         "email": "Email de contact",
         "status": "📊 Étape du projet",
@@ -57,7 +57,7 @@ TEXTS = {
         "fill_warn": "Please fill in all fields before analysis.",
         "analyzing": "🌱 Analyzing your project...",
         "analyze_done": "✅ Project analysis completed successfully !",
-        "ai_result": "🧩 AI generated result:",
+        "ai_result": "🧩 Project synthesis",
         "leader": "Project leader name",
         "email": "Contact email",
         "status": "📊 Project stage",
@@ -68,7 +68,7 @@ TEXTS = {
 }
 t = TEXTS[st.session_state.langue]
 
-# --- EN-TÊTE EVAD (logo centré + bouton langue à droite) ---
+# --- EN-TÊTE EVAD ---
 @st.cache_data
 def get_base64_image(image_path):
     try:
@@ -106,8 +106,19 @@ st.markdown("""
 <style>
 div.stForm {background-color:#018262!important;border-radius:20px;padding:25px!important;box-shadow:0 4px 15px rgba(0,0,0,.15);}
 div.stForm>div{background-color:#cfeee7!important;color:#014d3b!important;border-radius:15px;padding:20px;margin:0;}
-div.aiResultBox {background-color:#cfeee7!important;color:#014d3b!important;border-radius:15px;padding:20px;box-shadow:0 4px 15px rgba(0,0,0,.15);margin-top:15px;}
-.stTextInput>div>div>input,.stTextArea>div>div>textarea,.stSelectbox>div>div{background-color:#fff!important;color:#000!important;border-radius:6px;border:1px solid #555!important;}
+div.syntheseBox {
+    background-color:#cfeee7!important;
+    color:#014d3b!important;
+    border-radius:15px;
+    padding:25px;
+    box-shadow:0 4px 15px rgba(0,0,0,.15);
+    margin-top:15px;
+    font-size:15px;
+    line-height:1.6;
+}
+.stTextInput>div>div>input,.stTextArea>div>div>textarea,.stSelectbox>div>div{
+    background-color:#fff!important;color:#000!important;border-radius:6px;border:1px solid #555!important;
+}
 .stButton button{background-color:#018262!important;color:white!important;border-radius:8px;font-weight:bold;}
 .stButton button:hover{background-color:#01614c!important;}
 </style>
@@ -123,9 +134,7 @@ NOCODB_API_URL = st.secrets["NOCODB_API_URL"]
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 HEADERS = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
 
-# ==============================
-# ⚡ FUSION IA (corrigée : objectif + impacts positifs seulement)
-# ==============================
+# --- IA ---
 def ask_agent(role_description, user_input):
     payload = {
         "model": "mistralai/mistral-nemo",
@@ -142,20 +151,18 @@ def MultiAgentFusion(title, description, objectif, localisation):
             "Tu es un expert en durabilité. Fournis uniquement les sections suivantes :\n"
             "Objectif du projet :\nImpact écologique (positif seulement) :\n"
             "Impact social (positif seulement) :\nImpact économique (positif seulement) :\nPlan d’action (3 à 5 étapes concrètes).\n"
-            "Ne mentionne aucun aspect négatif, aucun titre 'Solution'. Réponds en français clair et structuré."
+            "Ne mentionne aucun aspect négatif ni le mot 'Solution'. Réponds en français clair et structuré."
         )
     else:
         role = (
             "You are a sustainability expert. Provide only these sections:\n"
             "Project Objective:\nPositive Ecological Impact:\nPositive Social Impact:\nPositive Economic Impact:\nAction Plan (3-5 practical steps).\n"
-            "Do not mention negatives or 'Solution' titles. Respond clearly and in English."
+            "Do not include negatives or the word 'Solution'. Respond clearly and in English."
         )
     user_input = f"Projet: {title}\nDescription: {description}\nObjectif: {objectif}\nLocalisation: {localisation}"
     return ask_agent(role, user_input)
 
-# ==============================
-# 🧾 FORMULAIRE PRINCIPAL
-# ==============================
+# --- FORMULAIRE PRINCIPAL ---
 if "nb_espaces" not in st.session_state:
     st.session_state.nb_espaces = 1
 
@@ -178,9 +185,7 @@ with st.form("user_form"):
     uploaded_doc = st.file_uploader(t["upload"], type=["pdf", "png", "jpg", "jpeg", "docx"])
     submitted = st.form_submit_button(t["analyze"])
 
-# ==============================
-# 🚀 ANALYSE DU PROJET (avec bloc style uniforme)
-# ==============================
+# --- ANALYSE DU PROJET ---
 if submitted:
     if not all([title, description, objectif, localisation]):
         st.warning(t["fill_warn"])
@@ -192,13 +197,11 @@ if submitted:
                 st.success(t["analyze_done"])
 
                 st.markdown(f"### {t['ai_result']}")
-                st.markdown(f"<div class='aiResultBox'><pre style='white-space:pre-wrap;'>{final_result}</pre></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='syntheseBox'><pre style='white-space:pre-wrap;'>{final_result}</pre></div>", unsafe_allow_html=True)
             except Exception as e:
                 st.error(f"Erreur IA : {e}")
 
-# ==============================
-# 🧑‍💼 ENREGISTREMENT FINAL (inchangé)
-# ==============================
+# --- ENREGISTREMENT FINAL ---
 if st.session_state.get("final_result"):
     with st.form("porteur_form"):
         st.subheader("👤 Présentation du porteur")
