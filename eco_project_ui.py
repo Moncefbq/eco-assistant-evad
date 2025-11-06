@@ -142,23 +142,6 @@ with col2:
         st.session_state.lang = "English"
         st.rerun()
 
-# --- Style dynamique selon la langue ---
-if st.session_state.lang == "Français":
-    st.markdown("""
-    <div class="lang-switch">
-        <button class="lang-button lang-active">🇫🇷 Français</button>
-        <button class="lang-button">🇬🇧 English</button>
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-    <div class="lang-switch">
-        <button class="lang-button">🇫🇷 Français</button>
-        <button class="lang-button lang-active">🇬🇧 English</button>
-    </div>
-    """, unsafe_allow_html=True)
-
-
 # --- Sous-titre descriptif (corrigé) ---
 if st.session_state.lang == "English":
     st.markdown("""
