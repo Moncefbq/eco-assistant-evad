@@ -226,6 +226,50 @@ else:
     titre_synthese = "📋 Synthèse du projet"
     titre_porteur = "👤 Présentation du porteur"
 
+# --- LABELS MULTILINGUES FORMULAIRE ---
+if st.session_state.lang == "English":
+    labels = {
+        "project_name": "Project Name",
+        "project_description": "Project Description",
+        "project_objective": "Project Objective",
+        "location": "Location",
+        "space": "Space",
+        "add_space": "➕ Add a Space",
+        "upload_doc": "📄 Related Document (optional)",
+        "submit_analysis": "🚀 Launch Project Analysis",
+        "objective_summary": "🎯 Project Objective",
+        "eco_impact": "🌿 Ecological Impact",
+        "social_impact": "🤝 Social Impact",
+        "economic_impact": "💰 Economic Impact",
+        "action_plan": "🧭 Action Plan",
+        "validate": "✅ Validate and Add Project Owner Information",
+        "leader_name": "Project Leader Name",
+        "email": "Contact Email",
+        "status": "📊 Project Stage",
+        "save": "💾 Save in EVAD Database"
+    }
+else:
+    labels = {
+        "project_name": "Nom du projet",
+        "project_description": "Description du projet",
+        "project_objective": "Objectif du projet",
+        "location": "Localisation",
+        "space": "Espace",
+        "add_space": "➕ Ajouter un espace",
+        "upload_doc": "📄 Document lié (optionnel)",
+        "submit_analysis": "🚀 Lancer l’analyse du projet",
+        "objective_summary": "🎯 Objectif du projet",
+        "eco_impact": "🌿 Impact écologique",
+        "social_impact": "🤝 Impact social",
+        "economic_impact": "💰 Impact économique",
+        "action_plan": "🧭 Plan d’action",
+        "validate": "✅ Valider et ajouter les informations du porteur",
+        "leader_name": "Nom du porteur de projet",
+        "email": "Email de contact",
+        "status": "📊 Étape du projet",
+        "save": "💾 Enregistrer dans la base EVAD"
+    }
+
 # ✅ ICI commence ton formulaire
 with st.form("user_form"):
     st.markdown(f"""
@@ -235,10 +279,11 @@ with st.form("user_form"):
         </p>
     """, unsafe_allow_html=True)
 
-    title = st.text_input("🏷️ Nom du projet")
-    description = st.text_area("📝 Description du projet", height=100)
-    objectif = st.text_area("🎯 Objectif du projet", height=100)
-    localisation = st.text_input("📍 Localisation")
+title = st.text_input(f"🏷️ {labels['project_name']}")
+description = st.text_area(f"📝 {labels['project_description']}", height=100)
+objectif = st.text_area(f"🎯 {labels['project_objective']}", height=100)
+localisation = st.text_input(f"📍 {labels['location']}")
+
 
     # Section espaces
     st.markdown(f"""
@@ -250,11 +295,12 @@ with st.form("user_form"):
 
     espaces = []   # 👈 cette ligne doit être indentée ici, 4 espaces
     for i in range(st.session_state.nb_espaces):
-        espaces.append(st.text_area(f"🏠 Espace {i+1}", key=f"espace_{i+1}", height=80))
+        espaces.append(st.text_area(f"🏠 {labels['space']} {i+1}", key=f"espace_{i+1}", height=80))
+
 
 
     if st.session_state.nb_espaces < 5:
-        if st.form_submit_button("➕ Ajouter un espace"):
+        if st.form_submit_button(labels["add_space"]):
             st.session_state.nb_espaces += 1
             st.rerun()
 
@@ -336,11 +382,14 @@ if "final_result" in st.session_state:
         impact_econ = first_sentence(impact_econ)
 
         # --- Champs finaux ---
-        st.session_state.objectif = st.text_area("🎯 Objectif du projet", objectif, height=100)
-        st.session_state.impact_eco = st.text_area("🌿 Impact écologique", impact_eco, height=70)
-        st.session_state.impact_social = st.text_area("🤝 Impact social", impact_social, height=70)
-        st.session_state.impact_econ = st.text_area("💰 Impact économique", impact_econ, height=70)
-        st.session_state.plan_action = st.text_area("🧭 Plan d’action", plan_action, height=140)
+st.session_state.objectif = st.text_area(labels["objective_summary"], objectif, height=100)
+st.session_state.impact_eco = st.text_area(labels["eco_impact"], impact_eco, height=70)
+st.session_state.impact_social = st.text_area(labels["social_impact"], impact_social, height=70)
+st.session_state.impact_econ = st.text_area(labels["economic_impact"], impact_econ, height=70)
+st.session_state.plan_action = st.text_area(labels["action_plan"], plan_action, height=140)
+validated = st.form_submit_button(labels["validate"])
+
+
 
         validated = st.form_submit_button("✅ Valider et ajouter les informations du porteur")
         if validated:
@@ -354,15 +403,11 @@ if "final_result" in st.session_state:
 if st.session_state.get("validation_ok"):
     with st.form("porteur_form"):
         st.subheader(titre_porteur)
-        leader = st.text_input("Nom du porteur de projet")
-        email = st.text_input("Email de contact")
-        status = st.selectbox(
-            "📊 Étape du projet",
-            ["Thinking", "Modélisation", "Construction", "Développement", "Financement", "Student"],
-            index=0
-        )
+         leader = st.text_input(labels["leader_name"])
+         email = st.text_input(labels["email"])
+         status = st.selectbox(labels["status"], ["Thinking", "Modélisation", "Construction", "Développement", "Financement", "Student"], index=0)
+         saved = st.form_submit_button(labels["save"])
 
-        saved = st.form_submit_button("💾 Enregistrer dans la base EVAD")
 
         if saved:
             UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
