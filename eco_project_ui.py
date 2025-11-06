@@ -210,14 +210,30 @@ def MultiAgentFusion(title, description, objectif, localisation):
 # ==============================
 if "nb_espaces" not in st.session_state:
     st.session_state.nb_espaces = 1
+# --- TITRES MULTILINGUES FORMULAIRE ---
+if st.session_state.lang == "English":
+    titre_projet = "📘 Project Overview"
+    sous_titre_projet = "Information about your sustainable place project"
+    titre_espaces = "📂 Project Details by Space"
+    sous_titre_espaces = "Information about each space included in the project"
+    titre_synthese = "📋 Project Summary"
+    titre_porteur = "👤 Project Leader Information"
+else:
+    titre_projet = "📘 Présentation du projet"
+    sous_titre_projet = "Informations sur le projet de lieu durable"
+    titre_espaces = "📂 Détails du projet par espace"
+    sous_titre_espaces = "Informations sur chaque espace qui compose le projet"
+    titre_synthese = "📋 Synthèse du projet"
+    titre_porteur = "👤 Présentation du porteur"
 
 with st.form("user_form"):
-    st.markdown("""
-        <h2 style='margin-bottom: 0;'>📘 Présentation du projet</h2>
-        <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
-            Informations sur le projet de lieu durable
-        </p>
-    """, unsafe_allow_html=True)
+st.markdown(f"""
+    <h2 style='margin-bottom: 0;'>{titre_projet}</h2>
+    <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
+        {sous_titre_projet}
+    </p>
+""", unsafe_allow_html=True)
+
 
     title = st.text_input("🏷️ Nom du projet")
     description = st.text_area("📝 Description du projet", height=100)
@@ -225,12 +241,13 @@ with st.form("user_form"):
     localisation = st.text_input("📍 Localisation")
 
     # Espaces dynamiques
-    st.markdown("""
-        <h3 style='margin-bottom: 0;'>📂 Détails du projet par espace</h3>
-        <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
-            Informations sur chaque espace qui compose le projet
-        </p>
-    """, unsafe_allow_html=True)
+st.markdown(f"""
+    <h3 style='margin-bottom: 0;'>{titre_espaces}</h3>
+    <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
+        {sous_titre_espaces}
+    </p>
+""", unsafe_allow_html=True)
+
 
     espaces = []
     for i in range(st.session_state.nb_espaces):
@@ -264,7 +281,7 @@ if submitted:
 # ==============================
 if "final_result" in st.session_state:
     with st.form("synthese_form"):
-        st.subheader("📋 Synthèse du projet")
+        st.subheader(titre_synthese)
 
         import re, requests
 
@@ -336,7 +353,7 @@ if "final_result" in st.session_state:
 # ==============================
 if st.session_state.get("validation_ok"):
     with st.form("porteur_form"):
-        st.subheader("👤 Présentation du porteur")
+        st.subheader(titre_porteur)
         leader = st.text_input("Nom du porteur de projet")
         email = st.text_input("Email de contact")
         status = st.selectbox(
