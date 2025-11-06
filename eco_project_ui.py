@@ -294,53 +294,6 @@ if "final_result" in st.session_state:
         st.session_state.impact_social = st.text_area("🤝 Impact social", impact_social, height=70)
         st.session_state.impact_econ = st.text_area("💰 Impact économique", impact_econ, height=70)
         st.session_state.plan_action = st.text_area("🧭 Plan d’action", plan_action, height=140)
-# --- Si le plan d’action est vide → régénération automatique bilingue ---
-if not plan_action or len(plan_action.strip()) < 10:
-    try:
-        if st.session_state.lang == "English":
-            role = (
-                "You are a sustainability expert. "
-                "Generate a clear and concise action plan with 3 to 5 short, practical steps "
-                "based on the project's objectives and impacts."
-            )
-            user_input = (
-                f"Project goal: {objectif}\n"
-                f"Ecological impact: {impact_eco}\n"
-                f"Social impact: {impact_social}\n"
-                f"Economic impact: {impact_econ}"
-            )
-        else:
-            role = (
-                "Tu es un expert en développement durable. "
-                "Génère un plan d’action clair avec 3 à 5 étapes courtes et concrètes "
-                "à partir des objectifs et des impacts du projet."
-            )
-            user_input = (
-                f"Objectif du projet: {objectif}\n"
-                f"Impact écologique: {impact_eco}\n"
-                f"Impact social: {impact_social}\n"
-                f"Impact économique: {impact_econ}"
-            )
-
-        payload = {
-            "model": "mistralai/mistral-nemo",
-            "messages": [
-                {"role": "system", "content": role},
-                {"role": "user", "content": user_input}
-            ],
-            "temperature": 0.6,
-            "max_tokens": 250
-        }
-
-        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-        response.raise_for_status()
-        plan_action = response.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-
-        if not plan_action:
-            plan_action = "⚠️ Action plan could not be generated. Please try again."
-    except Exception as e:
-        plan_action = f"(Erreur génération du plan : {e})"
-
 
         validated = st.form_submit_button("✅ Valider et ajouter les informations du porteur")
         if validated:
