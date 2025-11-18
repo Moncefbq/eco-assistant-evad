@@ -578,7 +578,7 @@ if "final_result" in st.session_state:
             st.success(synthese_labels["success"])
 
 # ==============================
-# 🧑‍💼 ENREGISTREMENT FINAL (version corrigée et alignée)
+# 🧑‍💼 ENREGISTREMENT FINAL (version corrigée et alignée NoCoDB)
 # ==============================
 if st.session_state.get("validation_ok"):
     with st.form("porteur_form"):
@@ -595,10 +595,12 @@ if st.session_state.get("validation_ok"):
         saved = st.form_submit_button(labels["save"])
 
         if saved:
+            # --- Upload du document éventuel ---
             UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
             headers = {"xc-token": NOCODB_API_TOKEN, "Accept": "application/json"}
 
             file_attachment = []
+
             if uploaded_doc is not None:
                 try:
                     files = {"file": (uploaded_doc.name, uploaded_doc.getvalue())}
@@ -606,7 +608,7 @@ if st.session_state.get("validation_ok"):
                     up.raise_for_status()
                     data = up.json()
 
-                    # Vérifie le format de la réponse (list ou dict)
+                    # Vérifie les formats possibles de réponse NoCoDB
                     if isinstance(data, dict) and "list" in data:
                         f = data["list"][0]
                     elif isinstance(data, list) and len(data) > 0:
@@ -617,37 +619,36 @@ if st.session_state.get("validation_ok"):
                     if f:
                         url = f.get("url", "")
                         signed = f.get("signedUrl", "")
-                        title = f.get("title", uploaded_doc.name)
+                        title_doc = f.get("title", uploaded_doc.name)
                         mimetype = f.get("mimetype", uploaded_doc.type or "image/png")
 
-                        # Correction du chemin
                         path = f.get("path", "")
                         if not path:
-                            if "/nc/uploads/" in url:
+                            if "/nc/" in url:
                                 path = url[url.index("/nc/"):]
-                            elif "/nc/uploads/" in signed:
+                            elif "/nc/" in signed:
                                 path = signed[signed.index("/nc/"):]
                             else:
-                                path = f"/nc/uploads/{title}"
+                                path = f"/nc/uploads/{title_doc}"
 
                         file_attachment = [{
-                            "title": title,
+                            "title": title_doc,
                             "path": path,
                             "url": signed or url,
                             "mimetype": mimetype
                         }]
 
                         st.toast("📎 Fichier uploadé avec succès", icon="📤")
+
                         try:
-                            st.image(uploaded_doc.getvalue(), caption=title, use_container_width=True)
+                            st.image(uploaded_doc.getvalue(), caption=title_doc, use_container_width=True)
                         except:
                             pass
-                    else:
-                        st.warning("⚠️ Aucun fichier détecté dans la réponse d’upload.")
+
                 except Exception as e:
                     st.error(f"Erreur lors de l’upload : {e}")
 
-            # --- Construction du payload principal ---
+            # --- Construction du payload EXACT pour NoCoDB ---
             payload = {
                 "Title": title,
                 "Description": description,
@@ -655,11 +656,15 @@ if st.session_state.get("validation_ok"):
                 "Project Leader": leader,
                 "Email": email,
                 "Status": status,
-                "Objectif du projet": st.session_state.objectif,
-                "Impact écologique": st.session_state.impact_eco,
-                "Impact social": st.session_state.impact_social,
-                "Impact économique": st.session_state.impact_econ,
-                "Plan d’action": st.session_state.plan_action,
+
+                # 🟩 CHAMPS SYNTHÈSE EXACTS SELON NOCoDB
+                "objectif_synthese": st.session_state.objectif,
+                "impact_eco": st.session_state.impact_eco,
+                "impact_social": st.session_state.impact_social,
+                "impact_econ": st.session_state.impact_econ,
+                "plan_action": st.session_state.plan_action,
+
+                # 🏠 ESPACES (OK)
                 "espace 1": espaces[0] if len(espaces) > 0 else "",
                 "espace 2": espaces[1] if len(espaces) > 1 else "",
                 "espace 3": espaces[2] if len(espaces) > 2 else "",
@@ -667,12 +672,12 @@ if st.session_state.get("validation_ok"):
                 "espace 5": espaces[4] if len(espaces) > 4 else "",
             }
 
+            # Ajout du fichier si présent
             if file_attachment:
-                payload["Logo + docs"] = file_attachment  # ✅ format correct pour NoCoDB
+                payload["Logo + docs"] = file_attachment
 
-            # --- Envoi vers NoCoDB ---
+            # --- Envoi API vers NoCoDB ---
             try:
-                # 🔐 En-têtes pour NoCoDB
                 headers = {
                     "xc-token": NOCODB_API_TOKEN,
                     "Accept": "application/json"
@@ -687,26 +692,9 @@ if st.session_state.get("validation_ok"):
                         else "🌿 Projet enregistré avec succès dans la base EVAD !"
                     )
                     st.success(msg_save)
-
-                    msg_toast = (
-                        "🌱 Project saved successfully"
-                        if st.session_state.lang == "English"
-                        else "🌱 Projet enregistré avec succès"
-                    )
-                    st.toast(msg_toast, icon="🌱")
-
+                    st.toast("🌱 Project saved successfully", icon="🌱")
                 else:
-                    msg_error_api = (
-                        f"❌ API Error {r.status_code}: {r.text}"
-                        if st.session_state.lang == "English"
-                        else f"❌ Erreur API {r.status_code} : {r.text}"
-                    )
-                    st.error(msg_error_api)
+                    st.error(f"❌ API Error {r.status_code} : {r.text}")
 
             except Exception as e:
-                msg_error_noco = (
-                    f"❌ Error while sending to NoCoDB: {e}"
-                    if st.session_state.lang == "English"
-                    else f"❌ Erreur lors de l’envoi à NoCoDB : {e}"
-                )
-                st.error(msg_error_noco)
+                st.error(f"❌ Erreur lors de l’envoi à NoCoDB : {e}")
