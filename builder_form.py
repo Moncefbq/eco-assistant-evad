@@ -58,9 +58,7 @@ if logo_base64:
             <img src="data:image/png;base64,{logo_base64}"
                  width="240"
                  style="margin: 0 auto; display: block; image-rendering: -webkit-optimize-contrast; -ms-interpolation-mode: nearest-neighbor;">
-            <h1 style="font-size: 2.1em; color: #014d3b; margin-top: 10px; margin-bottom: 5px; text-align: center;">
-                Formulaire Bâtisseur 
-            </h1>
+
         </div>
         <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 5px 0 20px 0;">
     """, unsafe_allow_html=True)
