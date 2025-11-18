@@ -22,7 +22,7 @@ NOCODB_API_TOKEN = st.secrets.get("NOCODB_API_TOKEN", "0JKfTbXfHzFC03lFmWwbzmB_I
 PROJECTS_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
 
 # TABLE Builders (bâtisseurs)
-BUILDERS_API_URL = "https://app.nocodb.com/api/v2/tables/vwocvmyl680puyd9/records"
+BUILDERS_API_URL = "https://app.nocodb.com/api/v2/tables/mnh4vojl5zy7bvx/records"
 
 # UPLOAD fichiers (Photo builder)
 UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
