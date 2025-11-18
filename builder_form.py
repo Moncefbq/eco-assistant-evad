@@ -9,7 +9,7 @@ import json
 # ⚙️ CONFIG GÉNÉRALE
 # ==============================
 st.set_page_config(
-    page_title="Formulaire Bâtisseur d’impact",
+    page_title="Formulaire Bâtisseur ",
     page_icon="🧑‍🌾",
     layout="centered"
 )
