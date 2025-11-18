@@ -433,11 +433,11 @@ if submitted:
                 st.error(msg_error)
 
 # ==============================
-# 🧩 SYNTHÈSE DU PROJET — version finale bilingue avec plan d’action auto-généré
+# 🧩 SYNTHÈSE DU PROJET — version finale bilingue avec plan d’action propre
 # ==============================
 if "final_result" in st.session_state:
 
-    # --- Titre et sous-titre ---
+    # --- Titre & sous-titre ---
     if st.session_state.lang == "English":
         titre_synthese = "📋 Project Summary"
         sous_titre_synthese = "Final synthesis of your sustainable project analysis"
@@ -453,7 +453,8 @@ if "final_result" in st.session_state:
             </p>
         """, unsafe_allow_html=True)
 
-        import re, requests
+        import re
+        import requests
 
         # --- Données générées ---
         data = st.session_state.final_result
@@ -463,12 +464,12 @@ if "final_result" in st.session_state:
         impact_econ = data.get("impact_econ", "")
         plan_action = data.get("plan_action", "")
 
-        # ==============================
-        # ⚙️ Fonctions utilitaires
-        # ==============================
+        # =====================================================
+        # 🧰 FONCTIONS UTILITAIRES (clean + format bilingue)
+        # =====================================================
 
         def clean_text_field(text):
-            """Nettoyage propre"""
+            """Nettoyage solide pour éviter le bruit et les artefacts."""
             if not text or text.strip() in [".", "-", "•"]:
                 return ""
             text = re.sub(r"\*+", "", text)
@@ -477,23 +478,30 @@ if "final_result" in st.session_state:
             return text.strip().capitalize()
 
         def first_sentence(text):
-            """Retourne la première phrase propre"""
+            """Extrait proprement la première phrase."""
             text = clean_text_field(text)
             match = re.match(r'^(.*?[.!?])(\s|$)', text)
-            return match.group(1).strip() if match else text.split('.')[0].strip() + '.'
+            return match.group(1).strip() if match else (text.split('.')[0].strip() + '.')
 
-        # ==============================
-        # 🧭 Format FR : "1ère étape", EN : "Step 1"
-        # ==============================
+        # =====================================================
+        # 🧭 FORMAT PLAN D’ACTION – FR « 1ère étape » / EN « Step 1 »
+        # + élimination des doublons
+        # =====================================================
         def format_action_plan(plan_text):
-            """Formate le plan d’action en FR (1ère étape) ou EN (Step 1)."""
-
+            """Format FR (1ère étape) / EN (Step 1) sans redondance."""
             plan_text = clean_text_field(plan_text)
-            steps = re.split(r'[.!?]', plan_text)
-            steps = [s.strip() for s in steps if len(s.strip()) > 5]
-            steps = steps[:5]  # max 5 étapes
 
-            # Si aucune étape détectée → modèle automatique
+            # Supprime « Étape X », « Step X », « X. », « X) », « X - »
+            plan_text = re.sub(r"[Éé]tape\s*\d+\s*:\s*", "", plan_text, flags=re.IGNORECASE)
+            plan_text = re.sub(r"Step\s*\d+\s*:\s*", "", plan_text, flags=re.IGNORECASE)
+            plan_text = re.sub(r"^\d+\s*[\.\-\)]\s*", "", plan_text, flags=re.MULTILINE)
+
+            # Découpage
+            steps = re.split(r'[.!?]', plan_text)
+            steps = [s.strip() for s in steps if len(s.strip()) > 4]
+            steps = steps[:5]
+
+            # Si aucune étape détectée → modèle standard
             if len(steps) == 0:
                 if st.session_state.lang == "English":
                     steps = [
@@ -501,7 +509,7 @@ if "final_result" in st.session_state:
                         "Acquire land or secure required permits",
                         "Mobilize local actors and recruit the team",
                         "Build and equip ecological and community spaces",
-                        "Launch pilot activities and establish monitoring indicators"
+                        "Launch pilot activities and monitoring indicators"
                     ]
                 else:
                     steps = [
@@ -509,41 +517,41 @@ if "final_result" in st.session_state:
                         "Acquérir ou louer les terrains nécessaires",
                         "Mobiliser les acteurs locaux et recruter l’équipe",
                         "Construire et aménager les espaces écologiques et communautaires",
-                        "Lancer les activités pilotes et mettre en place les indicateurs de suivi"
+                        "Lancer les activités pilotes et mettre en place les indicateurs"
                     ]
 
             formatted = []
 
             for i, step in enumerate(steps):
-
-                # 🇫🇷 Français → "1ère étape / 2ème étape"
+                # FRANÇAIS
                 if st.session_state.lang != "English":
                     ordinal = "1ère" if i == 0 else f"{i+1}ème"
                     formatted.append(f"{ordinal} étape : {step.capitalize()}.")
-
-                # 🇬🇧 Anglais → "Step 1 / Step 2"
+                # ENGLISH
                 else:
                     formatted.append(f"Step {i+1}: {step.capitalize()}.")
 
             return "\n".join(formatted)
 
-        # ==============================
-        # ✨ Nettoyage des contenus
-        # ==============================
+        # =====================================================
+        # 🧹 Nettoyage général
+        # =====================================================
         objectif = clean_text_field(objectif)
         impact_eco = first_sentence(impact_eco)
         impact_social = first_sentence(impact_social)
         impact_econ = first_sentence(impact_econ)
         plan_action = format_action_plan(plan_action)
 
-        # --- Si vide → IA génère un plan d'action ---
+        # =====================================================
+        # 🤖 Si plan d’action vide → génération AI
+        # =====================================================
         if not plan_action.strip():
             try:
                 if st.session_state.lang == "English":
                     prompt = (
                         f"Project: {objectif}\n"
                         f"Impacts: {impact_eco}, {impact_social}, {impact_econ}\n"
-                        "Generate a clear, 3-step action plan in English."
+                        "Generate a clear 3-step English action plan."
                     )
                 else:
                     prompt = (
@@ -564,15 +572,15 @@ if "final_result" in st.session_state:
 
                 response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
                 response.raise_for_status()
-                raw_plan = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                raw_plan = response.json()["choices"][0]["message"]["content"]
                 plan_action = format_action_plan(raw_plan)
 
             except Exception as e:
-                plan_action = f"(Erreur génération automatique du plan : {e})"
+                plan_action = f"(Erreur génération automatique : {e})"
 
-        # ==============================
+        # =====================================================
         # 🏷️ Labels bilingues
-        # ==============================
+        # =====================================================
         if st.session_state.lang == "English":
             synthese_labels = {
                 "objective": "🎯 Project Objective",
@@ -594,21 +602,21 @@ if "final_result" in st.session_state:
                 "success": "✅ Synthèse validée ! Vous pouvez maintenant ajouter les informations du porteur."
             }
 
-        # ==============================
-        # 🖊️ Champs de synthèse
-        # ==============================
+        # =====================================================
+        # 📝 Zones de texte
+        # =====================================================
         st.session_state.objectif = st.text_area(synthese_labels["objective"], objectif, height=100)
         st.session_state.impact_eco = st.text_area(synthese_labels["eco"], impact_eco, height=70)
         st.session_state.impact_social = st.text_area(synthese_labels["social"], impact_social, height=70)
         st.session_state.impact_econ = st.text_area(synthese_labels["econ"], impact_econ, height=70)
-        st.session_state.plan_action = st.text_area(synthese_labels["plan"], plan_action, height=160)
+        st.session_state.plan_action = st.text_area(synthese_labels["plan"], plan_action, height=180)
 
-        # --- Validation ---
+        # Bouton de validation
         validated = st.form_submit_button(synthese_labels["validate"])
-
         if validated:
             st.session_state.validation_ok = True
             st.success(synthese_labels["success"])
+
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL (version corrigée et alignée NoCoDB)
