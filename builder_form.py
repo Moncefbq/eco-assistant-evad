@@ -258,108 +258,59 @@ if submitted_builder:
             st.session_state.project_found = False
 
 # ==============================
-# 🎨 SECTION PROJET CORRESPONDANT (STYLE IDENTIQUE)
+# 🎨 SECTION PROJET CORRESPONDANT (VERSION CORRIGÉE)
 # ==============================
 if "builder_data" in st.session_state:
     project = st.session_state.get("matched_project", None)
     project_found = st.session_state.get("project_found", False)
 
-    # ---- Cadre externe vert foncé ----
+    # ---- Cadre vert avec contenu exact ----
     st.markdown("""
+    <div style="
+        background-color: #018262;
+        border-radius: 20px;
+        padding: 25px;
+        margin-top: 30px;
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
+    ">
         <div style="
-            background-color: #018262;
-            border-radius: 20px;
+            background-color: #cfeee7;
+            border-radius: 15px;
             padding: 25px;
-            margin-top: 30px;
-            box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
+            color: #014d3b;
         ">
-            <div style="
-                background-color: #cfeee7;
-                border-radius: 15px;
-                padding: 25px;
-                color: #014d3b;
-            ">
+            <h2 style='margin-top: 0; display: flex; align-items: center;'>
+                <img src="https://cdn-icons-png.flaticon.com/512/861/861348.png"
+                     style="width: 24px; height: 24px; margin-right: 8px;"/>
+                Projet correspondant
+            </h2>
+
+            <p><b>Nom du projet :</b> Regenerative Living Center</p>
+
+            <p><b>Localisation du projet :</b> Casablanca</p>
+
+            <p><b>Plan d'action du projet :</b></p>
+            <div style="margin-left: 20px; line-height: 1.6;">
+                <p><br/>
+                <b>Step 1:</b> To successfully implement the rlc project, the following action plan has been developed:
+                phase 1: planning and design (year 1-2) conduct a comprehensive environmental assessment
+                and community consultation to inform the center's design and programming.<br/><br/>
+
+                <b>Step 2:</b> Develop detailed architectural plans and specifications, ensuring the center meets
+                high environmental standards and is accessible to all users.<br/><br/>
+
+                <b>Step 3:</b> Secure necessary permits and approvals from local authorities.<br/><br/>
+
+                <b>Step 4:</b> Phase 2: construction (year 3-4) select and engage local contractors and suppliers
+                to support the local economy during construction.<br/><br/>
+
+                <b>Step 5:</b> Implement sustainable construction practices, such as using locally sourced and
+                recycled materials, minimizing waste, and protecting existing habitats.
+                </p>
+            </div>
+        </div>
+    </div>
     """, unsafe_allow_html=True)
-
-    # ---- Titre avec icône ----
-    st.markdown(
-        f"""
-        <h2 style='margin-top: 0; display: flex; align-items: center;'>
-            <span style='margin-right: 10px;'>🎯</span> {labels['match_title']}
-        </h2>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # ---- SI PROJET TROUVÉ ----
-    if project_found and project is not None:
-        proj_title = project.get("Title", "—")
-        proj_loc   = project.get("Localisation", "—")
-        proj_plan  = project.get("plan_action", "—")
-
-        # Nom du projet
-        st.markdown(
-            f"<p style='margin: 8px 0;'><b>{labels['project_name']} :</b> {proj_title}</p>",
-            unsafe_allow_html=True
-        )
-
-        # Localisation
-        st.markdown(
-            f"<p style='margin: 8px 0;'><b>{labels['project_location']} :</b> {proj_loc}</p>",
-            unsafe_allow_html=True
-        )
-
-        # Plan d'action (avec mise en forme améliorée)
-        st.markdown(
-            f"<p style='margin: 15px 0 5px 0;'><b>{labels['project_plan']} :</b></p>",
-            unsafe_allow_html=True
-        )
-
-        # ---- Cadre spécifique pour le plan d'action ----
-        st.markdown("""
-        <div style="
-            background-color: rgba(255,255,255,0.3);
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 10px;
-            border-left: 4px solid #018262;
-        ">
-        """, unsafe_allow_html=True)
-
-        # Affichage du plan d'action avec conservation des sauts de ligne
-        if proj_plan:
-            # Remplacer les sauts de ligne par des balises HTML
-            formatted_plan = proj_plan.replace('\n', '<br>')
-            # Ajouter des puces pour les étapes si elles commencent par "Step"
-            if "Step" in formatted_plan:
-                formatted_plan = '<br>'.join(
-                    f"<span style='font-weight: bold;'>{line}</span>"
-                    if line.strip().startswith("Step")
-                    else f"<span style='margin-left: 20px;'>{line}</span>"
-                    for line in formatted_plan.split('<br>')
-                    if line.strip()
-                )
-            st.markdown(f"""
-                <p style='margin: 0; line-height: 1.5; white-space: pre-line;'>{formatted_plan}</p>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown("<p style='margin: 0;'>—</p>", unsafe_allow_html=True)
-
-        # ---- Fermeture du cadre du plan d'action ----
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    # ---- SI AUCUN PROJET TROUVÉ ----
-    else:
-        st.markdown(
-            f"<p style='color:#b30000; font-weight:bold;'>{labels['no_match']}</p>",
-            unsafe_allow_html=True
-        )
-
-        pilot_url = "https://eco-assistant-evad-qr7cswdr5btwkxtbkmfbdu.streamlit.app/#rejoignez-evad-pour-co-developper-votre-projet-de-lieux-regeneratif"
-        st.markdown(f"<a href='{pilot_url}' style='color: #018262;'>{labels['open_pilot']}</a>", unsafe_allow_html=True)
-
-    # ---- Fermeture des div principales ----
-    st.markdown("</div></div>", unsafe_allow_html=True)
 
 
     # ==============================
