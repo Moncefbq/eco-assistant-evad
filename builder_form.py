@@ -258,7 +258,7 @@ if submitted_builder:
             st.session_state.project_found = False
 
 # ==============================
-# 🎨 SECTION PROJET CORRESPONDANT (STYLE IDENTIQUE)
+# 🎨 SECTION PROJET CORRESPONDANT AVEC DESIGN
 # ==============================
 if "builder_data" in st.session_state:
 
@@ -266,33 +266,35 @@ if "builder_data" in st.session_state:
     project = st.session_state.get("matched_project", None)
     project_found = st.session_state.get("project_found", False)
 
-    # CADRE EXTERIEUR
+    # Conteneur externe (vert foncé)
     st.markdown("""
         <div style="
             background-color: #018262;
             border-radius: 20px;
             padding: 25px;
-            margin-top: 35px;
+            margin-top: 40px;
             box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
         ">
     """, unsafe_allow_html=True)
 
-    # OUVERTURE DU CONTAINER STREAMLIT DANS LE CADRE HTML
+    # Conteneur interne (vert clair) via Streamlit
     with st.container():
         st.markdown("""
-            <div style="
-                background-color: #cfeee7;
-                border-radius: 15px;
-                padding: 25px;
-            ">
-            """,
+        <div style="
+            background-color: #cfeee7;
+            border-radius: 15px;
+            padding: 25px;
+            color: #014d3b;
+        ">
+        """, unsafe_allow_html=True)
+
+        # TITRE
+        st.markdown(
+            f"<h2 style='margin-top:0;'>{labels['match_title']}</h2>",
             unsafe_allow_html=True
         )
 
-        # Titre
-        st.markdown(f"<h2>{labels['match_title']}</h2>", unsafe_allow_html=True)
-
-        # Si projet trouvé
+        # SI PROJET TROUVÉ
         if project_found and project is not None:
             proj_title = project.get("Title", "—")
             proj_loc   = project.get("Localisation", "—")
@@ -302,6 +304,8 @@ if "builder_data" in st.session_state:
             st.markdown(f"**{labels['project_name']} :** {proj_title}")
             st.markdown(f"**{labels['project_location']} :** {proj_loc}")
             st.markdown(f"**{labels['project_plan']} :**")
+
+            # Texte plan d'action
             st.write(proj_plan)
 
             suggested_project = proj_title
@@ -309,17 +313,19 @@ if "builder_data" in st.session_state:
 
         else:
             st.warning(labels["no_match"])
+
             pilot_url = "https://eco-assistant-evad-qr7cswdr5btwkxtbkmfbdu.streamlit.app/#rejoignez-evad-pour-co-developper-votre-projet-de-lieux-regeneratif"
             st.markdown(f"[{labels['open_pilot']}]({pilot_url})", unsafe_allow_html=True)
 
             suggested_project = ""
             match_score = 0
 
-        # FERMETURE Zone Streamlit
+        # Fermeture du conteneur interne
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # FERMETURE CADRE EXTERIEUR
+    # Fermeture du conteneur externe
     st.markdown("</div>", unsafe_allow_html=True)
+
 
     # ==============================
     # 💾 BOUTON D'ENREGISTREMENT BUILDER
