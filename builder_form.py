@@ -258,10 +258,11 @@ if submitted_builder:
             st.session_state.project_found = False
 
 # ==============================
-# 🎨 SECTION PROJET CORRESPONDANT (STYLE IDENTIQUE)
+# 🎨 SECTION PROJET CORRESPONDANT (NOUVEAU DESIGN)
 # ==============================
 if "builder_data" in st.session_state:
 
+    builder_data = st.session_state.builder_data
     project = st.session_state.get("matched_project", None)
     project_found = st.session_state.get("project_found", False)
 
@@ -284,7 +285,7 @@ if "builder_data" in st.session_state:
 
     # ---- Titre ----
     st.markdown(
-        f"<h2 style='margin-top: 0;'>{labels['match_title']}</h2>",
+        f"<h2 style='margin-top: 0; margin-bottom: 20px;'>{labels['match_title']}</h2>",
         unsafe_allow_html=True
     )
 
@@ -296,42 +297,36 @@ if "builder_data" in st.session_state:
         proj_plan  = (project.get("plan_action") or 
                       project.get("Plan d’action") or "—")
 
-        # Nom du projet
-        st.markdown(
-            f"<p><b>{labels['project_name']} :</b> {proj_title}</p>",
-            unsafe_allow_html=True
-        )
+        st.markdown(f"<p><b>{labels['project_name']} :</b> {proj_title}</p>", unsafe_allow_html=True)
+        st.markdown(f"<p><b>{labels['project_location']} :</b> {proj_loc}</p>", unsafe_allow_html=True)
 
-        # Localisation
-        st.markdown(
-            f"<p><b>{labels['project_location']} :</b> {proj_loc}</p>",
-            unsafe_allow_html=True
-        )
+        st.markdown(f"<p><b>{labels['project_plan']} :</b></p>", unsafe_allow_html=True)
 
-        # Plan d’action (avec rendu propre)
-        st.markdown(
-            f"<p><b>{labels['project_plan']} :</b></p>",
-            unsafe_allow_html=True
-        )
-
-        # ⚠️ IMPORTANT : pas de st.write() ici, sinon ça casse le bloc HTML
+        # AFFICHAGE PLAN DANS LE CADRE
         st.markdown(
             f"<div style='white-space: pre-wrap; font-size: 15px;'>{proj_plan}</div>",
             unsafe_allow_html=True
         )
 
-    # ---- SI Aucun projet trouvé ----
+        suggested_project = proj_title
+        match_score = 100
+
     else:
-        st.markdown(
-            f"<p style='color:#b30000; font-weight:bold;'>{labels['no_match']}</p>",
-            unsafe_allow_html=True
-        )
-
-        pilot_url = "https://eco-assistant-evad-qr7cswdr5btwkxtbkmfbdu.streamlit.app/#rejoignez-evad-pour-co-developper-votre-projet-de-lieux-regeneratif"
+        st.warning(labels["no_match"])
+        pilot_url = "https://eco-assistant..."
         st.markdown(f"<a href='{pilot_url}'>{labels['open_pilot']}</a>", unsafe_allow_html=True)
+        suggested_project = ""
+        match_score = 0
 
-    # ---- Fermeture des div ----
+    # ---- Fermeture des DIV ----
     st.markdown("</div></div>", unsafe_allow_html=True)
+
+    # ---- BOUTON ENREGISTREMENT ----
+    save_clicked = st.button(labels["save_builder"])
+
+    if save_clicked:
+        # (ne change rien ici, ton upload + save est bon)
+        ...
 
 
     # ==============================
