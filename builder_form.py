@@ -258,59 +258,63 @@ if submitted_builder:
             st.session_state.project_found = False
 
 # ==============================
-# 🎨 SECTION PROJET CORRESPONDANT (VERSION CORRIGÉE)
+# 🎨 SECTION PROJET CORRESPONDANT (TEXTE SANS LABELS)
 # ==============================
 if "builder_data" in st.session_state:
-    project = st.session_state.get("matched_project", None)
-    project_found = st.session_state.get("project_found", False)
 
-    # ---- Cadre vert avec contenu exact ----
+    project = st.session_state.get("project", None)
+
+    # ---- Cadre externe vert foncé ----
     st.markdown("""
-    <div style="
-        background-color: #018262;
-        border-radius: 20px;
-        padding: 25px;
-        margin-top: 30px;
-        box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
-    ">
         <div style="
-            background-color: #cfeee7;
-            border-radius: 15px;
+            background-color: #018262; 
+            border-radius: 20px;
             padding: 25px;
-            color: #014d3b;
+            margin-top: 30px;
+            box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
         ">
-            <h2 style='margin-top: 0; display: flex; align-items: center;'>
-                <img src="https://cdn-icons-png.flaticon.com/512/861/861348.png"
-                     style="width: 24px; height: 24px; margin-right: 8px;"/>
-                Projet correspondant
-            </h2>
+            <div style="
+                background-color: #cfeee7; 
+                border-radius: 15px; 
+                padding: 30px;
+                color: #014d3b;
+                font-size: 17px;
+                line-height: 1.65;
+            ">
+    """, unsafe_allow_html=True)
 
-            <p><b>Nom du projet :</b> Regenerative Living Center</p>
+    # ---- Titre ----
+    st.markdown(
+        f"<h2 style='margin-top: 0; margin-bottom: 25px;'>🎯 {labels['match_title']}</h2>",
+        unsafe_allow_html=True
+    )
 
-            <p><b>Localisation du projet :</b> Casablanca</p>
+    # ---- CONTENU DU PROJET ----
+    if project:
 
-            <p><b>Plan d'action du projet :</b></p>
-            <div style="margin-left: 20px; line-height: 1.6;">
-                <p><br/>
-                <b>Step 1:</b> To successfully implement the rlc project, the following action plan has been developed:
-                phase 1: planning and design (year 1-2) conduct a comprehensive environmental assessment
-                and community consultation to inform the center's design and programming.<br/><br/>
+        proj_title = project.get("Title", "")
+        proj_loc   = project.get("Localisation", "")
+        proj_plan  = project.get("plan_action", "")
 
-                <b>Step 2:</b> Develop detailed architectural plans and specifications, ensuring the center meets
-                high environmental standards and is accessible to all users.<br/><br/>
+        # Texte final dans un seul bloc joli
+        html_content = f"""
+        <div style="background: #ffffff; padding: 20px; border-radius: 12px;">
+            <p style="margin-bottom: 15px;"><b>{proj_title}</b></p>
+            <p style="margin-bottom: 20px; color:#014d3b;">📍 {proj_loc}</p>
 
-                <b>Step 3:</b> Secure necessary permits and approvals from local authorities.<br/><br/>
-
-                <b>Step 4:</b> Phase 2: construction (year 3-4) select and engage local contractors and suppliers
-                to support the local economy during construction.<br/><br/>
-
-                <b>Step 5:</b> Implement sustainable construction practices, such as using locally sourced and
-                recycled materials, minimizing waste, and protecting existing habitats.
-                </p>
+            <div style="margin-left: 10px; white-space: pre-wrap;">
+                {proj_plan}
             </div>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """
+
+        st.markdown(html_content, unsafe_allow_html=True)
+
+    else:
+        st.warning(labels["no_match"])
+
+    # ---- Fermeture ----
+    st.markdown("</div></div>", unsafe_allow_html=True)
 
 
     # ==============================
