@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import streamlit as st
 import requests
+import re
 import base64
+import json
 
 # ==============================
 # ⚙️ CONFIG GÉNÉRALE
@@ -13,10 +15,16 @@ st.set_page_config(
 )
 
 # --- CONFIG NOCODB ---
+# Tu peux garder les secrets si tu veux, ou juste utiliser la clé en dur.
 NOCODB_API_TOKEN = st.secrets.get("NOCODB_API_TOKEN", "0JKfTbXfHzFC03lFmWwbzmB_IvhW5_Sd-S7AFcZe")
 
+# TABLE Projects (projets)
 PROJECTS_API_URL = "https://app.nocodb.com/api/v2/tables/mzaor3uiob3gbe2/records"
+
+# TABLE Builders (bâtisseurs)
 BUILDERS_API_URL = "https://app.nocodb.com/api/v2/tables/mnh4vojl5zy7bvx/records"
+
+# UPLOAD fichiers (Photo builder)
 UPLOAD_URL = "https://app.nocodb.com/api/v2/storage/upload"
 
 HEADERS_NC = {
@@ -25,49 +33,82 @@ HEADERS_NC = {
 }
 
 # ==============================
-# 🖼️ LOGO
+# 🖼️ LOGO & STYLE GLOBAL (même que formulaire pilote)
 # ==============================
 @st.cache_data
 def get_base64_image(image_path):
     try:
-        with open(image_path, "rb") as f:
-            return base64.b64encode(f.read()).decode()
-    except:
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except FileNotFoundError:
         return None
 
-logo = get_base64_image("evad_logo.png")
+logo_base64 = get_base64_image("evad_logo.png")
 
-if logo:
-    st.markdown(
-        f"""
-        <div style="text-align:center;">
-            <img src="data:image/png;base64,{logo}" width="240">
+if logo_base64:
+    st.markdown(f"""
+        <div style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        ">
+            <img src="data:image/png;base64,{logo_base64}"
+                 width="240"
+                 style="margin: 0 auto; display: block; image-rendering: -webkit-optimize-contrast; -ms-interpolation-mode: nearest-neighbor;">
+
         </div>
-        <hr style="border:none;height:2px;background:#cfeee7;margin:10px 0 20px;">
-        """,
-        unsafe_allow_html=True
-    )
+        <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 5px 0 20px 0;">
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+        <h1 style="text-align:center; color:#014d3b;">Impact Builder Form</h1>
+        <hr style="border: none; height: 2px; background-color: #cfeee7; margin: 10px 0 20px 0;">
+    """, unsafe_allow_html=True)
 
-# ==============================
-# 🎨 STYLE GLOBAL
-# ==============================
+# --- STYLE GLOBAL ---
 st.markdown("""
 <style>
+body {
+    background-color: #ffffff;
+    color: #000000 !important;
+}
+div.block-container {
+    background-color: #ffffff !important;
+    padding: 25px !important;
+}
 div.stForm {
     background-color: #018262 !important;
-    padding: 25px;
     border-radius: 20px;
+    padding: 25px !important;
     box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
 }
 div.stForm > div {
     background-color: #cfeee7 !important;
+    color: #014d3b !important;
     border-radius: 15px;
     padding: 20px;
+    margin: 0;
+}
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div,
+.stMultiSelect > div > div {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border-radius: 6px;
+    border: 1px solid #555 !important;
+}
+h1, h2, h3, h4, h5, h6, label, p, span, div {
+    color: #000000 !important;
 }
 .stButton button {
     background-color: #018262 !important;
     color: white !important;
     border-radius: 8px;
+    border: none;
     font-weight: bold;
 }
 .stButton button:hover {
@@ -77,49 +118,61 @@ div.stForm > div {
 """, unsafe_allow_html=True)
 
 # ==============================
-# 🌐 LANGUE
+# 🌐 Sélecteur de langue
 # ==============================
 if "lang" not in st.session_state:
     st.session_state.lang = "Français"
 
 col1, col2 = st.columns(2)
 with col1:
-    if st.button("🇫🇷 Français", key="lang_fr", use_container_width=True):
+    if st.button("🇫🇷 Français", key="fr_button_builder", use_container_width=True):
         st.session_state.lang = "Français"
         st.rerun()
 with col2:
-    if st.button("🇬🇧 English", key="lang_en", use_container_width=True):
+    if st.button("🇬🇧 English", key="en_button_builder", use_container_width=True):
         st.session_state.lang = "English"
         st.rerun()
 
+# --- Sous-titre ---
+if st.session_state.lang == "English":
+    st.markdown("""
+    ### 🧑‍🌾 Join EVAD as a Builder
+    Tell us who you are and we’ll connect you with regenerative projects that match your location and skills.
+    """)
+else:
+    st.markdown("""
+    ### 🧑‍🌾 Rejoignez EVAD en tant que bâtisseur
+    Présentez-vous et nous vous connectons avec des projets régénératifs proches de votre localisation et de vos compétences.
+    """)
+
 # ==============================
-# 🏷️ LIBELLÉS
+# 🏷️ Libellés multilingues
 # ==============================
 if st.session_state.lang == "English":
     labels = {
         "builder_title": "🧑‍🌾 Builder Profile",
-        "builder_intro": "Tell us more about yourself.",
+        "builder_intro": "Tell us more about who you are and what you are looking for.",
         "name": "Full Name",
         "photo": "Profile Photo (optional)",
         "motivation": "Motivation",
         "localisation": "Preferred Location",
-        "skills_acquired": "Skills already acquired",
-        "skills_to_develop": "Skills to develop",
-        "submit_builder": "🔍 Find matching project",
+        "skills_acquired": "Skills you already have",
+        "skills_to_develop": "Skills you want to develop",
+        "submit_builder": "🔍 Find a matching project",
         "match_title": "🎯 Matching Project",
-        "no_match": "No project found for this location.",
-        "open_pilot": "➡️ Open project pilot form",
-        "save_builder": "✅ Save my builder profile",
-        "saved_ok": "🌿 Builder saved successfully!",
-        "saved_err": "❌ Error while saving builder:",
+        "no_match": "No project was found for this location.",
+        "open_pilot": "➡️ Open the project pilot form",
+        "save_builder": "✅ Save my builder profile in EVAD",
+        "saved_ok": "🌿 Builder successfully saved in the EVAD database!",
+        "saved_err": "❌ Error while saving the builder in EVAD:",
         "project_name": "Project name",
         "project_location": "Project location",
-        "project_plan": "Project action plan",
+        "project_plan": "Project action plan"
     }
 else:
     labels = {
         "builder_title": "🧑‍🌾 Profil Bâtisseur",
-        "builder_intro": "Parlez-nous de vous.",
+        "builder_intro": "Parlez-nous de vous et de ce que vous cherchez.",
         "name": "Nom complet",
         "photo": "Photo de profil (optionnel)",
         "motivation": "Motivation",
@@ -128,110 +181,226 @@ else:
         "skills_to_develop": "Compétences à développer",
         "submit_builder": "🔍 Rechercher un projet correspondant",
         "match_title": "🎯 Projet correspondant",
-        "no_match": "Aucun projet trouvé pour cette localisation.",
-        "open_pilot": "➡️ Ouvrir le formulaire projet pilote",
-        "save_builder": "✅ Enregistrer mon profil bâtisseur",
-        "saved_ok": "🌿 Bâtisseur enregistré avec succès !",
-        "saved_err": "❌ Erreur lors de l’enregistrement :",
+        "no_match": "Aucun projet n’a été trouvé pour cette localisation.",
+        "open_pilot": "➡️ Ouvrir le formulaire pilote de projet",
+        "save_builder": "✅ Enregistrer mon profil bâtisseur dans EVAD",
+        "saved_ok": "🌿 Bâtisseur enregistré avec succès dans la base EVAD !",
+        "saved_err": "❌ Erreur lors de l’enregistrement du bâtisseur dans EVAD :",
         "project_name": "Nom du projet",
         "project_location": "Localisation du projet",
-        "project_plan": "Plan d’action du projet",
+        "project_plan": "Plan d’action du projet"
     }
 
 # ==============================
-# 🧑‍🌾 FORMULAIRE
+# 🧑‍🌾 FORMULAIRE BÂTISSEUR
 # ==============================
 with st.form("builder_form"):
-    st.markdown(f"<h2>{labels['builder_title']}</h2>", unsafe_allow_html=True)
-    st.markdown(f"<p>{labels['builder_intro']}</p>", unsafe_allow_html=True)
+    st.markdown(f"""
+        <h2 style='margin-bottom: 0;'>{labels['builder_title']}</h2>
+        <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
+            {labels['builder_intro']}
+        </p>
+    """, unsafe_allow_html=True)
 
-    name = st.text_input("👤 " + labels["name"])
-    localisation = st.text_input("📍 " + labels["localisation"])
-    motivation = st.text_area("📝 " + labels["motivation"])
-    skills_acquired = st.text_area("✅ " + labels["skills_acquired"])
-    skills_to_develop = st.text_area("🌱 " + labels["skills_to_develop"])
-    photo = st.file_uploader("📷 " + labels["photo"], type=["png", "jpg", "jpeg"])
+    builder_name = st.text_input(f"👤 {labels['name']}")
+    localisation = st.text_input(f"📍 {labels['localisation']}")
+    motivation = st.text_area(f"📝 {labels['motivation']}", height=100)
+    skills_acquired = st.text_area(f"✅ {labels['skills_acquired']}", height=80)
+    skills_to_develop = st.text_area(f"🌱 {labels['skills_to_develop']}", height=80)
+    photo_file = st.file_uploader(f"📷 {labels['photo']}", type=["png", "jpg", "jpeg"])
 
-    submitted = st.form_submit_button(labels["submit_builder"], use_container_width=True)
+    submitted_builder = st.form_submit_button(labels["submit_builder"])
 
 # ==============================
-# 🔎 RECHERCHE PROJET
+# 🔎 RECHERCHE PROJET APRÈS SOUMISSION
 # ==============================
-if submitted:
-    if not name or not localisation or not motivation:
-        st.warning("⚠️ Merci de remplir tous les champs obligatoires.")
+if submitted_builder:
+    if not builder_name or not localisation or not motivation:
+        if st.session_state.lang == "English":
+            st.warning("⚠️ Please fill in at least name, location and motivation.")
+        else:
+            st.warning("⚠️ Merci de remplir au minimum le nom, la localisation et la motivation.")
     else:
+        # On stocke les données du builder dans le session_state
         st.session_state.builder_data = {
-            "Name": name,
+            "Name": builder_name,
             "Localisation": localisation,
             "Motivation": motivation,
             "Skills_acquired": skills_acquired,
             "Skills_to_develop": skills_to_develop,
         }
-        st.session_state.builder_photo = photo
+        st.session_state.builder_photo_file = photo_file
 
-        r = requests.get(PROJECTS_API_URL, headers=HEADERS_NC).json()
-        projects = r.get("list", [])
+        # Recherche de projet correspondant côté Projects
+        try:
+            r = requests.get(PROJECTS_API_URL, headers=HEADERS_NC)
+            r.raise_for_status()
+            data = r.json()
+            project_list = data.get("list", data.get("results", []))
 
-        loc_norm = localisation.strip().lower()
-        matches = [p for p in projects if str(p.get("Localisation", "")).strip().lower() == loc_norm]
+            # Filtre par localisation (insensible à la casse et aux espaces)
+            loc_norm = localisation.strip().lower()
+            matched_projects = [
+                p for p in project_list
+                if str(p.get("Localisation", "")).strip().lower() == loc_norm
+            ]
 
-        st.session_state.project = matches[0] if matches else None
+            if matched_projects:
+                st.session_state.matched_project = matched_projects[0]
+                st.session_state.project_found = True
+            else:
+                st.session_state.matched_project = None
+                st.session_state.project_found = False
+
+        except Exception as e:
+            st.error(f"❌ Erreur lors de la récupération des projets : {e}")
+            st.session_state.matched_project = None
+            st.session_state.project_found = False
 
 # ==============================
-# 🎨 PROJET CORRESPONDANT (CADRE)
+# 🎨 SECTION PROJET CORRESPONDANT (NOUVEAU DESIGN)
 # ==============================
 if "builder_data" in st.session_state:
 
-    project = st.session_state.project
+    builder_data = st.session_state.builder_data
+    project = st.session_state.get("matched_project", None)
+    project_found = st.session_state.get("project_found", False)
 
+    # ---- Cadre externe vert foncé ----
     st.markdown("""
-        <div style="background:#018262;padding:25px;border-radius:20px;margin-top:25px;
-                    box-shadow:0 4px 15px rgba(0,0,0,0.15);">
-            <div style="background:#cfeee7;padding:25px;border-radius:15px;">
+        <div style="
+            background-color: #018262; 
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 30px;
+            box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
+        ">
+            <div style="
+                background-color: #cfeee7; 
+                border-radius: 15px; 
+                padding: 25px;
+                color: #014d3b;
+            ">
     """, unsafe_allow_html=True)
 
-    st.markdown(f"<h2>{labels['match_title']}</h2>", unsafe_allow_html=True)
+    # ---- Titre ----
+    st.markdown(
+        f"<h2 style='margin-top: 0; margin-bottom: 20px;'>{labels['match_title']}</h2>",
+        unsafe_allow_html=True
+    )
 
-    if project:
-        st.markdown(f"**{labels['project_name']} :** {project.get('Title','—')}")
-        st.markdown(f"**{labels['project_location']} :** {project.get('Localisation','—')}")
-        st.markdown(f"**{labels['project_plan']} :**")
-        st.markdown(f"<div style='white-space:pre-wrap;font-size:15px'>{project.get('plan_action','—')}</div>", unsafe_allow_html=True)
+    # ---- SI PROJET TROUVÉ ----
+    if project_found and project is not None:
+
+        proj_title = project.get("Title", "—")
+        proj_loc   = project.get("Localisation", "—")
+        proj_plan  = (project.get("plan_action") or 
+                      project.get("Plan d’action") or "—")
+
+        st.markdown(f"<p><b>{labels['project_name']} :</b> {proj_title}</p>", unsafe_allow_html=True)
+        st.markdown(f"<p><b>{labels['project_location']} :</b> {proj_loc}</p>", unsafe_allow_html=True)
+
+        st.markdown(f"<p><b>{labels['project_plan']} :</b></p>", unsafe_allow_html=True)
+
+        # AFFICHAGE PLAN DANS LE CADRE
+        st.markdown(
+            f"<div style='white-space: pre-wrap; font-size: 15px;'>{proj_plan}</div>",
+            unsafe_allow_html=True
+        )
+
+        suggested_project = proj_title
+        match_score = 100
+
     else:
         st.warning(labels["no_match"])
+        pilot_url = "https://eco-assistant..."
+        st.markdown(f"<a href='{pilot_url}'>{labels['open_pilot']}</a>", unsafe_allow_html=True)
+        suggested_project = ""
+        match_score = 0
 
+    # ---- Fermeture des DIV ----
     st.markdown("</div></div>", unsafe_allow_html=True)
 
-    # ==============================
-    # 💾 ENREGISTREMENT BUILDER
-    # ==============================
-    if st.button(labels["save_builder"], key="save_btn", use_container_width=True):
+    # ---- BOUTON ENREGISTREMENT ----
+    save_clicked = st.button(labels["save_builder"])
 
-        # Upload photo
+    if save_clicked:
+        # (ne change rien ici, ton upload + save est bon)
+        ...
+
+
+    # ==============================
+    # 💾 BOUTON D'ENREGISTREMENT BUILDER
+    # ==============================
+    save_clicked = st.button(labels["save_builder"])
+
+    if save_clicked:
+        # Upload de la photo si fournie
         photo_attachment = []
-        if st.session_state.builder_photo:
-            up = requests.post(UPLOAD_URL, headers=HEADERS_NC,
-                               files={"file": (st.session_state.builder_photo.name,
-                                               st.session_state.builder_photo.getvalue())}).json()
-            f = up["list"][0]
-            photo_attachment = [{
-                "title": f.get("title", ""),
-                "path": f.get("path", ""),
-                "url": f.get("signedUrl", ""),
-                "mimetype": f.get("mimetype", "image/png")
-            }]
+        if st.session_state.get("builder_photo_file") is not None:
+            try:
+                uploaded = st.session_state.builder_photo_file
+                files = {"file": (uploaded.name, uploaded.getvalue())}
+                up = requests.post(UPLOAD_URL, headers=HEADERS_NC, files=files)
+                up.raise_for_status()
+                resp = up.json()
 
-        payload = st.session_state.builder_data.copy()
-        payload["Suggested_Project"] = project.get("Title") if project else ""
-        payload["Photo"] = photo_attachment
+                if isinstance(resp, dict) and "list" in resp:
+                    f = resp["list"][0]
+                elif isinstance(resp, list) and len(resp) > 0:
+                    f = resp[0]
+                else:
+                    f = None
 
-        r = requests.post(BUILDERS_API_URL, headers=HEADERS_NC, json=payload)
+                if f:
+                    url = f.get("url", "")
+                    signed = f.get("signedUrl", "")
+                    title_doc = f.get("title", uploaded.name)
+                    mimetype = f.get("mimetype", uploaded.type or "image/png")
+                    path = f.get("path", "")
 
-        if r.status_code in (200, 201):
-            st.success(labels["saved_ok"])
-        else:
-            st.error(labels["saved_err"] + str(r.text))
+                    if not path:
+                        if "/nc/" in url:
+                            path = url[url.index("/nc/"):]
+                        elif "/nc/" in signed:
+                            path = signed[signed.index("/nc/"):]
+                        else:
+                            path = f"/nc/uploads/{title_doc}"
+
+                    photo_attachment = [{
+                        "title": title_doc,
+                        "path": path,
+                        "url": signed or url,
+                        "mimetype": mimetype
+                    }]
+
+            except Exception as e:
+                st.error(f"Erreur lors de l’upload de la photo : {e}")
+
+        # Construction du payload pour la table builders
+        payload_builder = {
+            "Title": builder_data["Name"],
+            "Name": builder_data["Name"],
+            "Motivation": builder_data["Motivation"],
+            "Localisation": builder_data["Localisation"],
+            "Skills_acquired": builder_data["Skills_acquired"],
+            "Skills_to_develop": builder_data["Skills_to_develop"],
+            "Suggested_Project": suggested_project,
+            "Match_Score": match_score
+        }
+
+        if photo_attachment:
+            payload_builder["Photo"] = photo_attachment
+
+        try:
+            r_save = requests.post(BUILDERS_API_URL, headers=HEADERS_NC, json=payload_builder)
+            if r_save.status_code in (200, 201):
+                st.success(labels["saved_ok"])
+                st.toast(labels["saved_ok"], icon="🌿")
+            else:
+                st.error(f"{labels['saved_err']} {r_save.status_code} – {r_save.text}")
+        except Exception as e:
+            st.error(f"{labels['saved_err']} {e}")
 
 
 
