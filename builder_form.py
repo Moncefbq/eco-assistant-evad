@@ -346,7 +346,6 @@ if "builder_data" in st.session_state:
         payload_builder = {
             "Title": builder_data["Name"],
             "Name": builder_data["Name"],
-            "Status": "New",
             "Motivation": builder_data["Motivation"],
             "Localisation": builder_data["Localisation"],
             "Skills_acquired": builder_data["Skills_acquired"],
