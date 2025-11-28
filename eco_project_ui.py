@@ -433,24 +433,21 @@ if submitted:
                 st.error(msg_error)
 
 # ==============================
-# 🧩 SYNTHÈSE DU PROJET — VERSION MIND MAP (FIXED)
+# 🧩 SYNTHÈSE DU PROJET — MIND MAP (CORRECT FINAL VERSION)
 # ==============================
 if "final_result" in st.session_state:
 
-    # --- Récupération des données ---
     objectif = st.session_state.objectif
     impact_eco = st.session_state.impact_eco
     impact_social = st.session_state.impact_social
     impact_econ = st.session_state.impact_econ
     plan_action = st.session_state.plan_action.replace("\n", "<br>")
 
-    # --- Titre ---
     if st.session_state.lang == "English":
         st.markdown("## 📋 Project Summary (Mind Map View)")
     else:
         st.markdown("## 📋 Synthèse du projet (Vue Mind Map)")
 
-    # --- CSS ---
     st.markdown("""
     <style>
     .mindmap-center {
@@ -462,7 +459,7 @@ if "final_result" in st.session_state:
         font-weight: bold;
         text-align: center;
         margin: auto;
-        max-width: 800px;
+        max-width: 850px;
         line-height: 1.6;
         box-shadow: 0 0 15px rgba(0,0,0,0.15);
     }
@@ -480,6 +477,8 @@ if "final_result" in st.session_state:
         width: 48%;
         min-width: 280px;
         box-shadow: 0 0 10px rgba(0,0,0,0.10);
+        line-height: 1.5;
+        font-size: 15px;
     }
     .mindmap-title {
         font-weight: bold;
@@ -490,8 +489,7 @@ if "final_result" in st.session_state:
     </style>
     """, unsafe_allow_html=True)
 
-    # --- BLOCK HTML CONTENU ---
-    html_mindmap = f"""
+    st.markdown(f"""
     <div class="mindmap-center">
         🎯 {objectif}
     </div>
@@ -519,16 +517,13 @@ if "final_result" in st.session_state:
         </div>
 
     </div>
-    """
+    """, unsafe_allow_html=True)
 
-    st.markdown(html_mindmap, unsafe_allow_html=True)
-
-    # --- BOUTON ---
-    valid_label = "Valider la synthèse" if st.session_state.lang == "Français" else "Validate Summary"
-    if st.button("✅ " + valid_label):
+    # bouton validation
+    btn_label = "Valider la synthèse" if st.session_state.lang == "Français" else "Validate summary"
+    if st.button("✅ " + btn_label):
         st.session_state.validation_ok = True
-        st.success("Synthèse validée !" if st.session_state.lang == "Français" else "Summary validated!")
-
+        st.success("✔️ Synthèse validée !")
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL (version corrigée et alignée NoCoDB)
