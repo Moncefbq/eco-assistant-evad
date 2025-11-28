@@ -433,74 +433,67 @@ if submitted:
                 st.error(msg_error)
 
 # ==============================
-# 🧩 SYNTHÈSE DU PROJET — VERSION MIND MAP
+# 🧩 SYNTHÈSE DU PROJET — VERSION MIND MAP (FIXED)
 # ==============================
 if "final_result" in st.session_state:
 
-    # --- Récupération des données analysées ---
+    # --- Récupération des données ---
     objectif = st.session_state.objectif
     impact_eco = st.session_state.impact_eco
     impact_social = st.session_state.impact_social
     impact_econ = st.session_state.impact_econ
-    plan_action = st.session_state.plan_action
+    plan_action = st.session_state.plan_action.replace("\n", "<br>")
 
-    # --- Titre Synthèse ---
+    # --- Titre ---
     if st.session_state.lang == "English":
         st.markdown("## 📋 Project Summary (Mind Map View)")
     else:
         st.markdown("## 📋 Synthèse du projet (Vue Mind Map)")
 
-    # --- STYLE CSS DE LA MIND MAP ---
+    # --- CSS ---
     st.markdown("""
     <style>
-    .mindmap-container {
-        display: flex;
-        justify-content: center;
-        margin-top: 30px;
-    }
     .mindmap-center {
         background: #018262;
         color: white;
         padding: 22px 35px;
-        border-radius: 50px;
-        font-size: 22px;
+        border-radius: 30px;
+        font-size: 20px;
         font-weight: bold;
         text-align: center;
-        max-width: 650px;
-        box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        margin: auto;
+        max-width: 800px;
+        line-height: 1.6;
+        box-shadow: 0 0 15px rgba(0,0,0,0.15);
     }
     .mindmap-branches {
+        margin-top: 35px;
         display: flex;
-        justify-content: space-around;
-        margin-top: 40px;
+        justify-content: space-between;
         flex-wrap: wrap;
+        gap: 20px;
     }
     .mindmap-box {
         background: #cfeee7;
         border-radius: 20px;
         padding: 20px;
-        width: 42%;
+        width: 48%;
         min-width: 280px;
-        margin: 10px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        font-size: 15px;
-        line-height: 1.5;
+        box-shadow: 0 0 10px rgba(0,0,0,0.10);
     }
     .mindmap-title {
         font-weight: bold;
         font-size: 18px;
+        margin-bottom: 8px;
         color: #014d3b;
-        margin-bottom: 10px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-    # --- HTML de la Mind Map ---
-    st.markdown(f"""
-    <div class="mindmap-container">
-        <div class="mindmap-center">
-            🎯 {objectif}
-        </div>
+    # --- BLOCK HTML CONTENU ---
+    html_mindmap = f"""
+    <div class="mindmap-center">
+        🎯 {objectif}
     </div>
 
     <div class="mindmap-branches">
@@ -522,18 +515,19 @@ if "final_result" in st.session_state:
 
         <div class="mindmap-box">
             <div class="mindmap-title">🧭 Plan d’action</div>
-            {plan_action.replace("\n","<br>")}
+            {plan_action}
         </div>
 
     </div>
-    """, unsafe_allow_html=True)
+    """
 
-    # --- Bouton validation pour passer à l'étape suivante ---
-    if st.button("✅ Valider la synthèse" if st.session_state.lang == "Français" else "✅ Validate summary"):
+    st.markdown(html_mindmap, unsafe_allow_html=True)
+
+    # --- BOUTON ---
+    valid_label = "Valider la synthèse" if st.session_state.lang == "Français" else "Validate Summary"
+    if st.button("✅ " + valid_label):
         st.session_state.validation_ok = True
-        st.success("Synthèse validée !" if st.session_state.lang == "Français" 
-                   else "Summary validated!")
-
+        st.success("Synthèse validée !" if st.session_state.lang == "Français" else "Summary validated!")
 
 
 # ==============================
