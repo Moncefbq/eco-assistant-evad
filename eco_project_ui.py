@@ -433,7 +433,7 @@ if submitted:
                 st.error(msg_error)
 
 # ==============================
-# 🧩 SYNTHÈSE DU PROJET — MIND MAP (CORRECT FINAL VERSION)
+# 🧩 SYNTHÈSE DU PROJET — MIND MAP (FINAL FIXED VERSION)
 # ==============================
 if "final_result" in st.session_state:
 
@@ -443,11 +443,10 @@ if "final_result" in st.session_state:
     impact_econ = st.session_state.impact_econ
     plan_action = st.session_state.plan_action.replace("\n", "<br>")
 
-    if st.session_state.lang == "English":
-        st.markdown("## 📋 Project Summary (Mind Map View)")
-    else:
-        st.markdown("## 📋 Synthèse du projet (Vue Mind Map)")
+    # ----- TITRE -----
+    st.markdown("## 📋 Synthèse du projet (Vue Mind Map)")
 
+    # ----- CSS -----
     st.markdown("""
     <style>
     .mindmap-center {
@@ -489,7 +488,8 @@ if "final_result" in st.session_state:
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown(f"""
+    # ----- HTML -----
+    html = f"""
     <div class="mindmap-center">
         🎯 {objectif}
     </div>
@@ -517,13 +517,16 @@ if "final_result" in st.session_state:
         </div>
 
     </div>
-    """, unsafe_allow_html=True)
+    """
 
-    # bouton validation
-    btn_label = "Valider la synthèse" if st.session_state.lang == "Français" else "Validate summary"
-    if st.button("✅ " + btn_label):
-        st.session_state.validation_ok = True
-        st.success("✔️ Synthèse validée !")
+    st.markdown(html, unsafe_allow_html=True)
+
+    # ----- VALIDATION FORM -----
+    with st.form("validate_synthese"):
+        validated = st.form_submit_button("✅ Valider la synthèse")
+        if validated:
+            st.session_state.validation_ok = True
+            st.success("✔️ Synthèse validée !")
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL (version corrigée et alignée NoCoDB)
