@@ -517,16 +517,17 @@ def generate_mindmap(objective, eco, social, econ, actions):
     html(html_code, height=700, scrolling=False)
 
 
-# 🎨 Affichage Mind Map
-st.markdown("## 🧠 Mind Mapping du projet")
+if st.session_state.get("validation_ok"):
+    st.markdown("## 🧠 Mind Mapping du projet")
 
-generate_mindmap(
-    st.session_state.objectif,
-    st.session_state.impact_eco,
-    st.session_state.impact_social,
-    st.session_state.impact_econ,
-    st.session_state.plan_action
-)
+    generate_mindmap(
+        st.session_state.objectif,
+        st.session_state.impact_eco,
+        st.session_state.impact_social,
+        st.session_state.impact_econ,
+        st.session_state.plan_action
+    )
+
 
 
 # ==============================
