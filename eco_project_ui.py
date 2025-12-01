@@ -423,6 +423,8 @@ if submitted:
 
                 # ✅ Message de réussite bilingue
                 st.success(message_success)
+                st.session_state.validation_ok = True
+
 
             except Exception as e:
                 msg_error = (
