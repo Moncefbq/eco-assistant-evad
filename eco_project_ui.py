@@ -5,6 +5,11 @@ import re
 import base64
 import json
 
+from pyvis.network import Network
+import streamlit as st
+import tempfile
+import os
+
 # --- EN-TÊTE EVAD (logo centré, net et sans cadre) ---
 @st.cache_data
 def get_base64_image(image_path):
@@ -438,68 +443,78 @@ if submitted:
 # 🧠 MIND MAP AUTOMATIQUE
 # ==============================
 
-from streamlit_agraph import agraph, Node, Edge, Config
+from pyvis.network import Network
+import streamlit as st
+import tempfile
+import os
 
 def generate_mindmap(objective, eco, social, econ, actions):
     """
-    Mind map automatique 100% compatible Streamlit Cloud
+    Mind map automatique 100% compatible Streamlit Cloud via PyVis.
     """
-    nodes = []
-    edges = []
-
-    # 🎯 Nœud central = Objectif
-    nodes.append(Node(
-        id="objectif",
-        label=objective,
-        size=60,
-        color="#018262",            # Vert EVAD
-        font={"color": "white", "size": 18}
-    ))
-
-    # 🌿 Impacts principaux
-    impacts = [
-        ("eco", "Impact écologique", eco),
-        ("social", "Impact social", social),
-        ("econ", "Impact économique", econ),
-    ]
-
-    for node_id, label, content in impacts:
-        nodes.append(Node(
-            id=node_id,
-            label=label,
-            size=45,
-            color="#8FD9C1",
-            font={"color": "#014d3b", "size": 14}
-        ))
-        edges.append(Edge(source="objectif", target=node_id))
-
-    # 🧭 Plan d’action — chaque étape devient un noeud
-    action_lines = [a.strip() for a in actions.split("\n") if len(a.strip()) > 3]
-
-    for i, step in enumerate(action_lines):
-        step_id = f"step_{i}"
-        nodes.append(Node(
-            id=step_id,
-            label=step,
-            size=35,
-            color="#CFEFE7",
-            font={"color": "#014d3b", "size": 11}
-        ))
-        edges.append(Edge(source="objectif", target=step_id))
-
-    # ⚙️ Configuration visuelle
-    config = Config(
+    # Crée un graphe PyVis
+    net = Network(
+        height="650px",
         width="100%",
-        height=650,
-        directed=False,
-        nodeHighlightBehavior=True,
-        highlightColor="#F7A7A6",
-        physics=True,       # Animation fluide
-        hierarchical=False  # Disposition libre
+        bgcolor="#ffffff",
+        font_color="#014d3b"
     )
 
-    return agraph(nodes=nodes, edges=edges, config=config)
+    # Options pour un rendu plus organique
+    net.barnes_hut()
 
+    # 🎯 Noeud central
+    net.add_node(
+        "objectif",
+        label=objective,
+        color="#018262",
+        shape="dot",
+        size=55,
+        font={"size": 22, "color": "white"}
+    )
+
+    # 🌿 Impacts
+    impacts = [
+        ("eco", "Impact écologique"),
+        ("social", "Impact social"),
+        ("econ", "Impact économique"),
+    ]
+
+    for node_id, label in impacts:
+        net.add_node(
+            node_id,
+            label=label,
+            color="#8FD9C1",
+            shape="dot",
+            size=40
+        )
+        net.add_edge("objectif", node_id)
+
+    # 🧭 Étapes du plan d’action
+    lines = [l.strip() for l in actions.split("\n") if len(l.strip()) > 3]
+
+    for i, step in enumerate(lines):
+        step_id = f"step_{i}"
+        net.add_node(
+            step_id,
+            label=step,
+            color="#CFEFE7",
+            shape="dot",
+            size=30
+        )
+        net.add_edge("objectif", step_id)
+
+    # Fichier temporaire HTML (pour Streamlit Cloud)
+    tmp_dir = tempfile.gettempdir()
+    html_path = os.path.join(tmp_dir, "mindmap.html")
+
+    net.save_graph(html_path)
+
+    # Affichage dans Streamlit avec iframe
+    with open(html_path, "r", encoding="utf-8") as f:
+        html_content = f.read()
+
+    st.components.v1.html(html_content, height=700, scrolling=False)
 if st.session_state.get("validation_ok"):
     st.markdown("## 🧠 Mind Mapping du projet")
 
@@ -510,7 +525,6 @@ if st.session_state.get("validation_ok"):
         st.session_state.impact_econ,
         st.session_state.plan_action
     )
-
 
 
 
