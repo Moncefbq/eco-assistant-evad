@@ -438,86 +438,67 @@ if submitted:
 # 🧠 MIND MAP AUTOMATIQUE
 # ==============================
 
-from streamlit.components.v1 import html
+from streamlit_agraph import agraph, Node, Edge, Config
 
 def generate_mindmap(objective, eco, social, econ, actions):
-    nodes = [
-        {"label": "🌿 Impact écologique", "value": eco},
-        {"label": "🤝 Impact social", "value": social},
-        {"label": "💰 Impact économique", "value": econ},
+    """
+    Mind map automatique 100% compatible Streamlit Cloud
+    """
+    nodes = []
+    edges = []
+
+    # 🎯 Nœud central = Objectif
+    nodes.append(Node(
+        id="objectif",
+        label=objective,
+        size=60,
+        color="#018262",            # Vert EVAD
+        font={"color": "white", "size": 18}
+    ))
+
+    # 🌿 Impacts principaux
+    impacts = [
+        ("eco", "Impact écologique", eco),
+        ("social", "Impact social", social),
+        ("econ", "Impact économique", econ),
     ]
 
-    # Ajouter les étapes du plan d'action
-    for step in actions.split("\n"):
-        step = step.strip()
-        if len(step) > 0:
-            nodes.append({"label": step, "value": step})
+    for node_id, label, content in impacts:
+        nodes.append(Node(
+            id=node_id,
+            label=label,
+            size=45,
+            color="#8FD9C1",
+            font={"color": "#014d3b", "size": 14}
+        ))
+        edges.append(Edge(source="objectif", target=node_id))
 
-    html_code = f"""
-    <div id="mindmap" style="width:100%; height:650px;"></div>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script>
-        const width = document.getElementById('mindmap').clientWidth;
-        const height = 650;
+    # 🧭 Plan d’action — chaque étape devient un noeud
+    action_lines = [a.strip() for a in actions.split("\n") if len(a.strip()) > 3]
 
-        const data = {{
-            "center": "{objective}",
-            "children": {nodes}
-        }};
+    for i, step in enumerate(action_lines):
+        step_id = f"step_{i}"
+        nodes.append(Node(
+            id=step_id,
+            label=step,
+            size=35,
+            color="#CFEFE7",
+            font={"color": "#014d3b", "size": 11}
+        ))
+        edges.append(Edge(source="objectif", target=step_id))
 
-        const svg = d3.select("#mindmap")
-            .append("svg")
-            .attr("width", width)
-            .attr("height", height);
+    # ⚙️ Configuration visuelle
+    config = Config(
+        width="100%",
+        height=650,
+        directed=False,
+        nodeHighlightBehavior=True,
+        highlightColor="#F7A7A6",
+        physics=True,       # Animation fluide
+        hierarchical=False  # Disposition libre
+    )
 
-        const g = svg.append("g")
-            .attr("transform", "translate(" + width/2 + "," + height/2 + ")");
-
-        g.append("circle")
-            .attr("r", 70)
-            .attr("fill", "#018262");
-
-        g.append("text")
-            .attr("text-anchor", "middle")
-            .attr("dy", ".35em")
-            .attr("fill", "white")
-            .style("font-size", "18px")
-            .text(data.center);
-
-        const angleStep = (2 * Math.PI) / data.children.length;
-
-        data.children.forEach((child, i) => {{
-            const angle = i * angleStep;
-            const x = Math.cos(angle) * 260;
-            const y = Math.sin(angle) * 260;
-
-            g.append("line")
-                .attr("x1", 0).attr("y1", 0)
-                .attr("x2", x).attr("y2", y)
-                .attr("stroke", "#555")
-                .attr("stroke-width", 2);
-
-            const node = g.append("g")
-                .attr("transform", "translate(" + x + "," + y + ")");
-
-            node.append("circle")
-                .attr("r", 60)
-                .attr("fill", "#cfeee7")
-                .attr("stroke", "#018262")
-                .attr("stroke-width", 2);
-
-            node.append("text")
-                .attr("text-anchor", "middle")
-                .attr("dy", ".35em")
-                .attr("fill", "#014d3b")
-                .style("font-size", "14px")
-                .text(child.label);
-        }});
-    </script>
-    """
-
-    html(html_code, height=700, scrolling=False)
-
+    return agraph(nodes=nodes, edges=edges, config=config)
 
 if st.session_state.get("validation_ok"):
     st.markdown("## 🧠 Mind Mapping du projet")
@@ -529,6 +510,7 @@ if st.session_state.get("validation_ok"):
         st.session_state.impact_econ,
         st.session_state.plan_action
     )
+
 
 
 
