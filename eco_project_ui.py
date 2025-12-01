@@ -433,189 +433,101 @@ if submitted:
                 st.error(msg_error)
 
 # ==============================
-# 🧩 SYNTHÈSE DU PROJET — version finale bilingue avec plan d’action propre
+# 🧠 MIND MAP AUTOMATIQUE
 # ==============================
-if "final_result" in st.session_state:
 
-    # --- Titre & sous-titre ---
-    if st.session_state.lang == "English":
-        titre_synthese = "📋 Project Summary"
-        sous_titre_synthese = "Final synthesis of your sustainable project analysis"
-    else:
-        titre_synthese = "📋 Synthèse du projet"
-        sous_titre_synthese = "Synthèse finale de l’analyse de votre projet durable"
+from streamlit.components.v1 import html
 
-    with st.form("synthese_form"):
-        st.markdown(f"""
-            <h2 style='margin-bottom: 0;'>{titre_synthese}</h2>
-            <p style='margin-top: 2px; color:#014d3b; font-style: italic;'>
-                {sous_titre_synthese}
-            </p>
-        """, unsafe_allow_html=True)
+def generate_mindmap(objective, eco, social, econ, actions):
+    nodes = [
+        {"label": "🌿 Impact écologique", "value": eco},
+        {"label": "🤝 Impact social", "value": social},
+        {"label": "💰 Impact économique", "value": econ},
+    ]
 
-        import re
-        import requests
+    # Ajouter les étapes du plan d'action
+    for step in actions.split("\n"):
+        step = step.strip()
+        if len(step) > 0:
+            nodes.append({"label": step, "value": step})
 
-        # --- Données générées ---
-        data = st.session_state.final_result
-        objectif = data.get("objectif", "")
-        impact_eco = data.get("impact_eco", "")
-        impact_social = data.get("impact_social", "")
-        impact_econ = data.get("impact_econ", "")
-        plan_action = data.get("plan_action", "")
+    html_code = f"""
+    <div id="mindmap" style="width:100%; height:650px;"></div>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        const width = document.getElementById('mindmap').clientWidth;
+        const height = 650;
 
-        # =====================================================
-        # 🧰 FONCTIONS UTILITAIRES (clean + format bilingue)
-        # =====================================================
+        const data = {{
+            "center": "{objective}",
+            "children": {nodes}
+        }};
 
-        def clean_text_field(text):
-            """Nettoyage solide pour éviter le bruit et les artefacts."""
-            if not text or text.strip() in [".", "-", "•"]:
-                return ""
-            text = re.sub(r"\*+", "", text)
-            text = re.sub(r"^[\-\*\d\.\)]+\s*", "", text, flags=re.MULTILINE)
-            text = re.sub(r"\s+", " ", text.strip())
-            return text.strip().capitalize()
+        const svg = d3.select("#mindmap")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
 
-        def first_sentence(text):
-            """Extrait proprement la première phrase."""
-            text = clean_text_field(text)
-            match = re.match(r'^(.*?[.!?])(\s|$)', text)
-            return match.group(1).strip() if match else (text.split('.')[0].strip() + '.')
+        const g = svg.append("g")
+            .attr("transform", "translate(" + width/2 + "," + height/2 + ")");
 
-        # =====================================================
-        # 🧭 FORMAT PLAN D’ACTION – FR « 1ère étape » / EN « Step 1 »
-        # + élimination des doublons
-        # =====================================================
-        def format_action_plan(plan_text):
-            """Format FR (1ère étape) / EN (Step 1) sans redondance."""
-            plan_text = clean_text_field(plan_text)
+        g.append("circle")
+            .attr("r", 70)
+            .attr("fill", "#018262");
 
-            # Supprime « Étape X », « Step X », « X. », « X) », « X - »
-            plan_text = re.sub(r"[Éé]tape\s*\d+\s*:\s*", "", plan_text, flags=re.IGNORECASE)
-            plan_text = re.sub(r"Step\s*\d+\s*:\s*", "", plan_text, flags=re.IGNORECASE)
-            plan_text = re.sub(r"^\d+\s*[\.\-\)]\s*", "", plan_text, flags=re.MULTILINE)
+        g.append("text")
+            .attr("text-anchor", "middle")
+            .attr("dy", ".35em")
+            .attr("fill", "white")
+            .style("font-size", "18px")
+            .text(data.center);
 
-            # Découpage
-            steps = re.split(r'[.!?]', plan_text)
-            steps = [s.strip() for s in steps if len(s.strip()) > 4]
-            steps = steps[:5]
+        const angleStep = (2 * Math.PI) / data.children.length;
 
-            # Si aucune étape détectée → modèle standard
-            if len(steps) == 0:
-                if st.session_state.lang == "English":
-                    steps = [
-                        "Conduct a feasibility study to validate the project",
-                        "Acquire land or secure required permits",
-                        "Mobilize local actors and recruit the team",
-                        "Build and equip ecological and community spaces",
-                        "Launch pilot activities and monitoring indicators"
-                    ]
-                else:
-                    steps = [
-                        "Réaliser une étude de faisabilité pour valider le projet",
-                        "Acquérir ou louer les terrains nécessaires",
-                        "Mobiliser les acteurs locaux et recruter l’équipe",
-                        "Construire et aménager les espaces écologiques et communautaires",
-                        "Lancer les activités pilotes et mettre en place les indicateurs"
-                    ]
+        data.children.forEach((child, i) => {{
+            const angle = i * angleStep;
+            const x = Math.cos(angle) * 260;
+            const y = Math.sin(angle) * 260;
 
-            formatted = []
+            g.append("line")
+                .attr("x1", 0).attr("y1", 0)
+                .attr("x2", x).attr("y2", y)
+                .attr("stroke", "#555")
+                .attr("stroke-width", 2);
 
-            for i, step in enumerate(steps):
-                # FRANÇAIS
-                if st.session_state.lang != "English":
-                    ordinal = "1ère" if i == 0 else f"{i+1}ème"
-                    formatted.append(f"{ordinal} étape : {step.capitalize()}.")
-                # ENGLISH
-                else:
-                    formatted.append(f"Step {i+1}: {step.capitalize()}.")
+            const node = g.append("g")
+                .attr("transform", "translate(" + x + "," + y + ")");
 
-            return "\n".join(formatted)
+            node.append("circle")
+                .attr("r", 60)
+                .attr("fill", "#cfeee7")
+                .attr("stroke", "#018262")
+                .attr("stroke-width", 2);
 
-        # =====================================================
-        # 🧹 Nettoyage général
-        # =====================================================
-        objectif = clean_text_field(objectif)
-        impact_eco = first_sentence(impact_eco)
-        impact_social = first_sentence(impact_social)
-        impact_econ = first_sentence(impact_econ)
-        plan_action = format_action_plan(plan_action)
+            node.append("text")
+                .attr("text-anchor", "middle")
+                .attr("dy", ".35em")
+                .attr("fill", "#014d3b")
+                .style("font-size", "14px")
+                .text(child.label);
+        }});
+    </script>
+    """
 
-        # =====================================================
-        # 🤖 Si plan d’action vide → génération AI
-        # =====================================================
-        if not plan_action.strip():
-            try:
-                if st.session_state.lang == "English":
-                    prompt = (
-                        f"Project: {objectif}\n"
-                        f"Impacts: {impact_eco}, {impact_social}, {impact_econ}\n"
-                        "Generate a clear 3-step English action plan."
-                    )
-                else:
-                    prompt = (
-                        f"Projet : {objectif}\n"
-                        f"Impacts : {impact_eco}, {impact_social}, {impact_econ}\n"
-                        "Génère un plan d’action clair en 3 étapes en français."
-                    )
+    html(html_code, height=700, scrolling=False)
 
-                payload = {
-                    "model": "mistralai/mistral-nemo",
-                    "messages": [
-                        {"role": "system", "content": "You are an expert in sustainable project planning."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    "temperature": 0.5,
-                    "max_tokens": 220
-                }
 
-                response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-                response.raise_for_status()
-                raw_plan = response.json()["choices"][0]["message"]["content"]
-                plan_action = format_action_plan(raw_plan)
+# 🎨 Affichage Mind Map
+st.markdown("## 🧠 Mind Mapping du projet")
 
-            except Exception as e:
-                plan_action = f"(Erreur génération automatique : {e})"
+generate_mindmap(
+    objectif,
+    impact_eco,
+    impact_social,
+    impact_econ,
+    plan_action
+)
 
-        # =====================================================
-        # 🏷️ Labels bilingues
-        # =====================================================
-        if st.session_state.lang == "English":
-            synthese_labels = {
-                "objective": "🎯 Project Objective",
-                "eco": "🌿 Ecological Impact",
-                "social": "🤝 Social Impact",
-                "econ": "💰 Economic Impact",
-                "plan": "🧭 Action Plan",
-                "validate": "✅ Validate and Add Project Owner Information",
-                "success": "✅ Summary validated! You can now add the project owner information."
-            }
-        else:
-            synthese_labels = {
-                "objective": "🎯 Objectif du projet",
-                "eco": "🌿 Impact écologique",
-                "social": "🤝 Impact social",
-                "econ": "💰 Impact économique",
-                "plan": "🧭 Plan d’action",
-                "validate": "✅ Valider et ajouter les informations du porteur",
-                "success": "✅ Synthèse validée ! Vous pouvez maintenant ajouter les informations du porteur."
-            }
-
-        # =====================================================
-        # 📝 Zones de texte
-        # =====================================================
-        st.session_state.objectif = st.text_area(synthese_labels["objective"], objectif, height=100)
-        st.session_state.impact_eco = st.text_area(synthese_labels["eco"], impact_eco, height=70)
-        st.session_state.impact_social = st.text_area(synthese_labels["social"], impact_social, height=70)
-        st.session_state.impact_econ = st.text_area(synthese_labels["econ"], impact_econ, height=70)
-        st.session_state.plan_action = st.text_area(synthese_labels["plan"], plan_action, height=180)
-
-        # Bouton de validation
-        validated = st.form_submit_button(synthese_labels["validate"])
-        if validated:
-            st.session_state.validation_ok = True
-            st.success(synthese_labels["success"])
 
 # ==============================
 # 🧑‍💼 ENREGISTREMENT FINAL (version corrigée et alignée NoCoDB)
