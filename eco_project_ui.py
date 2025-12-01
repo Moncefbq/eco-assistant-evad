@@ -439,116 +439,55 @@ if submitted:
 # 🧠 MIND MAP AUTOMATIQUE
 # ==============================
 
-from pyvis.network import Network
+import matplotlib.pyplot as plt
 import math
-import tempfile
-import os
 
 def generate_mindmap(objective, eco, social, econ, actions):
-    # ================================
-    # 🎨 CONFIG EXACT DU STYLE
-    # ================================
-    BACKGROUND = "#111111"         # noir mat
-    BORDER_COLOR = "#FFFFFF"       # blanc
-    TEXT_COLOR = "#FF6A5C"         # rouge/orange comme ton screenshot
-    FONT = {"size": 18, "color": TEXT_COLOR, "face": "arial"}
 
-    net = Network(
-        height="700px",
-        width="100%",
-        bgcolor=BACKGROUND,
-        font_color=TEXT_COLOR
-    )
+    # STYLE EXACT
+    bg = "#111111"
+    border = "white"
+    text_color = "#FF6A5C"
 
-    net.toggle_physics(False)
+    fig, ax = plt.subplots(figsize=(10, 10))
+    ax.set_facecolor(bg)
+    plt.axis("off")
 
-    # ================================
-    # 🎯 NOEUD CENTRAL
-    # ================================
-    net.add_node(
-        "objectif",
-        label=objective,
-        shape="circle",
-        borderWidth=3,
-        color=BORDER_COLOR,
-        size=110,
-        font=FONT,
-        labelHighlight=True,
-    )
+    # --- Fonction pour dessiner un cercle + texte ---
+    def draw_circle(x, y, r, text):
+        circle = plt.Circle((x, y), r, edgecolor=border, facecolor=bg, linewidth=3)
+        ax.add_patch(circle)
+        ax.text(x, y, text, color=text_color, ha="center", va="center", fontsize=14, wrap=True)
 
-    # ================================
-    # 🌿 3 IMPACTS → 3 CERCLES
-    # ================================
-    impacts = [
-        ("eco", eco),
-        ("social", social),
-        ("econ", econ),
-    ]
+    # --- Centre ---
+    draw_circle(0, 0, 1.5, objective)
 
-    radius = 280
+    # --- Impacts ---
+    impacts = [eco, social, econ]
+    radius1 = 4
     angle_step = 2 * math.pi / len(impacts)
 
-    for i, (node_id, text) in enumerate(impacts):
+    for i, txt in enumerate(impacts):
         angle = i * angle_step
-        x = radius * math.cos(angle)
-        y = radius * math.sin(angle)
+        x = radius1 * math.cos(angle)
+        y = radius1 * math.sin(angle)
+        draw_circle(x, y, 1.2, txt)
 
-        net.add_node(
-            node_id,
-            label=text,
-            shape="circle",
-            borderWidth=3,
-            color=BORDER_COLOR,
-            size=90,
-            x=x,
-            y=y,
-            fixed=True,
-            font=FONT
-        )
+    # --- Actions ---
+    action_list = [a.strip() for a in actions.split("\n") if len(a.strip()) > 2]
+    radius2 = 7
+    angle_step2 = 2 * math.pi / max(1, len(action_list))
 
-        net.add_edge("objectif", node_id, color=BORDER_COLOR, width=2)
+    for i, txt in enumerate(action_list):
+        angle = i * angle_step2
+        x = radius2 * math.cos(angle)
+        y = radius2 * math.sin(angle)
+        draw_circle(x, y, 1.0, txt)
 
-    # ================================
-    # 🧭 PLAN D’ACTION → petits cercles
-    # ================================
-    action_items = [l.strip() for l in actions.split("\n") if len(l.strip()) > 2]
+    st.pyplot(fig)
 
-    radius_2 = 450
-    angle_step_2 = 2 * math.pi / max(1, len(action_items))
 
-    for i, item in enumerate(action_items):
-        angle = i * angle_step_2
-        x = radius_2 * math.cos(angle)
-        y = radius_2 * math.sin(angle)
 
-        node_id = f"act{i}"
-
-        net.add_node(
-            node_id,
-            label=item,
-            shape="circle",
-            borderWidth=3,
-            color=BORDER_COLOR,
-            size=80,
-            x=x,
-            y=y,
-            fixed=True,
-            font=FONT
-        )
-
-        net.add_edge("objectif", node_id, color=BORDER_COLOR, width=2)
-
-    # ================================
-    # 📄 EXPORT HTML POUR STREAMLIT
-    # ================================
-    temp_dir = tempfile.gettempdir()
-    html_path = os.path.join(temp_dir, "mindmap.html")
-    net.save_graph(html_path)
-
-    with open(html_path, "r", encoding="utf-8") as f:
-        html = f.read()
-
-    st.components.v1.html(html, height=750, scrolling=False)
 
 
 if st.session_state.get("validation_ok"):
