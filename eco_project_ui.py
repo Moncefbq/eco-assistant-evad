@@ -444,85 +444,140 @@ import math
 
 def generate_mindmap(objective, eco, social, econ, actions):
 
-    # Circle positions
+    # Colors for bubbles
+    bubble_colors = [
+        "#A7C7E7",  # blue
+        "#F7C5C5",  # red
+        "#C7F7D4",  # green
+        "#FBE7A1",  # yellow
+        "#E3C7F7",  # purple
+    ]
+
     impacts = [eco, social, econ]
     action_items = [a.strip() for a in actions.split("\n") if len(a.strip()) > 2]
 
-    # HTML template
     html = """
     <style>
-    .mindmap-container {
-        background: #111111;
-        width: 900px;
-        height: 900px;
-        position: relative;
-        margin: auto;
-        border-radius: 10px;
-    }
-    .node {
-        width: 160px;
-        height: 160px;
-        border: 3px solid white;
-        border-radius: 50%;
-        color: #FF6A5C;
+
+    .mindmap-wrapper {
+        width: 100%;
         display: flex;
-        align-items: center;
         justify-content: center;
-        text-align: center;
-        padding: 10px;
+    }
+
+    .mindmap {
+        width: 900px;
+        height: 600px;
+        position: relative;
+        background: #fafafa;
+        border-radius: 20px;
+        margin-top: 20px;
+        overflow: hidden;
+    }
+
+    .bubble {
+        padding: 15px 25px;
+        border-radius: 40px;
         position: absolute;
-        font-size: 17px;
+        font-weight: 600;
+        font-family: 'Arial';
+        font-size: 18px;
+        text-align: center;
+        color: #333;
+        box-shadow: 0px 3px 8px rgba(0,0,0,0.15);
     }
-    .center {
-        width: 220px;
-        height: 220px;
-        left: 50%;
+
+    .center-bubble {
+        background: #FFD86B;
+        padding: 20px 40px;
+        font-size: 22px;
+        border-radius: 45px;
         top: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 20px;
+        left: 50%;
+        transform: translate(-50%,-50%);
+        z-index: 10;
     }
+
+    .line {
+        position: absolute;
+        width: 2px;
+        background: #bbb;
+        transform-origin: top left;
+    }
+
     </style>
 
-    <div class="mindmap-container">
-        <div class="node center">{objective}</div>
+    <div class="mindmap-wrapper">
+    <div class="mindmap">
+        <div class="bubble center-bubble">{objective}</div>
     """.format(objective=objective)
 
-    # --- Impacts (rayon = 280px)
-    radius1 = 280
+    # ---- IMPACTS AROUND THE CENTER ----
+    radius1 = 200
     angle_step1 = 2 * math.pi / len(impacts)
 
     for i, txt in enumerate(impacts):
         angle = i * angle_step1
         x = 450 + radius1 * math.cos(angle)
-        y = 450 + radius1 * math.sin(angle)
+        y = 300 + radius1 * math.sin(angle)
+
+        color = bubble_colors[i % len(bubble_colors)]
 
         html += f"""
-        <div class="node" style="left:{x}px; top:{y}px;">
+        <div class="bubble" style="left:{x}px; top:{y}px; background:{color};">
             {txt}
         </div>
         """
 
-    # --- Actions (rayon = 380px)
-    radius2 = 380
+        # draw a line from center to bubble
+        cx, cy = 450, 300
+        dx, dy = x - cx + 80, y - cy + 20
+        dist = math.sqrt(dx*dx + dy*dy)
+        angle_deg = math.degrees(math.atan2(dy, dx))
+
+        html += f"""
+        <div class="line" style="
+            left: {cx}px;
+            top: {cy}px;
+            height: {dist}px;
+            transform: rotate({angle_deg}deg);
+        "></div>
+        """
+
+    # ---- ACTIONS OUTER RING ----
+    radius2 = 330
     angle_step2 = 2 * math.pi / max(1, len(action_items))
 
     for i, txt in enumerate(action_items):
         angle = i * angle_step2
         x = 450 + radius2 * math.cos(angle)
-        y = 450 + radius2 * math.sin(angle)
+        y = 300 + radius2 * math.sin(angle)
+
+        color = bubble_colors[(i+3) % len(bubble_colors)]
 
         html += f"""
-        <div class="node" style="left:{x}px; top:{y}px; width:140px; height:140px; font-size:14px;">
+        <div class="bubble" style="left:{x}px; top:{y}px; background:{color}; font-size:16px;">
             {txt}
         </div>
         """
 
-    html += "</div>"
+        cx, cy = 450, 300
+        dx, dy = x - cx + 80, y - cy + 20
+        dist = math.sqrt(dx*dx + dy*dy)
+        angle_deg = math.degrees(math.atan2(dy, dx))
+
+        html += f"""
+        <div class="line" style="
+            left: {cx}px;
+            top: {cy}px;
+            height: {dist}px;
+            transform: rotate({angle_deg}deg);
+        "></div>
+        """
+
+    html += "</div></div>"
 
     st.markdown(html, unsafe_allow_html=True)
-
-
-
 
 
 
