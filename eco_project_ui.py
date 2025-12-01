@@ -439,52 +439,88 @@ if submitted:
 # 🧠 MIND MAP AUTOMATIQUE
 # ==============================
 
-import matplotlib.pyplot as plt
+import streamlit as st
 import math
 
 def generate_mindmap(objective, eco, social, econ, actions):
 
-    # STYLE EXACT
-    bg = "#111111"
-    border = "white"
-    text_color = "#FF6A5C"
-
-    fig, ax = plt.subplots(figsize=(10, 10))
-    ax.set_facecolor(bg)
-    plt.axis("off")
-
-    # --- Fonction pour dessiner un cercle + texte ---
-    def draw_circle(x, y, r, text):
-        circle = plt.Circle((x, y), r, edgecolor=border, facecolor=bg, linewidth=3)
-        ax.add_patch(circle)
-        ax.text(x, y, text, color=text_color, ha="center", va="center", fontsize=14, wrap=True)
-
-    # --- Centre ---
-    draw_circle(0, 0, 1.5, objective)
-
-    # --- Impacts ---
+    # Circle positions
     impacts = [eco, social, econ]
-    radius1 = 4
-    angle_step = 2 * math.pi / len(impacts)
+    action_items = [a.strip() for a in actions.split("\n") if len(a.strip()) > 2]
+
+    # HTML template
+    html = """
+    <style>
+    .mindmap-container {
+        background: #111111;
+        width: 900px;
+        height: 900px;
+        position: relative;
+        margin: auto;
+        border-radius: 10px;
+    }
+    .node {
+        width: 160px;
+        height: 160px;
+        border: 3px solid white;
+        border-radius: 50%;
+        color: #FF6A5C;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 10px;
+        position: absolute;
+        font-size: 17px;
+    }
+    .center {
+        width: 220px;
+        height: 220px;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 20px;
+    }
+    </style>
+
+    <div class="mindmap-container">
+        <div class="node center">{objective}</div>
+    """.format(objective=objective)
+
+    # --- Impacts (rayon = 280px)
+    radius1 = 280
+    angle_step1 = 2 * math.pi / len(impacts)
 
     for i, txt in enumerate(impacts):
-        angle = i * angle_step
-        x = radius1 * math.cos(angle)
-        y = radius1 * math.sin(angle)
-        draw_circle(x, y, 1.2, txt)
+        angle = i * angle_step1
+        x = 450 + radius1 * math.cos(angle)
+        y = 450 + radius1 * math.sin(angle)
 
-    # --- Actions ---
-    action_list = [a.strip() for a in actions.split("\n") if len(a.strip()) > 2]
-    radius2 = 7
-    angle_step2 = 2 * math.pi / max(1, len(action_list))
+        html += f"""
+        <div class="node" style="left:{x}px; top:{y}px;">
+            {txt}
+        </div>
+        """
 
-    for i, txt in enumerate(action_list):
+    # --- Actions (rayon = 380px)
+    radius2 = 380
+    angle_step2 = 2 * math.pi / max(1, len(action_items))
+
+    for i, txt in enumerate(action_items):
         angle = i * angle_step2
-        x = radius2 * math.cos(angle)
-        y = radius2 * math.sin(angle)
-        draw_circle(x, y, 1.0, txt)
+        x = 450 + radius2 * math.cos(angle)
+        y = 450 + radius2 * math.sin(angle)
 
-    st.pyplot(fig)
+        html += f"""
+        <div class="node" style="left:{x}px; top:{y}px; width:140px; height:140px; font-size:14px;">
+            {txt}
+        </div>
+        """
+
+    html += "</div>"
+
+    st.markdown(html, unsafe_allow_html=True)
+
 
 
 
