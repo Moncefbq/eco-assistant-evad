@@ -443,10 +443,6 @@ if submitted:
 # 🧠 MIND MAP AUTOMATIQUE
 # ==============================
 
-from pyvis.network import Network
-import streamlit as st
-import tempfile
-import os
 
 def generate_mindmap(objective, eco, social, econ, actions):
     """
