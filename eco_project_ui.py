@@ -439,146 +439,114 @@ if submitted:
 # 🧠 MIND MAP AUTOMATIQUE
 # ==============================
 
+from pyvis.network import Network
 import streamlit as st
 import math
+import tempfile
+import os
 
 def generate_mindmap(objective, eco, social, econ, actions):
-
-    impacts = [eco, social, econ]
-    action_items = [a.strip() for a in actions.split("\n") if len(a.strip()) > 2]
-
-    # Couleurs des bulles
-    bubble_colors = [
-        "#A7C7E7",
-        "#F7C5C5",
-        "#C7F7D4",
-        "#FBE7A1",
-        "#E3C7F7",
-    ]
-
-    # Construire la partie HTML SANS format()
-    html = f"""
-    <style>
-
-    .mindmap-wrapper {{
-        width: 100%;
-        display: flex;
-        justify-content: center;
-    }}
-
-    .mindmap {{
-        width: 900px;
-        height: 600px;
-        position: relative;
-        background: #fafafa;
-        border-radius: 20px;
-        margin-top: 20px;
-        overflow: hidden;
-    }}
-
-    .bubble {{
-        padding: 15px 25px;
-        border-radius: 40px;
-        position: absolute;
-        font-weight: 600;
-        font-family: 'Arial';
-        font-size: 18px;
-        text-align: center;
-        color: #333;
-        box-shadow: 0px 3px 8px rgba(0,0,0,0.15);
-        max-width: 180px;
-    }}
-
-    .center-bubble {{
-        background: #FFD86B;
-        padding: 20px 40px;
-        font-size: 22px;
-        border-radius: 45px;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%,-50%);
-        z-index: 10;
-    }}
-
-    .line {{
-        position: absolute;
-        width: 2px;
-        background: #bbb;
-        transform-origin: top left;
-    }}
-
-    </style>
-
-    <div class="mindmap-wrapper">
-        <div class="mindmap">
-            <div class="bubble center-bubble">{objective}</div>
+    """
+    Mind map radial professionnel (style Miro/XMind)
+    100% compatible Streamlit Cloud.
     """
 
-    # ----------- IMPACTS -----------
-    radius1 = 200
+    # --- Initialisation du graph ---
+    net = Network(
+        height="650px",
+        width="100%",
+        bgcolor="#ffffff",
+        font_color="#014d3b"
+    )
+
+    # Désactive la physique pour garder une forme fixe, propre
+    net.toggle_physics(False)
+
+    # ============================
+    # 🎯 1) NOEUD CENTRAL
+    # ============================
+    net.add_node(
+        "objectif",
+        label=objective,
+        color="#018262",
+        size=60,
+        shape="dot",
+        font={"color": "white", "size": 22}
+    )
+
+    # ============================
+    # 🌿 2) IMPACTS (cercle intérieur)
+    # ============================
+    impacts = [
+        ("eco", "Impact écologique"),
+        ("social", "Impact social"),
+        ("econ", "Impact économique"),
+    ]
+
+    radius1 = 180  # rayon du 1er cercle
     angle_step1 = 2 * math.pi / len(impacts)
 
-    for i, txt in enumerate(impacts):
+    for i, (node_id, label) in enumerate(impacts):
         angle = i * angle_step1
-        x = 450 + radius1 * math.cos(angle)
-        y = 300 + radius1 * math.sin(angle)
-        color = bubble_colors[i % len(bubble_colors)]
+        x = radius1 * math.cos(angle)
+        y = radius1 * math.sin(angle)
 
-        html += f"""
-        <div class="bubble" style="left:{x}px; top:{y}px; background:{color};">
-            {txt}
-        </div>
-        """
+        net.add_node(
+            node_id,
+            label=label,
+            color="#8FD9C1",
+            size=40,
+            shape="dot",
+            x=x,
+            y=y,
+            fixed=True,
+            font={"size": 16}
+        )
 
-        cx, cy = 450, 300
-        dx, dy = x - cx + 80, y - cy + 20
-        dist = math.sqrt(dx*dx + dy*dy)
-        angle_deg = math.degrees(math.atan2(dy, dx))
+        net.add_edge("objectif", node_id)
 
-        html += f"""
-        <div class="line" style="
-            left: {cx}px;
-            top: {cy}px;
-            height: {dist}px;
-            transform: rotate({angle_deg}deg);
-        "></div>
-        """
-
-    # ----------- ACTIONS -----------
+    # ============================
+    # 🧭 3) ACTIONS (cercle extérieur)
+    # ============================
+    action_lines = [l.strip() for l in actions.split("\n") if len(l.strip()) > 3]
     radius2 = 330
-    angle_step2 = 2 * math.pi / max(1, len(action_items))
+    if len(action_lines) > 0:
+        angle_step2 = 2 * math.pi / len(action_lines)
+    else:
+        angle_step2 = 1
 
-    for i, txt in enumerate(action_items):
+    for i, step in enumerate(action_lines):
         angle = i * angle_step2
-        x = 450 + radius2 * math.cos(angle)
-        y = 300 + radius2 * math.sin(angle)
-        color = bubble_colors[(i + 3) % len(bubble_colors)]
+        x = radius2 * math.cos(angle)
+        y = radius2 * math.sin(angle)
 
-        html += f"""
-        <div class="bubble" style="left:{x}px; top:{y}px; background:{color}; font-size:16px;">
-            {txt}
-        </div>
-        """
+        node_id = f"step_{i}"
 
-        cx, cy = 450, 300
-        dx, dy = x - cx + 80, y - cy + 20
-        dist = math.sqrt(dx*dx + dy*dy)
-        angle_deg = math.degrees(math.atan2(dy, dx))
+        net.add_node(
+            node_id,
+            label=step,
+            color="#CFEFE7",
+            size=30,
+            shape="dot",
+            x=x,
+            y=y,
+            fixed=True,
+            font={"size": 12}
+        )
 
-        html += f"""
-        <div class="line" style="
-            left: {cx}px;
-            top: {cy}px;
-            height: {dist}px;
-            transform: rotate({angle_deg}deg);
-        "></div>
-        """
+        net.add_edge("objectif", node_id)
 
-    html += "</div></div>"
+    # ============================
+    # 📄 Export HTML temporaire
+    # ============================
+    tmp_dir = tempfile.gettempdir()
+    html_path = os.path.join(tmp_dir, "mindmap.html")
+    net.save_graph(html_path)
 
-    st.markdown(html, unsafe_allow_html=True)
+    with open(html_path, "r", encoding="utf-8") as f:
+        html_content = f.read()
 
-
+    st.components.v1.html(html_content, height=700, scrolling=False)
 
 
 if st.session_state.get("validation_ok"):
