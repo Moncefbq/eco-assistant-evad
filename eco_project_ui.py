@@ -444,28 +444,29 @@ import math
 
 def generate_mindmap(objective, eco, social, econ, actions):
 
-    # Colors for bubbles
-    bubble_colors = [
-        "#A7C7E7",  # blue
-        "#F7C5C5",  # red
-        "#C7F7D4",  # green
-        "#FBE7A1",  # yellow
-        "#E3C7F7",  # purple
-    ]
-
     impacts = [eco, social, econ]
     action_items = [a.strip() for a in actions.split("\n") if len(a.strip()) > 2]
 
-    html = """
+    # Couleurs des bulles
+    bubble_colors = [
+        "#A7C7E7",
+        "#F7C5C5",
+        "#C7F7D4",
+        "#FBE7A1",
+        "#E3C7F7",
+    ]
+
+    # Construire la partie HTML SANS format()
+    html = f"""
     <style>
 
-    .mindmap-wrapper {
+    .mindmap-wrapper {{
         width: 100%;
         display: flex;
         justify-content: center;
-    }
+    }}
 
-    .mindmap {
+    .mindmap {{
         width: 900px;
         height: 600px;
         position: relative;
@@ -473,9 +474,9 @@ def generate_mindmap(objective, eco, social, econ, actions):
         border-radius: 20px;
         margin-top: 20px;
         overflow: hidden;
-    }
+    }}
 
-    .bubble {
+    .bubble {{
         padding: 15px 25px;
         border-radius: 40px;
         position: absolute;
@@ -485,9 +486,10 @@ def generate_mindmap(objective, eco, social, econ, actions):
         text-align: center;
         color: #333;
         box-shadow: 0px 3px 8px rgba(0,0,0,0.15);
-    }
+        max-width: 180px;
+    }}
 
-    .center-bubble {
+    .center-bubble {{
         background: #FFD86B;
         padding: 20px 40px;
         font-size: 22px;
@@ -496,23 +498,23 @@ def generate_mindmap(objective, eco, social, econ, actions):
         left: 50%;
         transform: translate(-50%,-50%);
         z-index: 10;
-    }
+    }}
 
-    .line {
+    .line {{
         position: absolute;
         width: 2px;
         background: #bbb;
         transform-origin: top left;
-    }
+    }}
 
     </style>
 
     <div class="mindmap-wrapper">
-    <div class="mindmap">
-        <div class="bubble center-bubble">{objective}</div>
-    """.format(objective=objective)
+        <div class="mindmap">
+            <div class="bubble center-bubble">{objective}</div>
+    """
 
-    # ---- IMPACTS AROUND THE CENTER ----
+    # ----------- IMPACTS -----------
     radius1 = 200
     angle_step1 = 2 * math.pi / len(impacts)
 
@@ -520,7 +522,6 @@ def generate_mindmap(objective, eco, social, econ, actions):
         angle = i * angle_step1
         x = 450 + radius1 * math.cos(angle)
         y = 300 + radius1 * math.sin(angle)
-
         color = bubble_colors[i % len(bubble_colors)]
 
         html += f"""
@@ -529,7 +530,6 @@ def generate_mindmap(objective, eco, social, econ, actions):
         </div>
         """
 
-        # draw a line from center to bubble
         cx, cy = 450, 300
         dx, dy = x - cx + 80, y - cy + 20
         dist = math.sqrt(dx*dx + dy*dy)
@@ -544,7 +544,7 @@ def generate_mindmap(objective, eco, social, econ, actions):
         "></div>
         """
 
-    # ---- ACTIONS OUTER RING ----
+    # ----------- ACTIONS -----------
     radius2 = 330
     angle_step2 = 2 * math.pi / max(1, len(action_items))
 
@@ -552,8 +552,7 @@ def generate_mindmap(objective, eco, social, econ, actions):
         angle = i * angle_step2
         x = 450 + radius2 * math.cos(angle)
         y = 300 + radius2 * math.sin(angle)
-
-        color = bubble_colors[(i+3) % len(bubble_colors)]
+        color = bubble_colors[(i + 3) % len(bubble_colors)]
 
         html += f"""
         <div class="bubble" style="left:{x}px; top:{y}px; background:{color}; font-size:16px;">
@@ -578,6 +577,7 @@ def generate_mindmap(objective, eco, social, econ, actions):
     html += "</div></div>"
 
     st.markdown(html, unsafe_allow_html=True)
+
 
 
 
