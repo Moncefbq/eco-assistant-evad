@@ -6,7 +6,7 @@ import base64
 import json
 
 from pyvis.network import Network
-import streamlit as st
+import math
 import tempfile
 import os
 
@@ -443,12 +443,13 @@ if submitted:
 # 🧠 MIND MAP AUTOMATIQUE
 # ==============================
 
-
 def generate_mindmap(objective, eco, social, econ, actions):
     """
-    Mind map automatique 100% compatible Streamlit Cloud via PyVis.
+    Mind map radial professionnel (style Miro/XMind)
+    100% compatible Streamlit Cloud.
     """
-    # Crée un graphe PyVis
+
+    # --- Initialisation du graph ---
     net = Network(
         height="650px",
         width="100%",
@@ -456,61 +457,95 @@ def generate_mindmap(objective, eco, social, econ, actions):
         font_color="#014d3b"
     )
 
-    # Options pour un rendu plus organique
-    net.barnes_hut()
+    # Désactive la physique pour garder une forme fixe, propre
+    net.toggle_physics(False)
 
-    # 🎯 Noeud central
+    # ============================
+    # 🎯 1) NOEUD CENTRAL
+    # ============================
     net.add_node(
         "objectif",
         label=objective,
         color="#018262",
+        size=60,
         shape="dot",
-        size=55,
-        font={"size": 22, "color": "white"}
+        font={"color": "white", "size": 22}
     )
 
-    # 🌿 Impacts
+    # ============================
+    # 🌿 2) IMPACTS (cercle intérieur)
+    # ============================
     impacts = [
         ("eco", "Impact écologique"),
         ("social", "Impact social"),
         ("econ", "Impact économique"),
     ]
 
-    for node_id, label in impacts:
+    radius1 = 180  # rayon du 1er cercle
+    angle_step1 = 2 * math.pi / len(impacts)
+
+    for i, (node_id, label) in enumerate(impacts):
+        angle = i * angle_step1
+        x = radius1 * math.cos(angle)
+        y = radius1 * math.sin(angle)
+
         net.add_node(
             node_id,
             label=label,
             color="#8FD9C1",
+            size=40,
             shape="dot",
-            size=40
+            x=x,
+            y=y,
+            fixed=True,
+            font={"size": 16}
         )
+
         net.add_edge("objectif", node_id)
 
-    # 🧭 Étapes du plan d’action
-    lines = [l.strip() for l in actions.split("\n") if len(l.strip()) > 3]
+    # ============================
+    # 🧭 3) ACTIONS (cercle extérieur)
+    # ============================
+    action_lines = [l.strip() for l in actions.split("\n") if len(l.strip()) > 3]
+    radius2 = 330
+    if len(action_lines) > 0:
+        angle_step2 = 2 * math.pi / len(action_lines)
+    else:
+        angle_step2 = 1
 
-    for i, step in enumerate(lines):
-        step_id = f"step_{i}"
+    for i, step in enumerate(action_lines):
+        angle = i * angle_step2
+        x = radius2 * math.cos(angle)
+        y = radius2 * math.sin(angle)
+
+        node_id = f"step_{i}"
+
         net.add_node(
-            step_id,
+            node_id,
             label=step,
             color="#CFEFE7",
+            size=30,
             shape="dot",
-            size=30
+            x=x,
+            y=y,
+            fixed=True,
+            font={"size": 12}
         )
-        net.add_edge("objectif", step_id)
 
-    # Fichier temporaire HTML (pour Streamlit Cloud)
+        net.add_edge("objectif", node_id)
+
+    # ============================
+    # 📄 Export HTML temporaire
+    # ============================
     tmp_dir = tempfile.gettempdir()
     html_path = os.path.join(tmp_dir, "mindmap.html")
-
     net.save_graph(html_path)
 
-    # Affichage dans Streamlit avec iframe
     with open(html_path, "r", encoding="utf-8") as f:
         html_content = f.read()
 
     st.components.v1.html(html_content, height=700, scrolling=False)
+
 if st.session_state.get("validation_ok"):
     st.markdown("## 🧠 Mind Mapping du projet")
 
