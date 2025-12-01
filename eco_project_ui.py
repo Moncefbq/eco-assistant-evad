@@ -521,11 +521,11 @@ def generate_mindmap(objective, eco, social, econ, actions):
 st.markdown("## 🧠 Mind Mapping du projet")
 
 generate_mindmap(
-    objectif,
-    impact_eco,
-    impact_social,
-    impact_econ,
-    plan_action
+    st.session_state.objectif,
+    st.session_state.impact_eco,
+    st.session_state.impact_social,
+    st.session_state.impact_econ,
+    st.session_state.plan_action
 )
 
 
