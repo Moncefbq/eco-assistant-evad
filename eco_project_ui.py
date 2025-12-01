@@ -5,10 +5,6 @@ import re
 import base64
 import json
 
-from pyvis.network import Network
-import math
-import tempfile
-import os
 
 # --- EN-TÊTE EVAD (logo centré, net et sans cadre) ---
 @st.cache_data
@@ -443,108 +439,117 @@ if submitted:
 # 🧠 MIND MAP AUTOMATIQUE
 # ==============================
 
-def generate_mindmap(objective, eco, social, econ, actions):
-    """
-    Mind map radial professionnel (style Miro/XMind)
-    100% compatible Streamlit Cloud.
-    """
+from pyvis.network import Network
+import math
+import tempfile
+import os
 
-    # --- Initialisation du graph ---
+def generate_mindmap(objective, eco, social, econ, actions):
+    # ================================
+    # 🎨 CONFIG EXACT DU STYLE
+    # ================================
+    BACKGROUND = "#111111"         # noir mat
+    BORDER_COLOR = "#FFFFFF"       # blanc
+    TEXT_COLOR = "#FF6A5C"         # rouge/orange comme ton screenshot
+    FONT = {"size": 18, "color": TEXT_COLOR, "face": "arial"}
+
     net = Network(
-        height="650px",
+        height="700px",
         width="100%",
-        bgcolor="#ffffff",
-        font_color="#014d3b"
+        bgcolor=BACKGROUND,
+        font_color=TEXT_COLOR
     )
 
-    # Désactive la physique pour garder une forme fixe, propre
     net.toggle_physics(False)
 
-    # ============================
-    # 🎯 1) NOEUD CENTRAL
-    # ============================
+    # ================================
+    # 🎯 NOEUD CENTRAL
+    # ================================
     net.add_node(
         "objectif",
         label=objective,
-        color="#018262",
-        size=60,
-        shape="dot",
-        font={"color": "white", "size": 22}
+        shape="circle",
+        borderWidth=3,
+        color=BORDER_COLOR,
+        size=110,
+        font=FONT,
+        labelHighlight=True,
     )
 
-    # ============================
-    # 🌿 2) IMPACTS (cercle intérieur)
-    # ============================
+    # ================================
+    # 🌿 3 IMPACTS → 3 CERCLES
+    # ================================
     impacts = [
-        ("eco", "Impact écologique"),
-        ("social", "Impact social"),
-        ("econ", "Impact économique"),
+        ("eco", eco),
+        ("social", social),
+        ("econ", econ),
     ]
 
-    radius1 = 180  # rayon du 1er cercle
-    angle_step1 = 2 * math.pi / len(impacts)
+    radius = 280
+    angle_step = 2 * math.pi / len(impacts)
 
-    for i, (node_id, label) in enumerate(impacts):
-        angle = i * angle_step1
-        x = radius1 * math.cos(angle)
-        y = radius1 * math.sin(angle)
-
-        net.add_node(
-            node_id,
-            label=label,
-            color="#8FD9C1",
-            size=40,
-            shape="dot",
-            x=x,
-            y=y,
-            fixed=True,
-            font={"size": 16}
-        )
-
-        net.add_edge("objectif", node_id)
-
-    # ============================
-    # 🧭 3) ACTIONS (cercle extérieur)
-    # ============================
-    action_lines = [l.strip() for l in actions.split("\n") if len(l.strip()) > 3]
-    radius2 = 330
-    if len(action_lines) > 0:
-        angle_step2 = 2 * math.pi / len(action_lines)
-    else:
-        angle_step2 = 1
-
-    for i, step in enumerate(action_lines):
-        angle = i * angle_step2
-        x = radius2 * math.cos(angle)
-        y = radius2 * math.sin(angle)
-
-        node_id = f"step_{i}"
+    for i, (node_id, text) in enumerate(impacts):
+        angle = i * angle_step
+        x = radius * math.cos(angle)
+        y = radius * math.sin(angle)
 
         net.add_node(
             node_id,
-            label=step,
-            color="#CFEFE7",
-            size=30,
-            shape="dot",
+            label=text,
+            shape="circle",
+            borderWidth=3,
+            color=BORDER_COLOR,
+            size=90,
             x=x,
             y=y,
             fixed=True,
-            font={"size": 12}
+            font=FONT
         )
 
-        net.add_edge("objectif", node_id)
+        net.add_edge("objectif", node_id, color=BORDER_COLOR, width=2)
 
-    # ============================
-    # 📄 Export HTML temporaire
-    # ============================
-    tmp_dir = tempfile.gettempdir()
-    html_path = os.path.join(tmp_dir, "mindmap.html")
+    # ================================
+    # 🧭 PLAN D’ACTION → petits cercles
+    # ================================
+    action_items = [l.strip() for l in actions.split("\n") if len(l.strip()) > 2]
+
+    radius_2 = 450
+    angle_step_2 = 2 * math.pi / max(1, len(action_items))
+
+    for i, item in enumerate(action_items):
+        angle = i * angle_step_2
+        x = radius_2 * math.cos(angle)
+        y = radius_2 * math.sin(angle)
+
+        node_id = f"act{i}"
+
+        net.add_node(
+            node_id,
+            label=item,
+            shape="circle",
+            borderWidth=3,
+            color=BORDER_COLOR,
+            size=80,
+            x=x,
+            y=y,
+            fixed=True,
+            font=FONT
+        )
+
+        net.add_edge("objectif", node_id, color=BORDER_COLOR, width=2)
+
+    # ================================
+    # 📄 EXPORT HTML POUR STREAMLIT
+    # ================================
+    temp_dir = tempfile.gettempdir()
+    html_path = os.path.join(temp_dir, "mindmap.html")
     net.save_graph(html_path)
 
     with open(html_path, "r", encoding="utf-8") as f:
-        html_content = f.read()
+        html = f.read()
 
-    st.components.v1.html(html_content, height=700, scrolling=False)
+    st.components.v1.html(html, height=750, scrolling=False)
+
 
 if st.session_state.get("validation_ok"):
     st.markdown("## 🧠 Mind Mapping du projet")
